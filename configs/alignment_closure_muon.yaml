@@ -1,0 +1,8 @@
+alignment_closure:
+  reference_station: 0
+  seed: 20260808
+  chi2_gate: null
+  refinement_iterations: 3
+  prior_sigma_mm: null
+  measurement_noise_scale: 0.0
+  magnitude_mm: null

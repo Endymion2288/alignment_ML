@@ -1,0 +1,30 @@
+# Physical, truth-fixed alignment capture scan.  Each point is refitted from
+# the persisted SCT_ClusterContainer after loading its own SQLite/POOL payload.
+physical_refit_capture_scan:
+  input_xaod: /eos/experiment/faser/sim/mc24/particle_gun/100012/rec/dev/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00000-00004-xAOD.root
+  nevents: 5
+  station_ids: [0, 1, 2, 3]
+  reference_station: 0
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 3
+  prior_sigma_mm: null
+  capture_tolerance_mm: 0.01
+  magnitudes_mm: [0.0, 0.1, 1.0, 10.0, 50.0, 100.0, 250.0, 500.0, 1000.0]
+  direction_trials:
+    - name: mixed_a
+      unit_offsets_xy:
+        1: [1.0, 0.0]
+        2: [0.0, 1.0]
+        3: [0.7071067811865476, -0.7071067811865476]
+    - name: mixed_b
+      unit_offsets_xy:
+        1: [0.0, 1.0]
+        2: [-1.0, 0.0]
+        3: [0.7071067811865476, 0.7071067811865476]
+    - name: mixed_c
+      unit_offsets_xy:
+        1: [-0.7071067811865476, 0.7071067811865476]
+        2: [1.0, 0.0]
+        3: [0.0, -1.0]

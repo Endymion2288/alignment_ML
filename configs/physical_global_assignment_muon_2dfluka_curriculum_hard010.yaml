@@ -1,0 +1,9 @@
+# Lower hard-negative occupancy point for the physical pairwise-MLP robustness
+# scan.  The fake construction, payload bank, source splits, and relative
+# truth-chi2 requirement are inherited unchanged; only the Poisson mean is
+# reduced to 0.10 per non-reference target station.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  synthetic_multitrack:
+    hard_negative_mean_per_target_station: 0.10

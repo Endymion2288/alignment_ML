@@ -1,0 +1,20 @@
+# A fresh, sealed multi-direction physical scan.  The source split remains
+# exactly the frozen MLP split; only the number of independently generated
+# geometry directions is increased for evaluation.  Zero offset has one
+# direction-independent refit by construction.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_train_aug.yaml
+
+physical_curriculum_mlp:
+  payload_bank:
+    seed: 20260812
+    magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+    direction_trials_per_split:
+      train: 3
+      validation: 3
+      test: 3
+
+  synthetic_multitrack:
+    # Control the stochastic overlay component across geometry directions at
+    # a fixed magnitude.  This changes only deterministic selection RNG, not
+    # any refitted coordinate, covariance, or Acts propagation.
+    overlay_seed_scope: magnitude_shared_across_direction_trials

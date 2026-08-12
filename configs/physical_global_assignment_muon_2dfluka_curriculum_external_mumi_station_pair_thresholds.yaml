@@ -1,0 +1,14 @@
+# Bounded validation-only search for a station-pair decision-threshold vector.
+# The pairwise MLP and all physical Acts candidates are fixed.  Per-pair
+# temperature calibration is fitted on validation only; a finite coordinate
+# descent searches score thresholds for Sinkhorn plus dustbin assignment.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_station_pair_calibration.yaml
+
+physical_curriculum_mlp:
+  station_pair_threshold_baseline:
+    method: sinkhorn_hungarian
+    unmatched_penalties: [0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.5]
+    threshold_grid: [0.02, 0.10, 0.20, 0.35, 0.60]
+    initial_thresholds: [0.10, 0.35]
+    maximum_sweeps: 2

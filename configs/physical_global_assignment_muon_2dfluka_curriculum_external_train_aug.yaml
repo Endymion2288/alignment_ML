@@ -1,0 +1,50 @@
+# Source-disjoint train-only augmentation after physical compatibility smoke.
+# The 100043/100044 5 mrad FLUKA-E chunks are admitted only to training.  The
+# validation and sealed test populations remain the original 2D-FLUKA 100116/
+# 100117 production, so this file measures genuine out-of-source robustness.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  sources:
+    - id: mc24_100116_00000_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00000-00009-s0012-xAOD.root
+    - id: mc24_100116_00020_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00020-00029-s0012-xAOD.root
+    - id: mc24_100116_00040_00049
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00040-00049-s0012-xAOD.root
+    - id: mc24_100117_00000_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00000-00009-s0012-xAOD.root
+    - id: mc24_100117_00020_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00020-00029-s0012-xAOD.root
+    - id: mc24_100117_00040_00049
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00040-00049-s0012-xAOD.root
+    - id: mc24_100043_00000_00099
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00000-00099-s0013-r0022-xAOD.root
+    - id: mc24_100043_00100_00199
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00100-00199-s0013-r0022-xAOD.root
+    - id: mc24_100044_00000_00099
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00000-00099-s0013-r0022-xAOD.root
+    - id: mc24_100044_00100_00199
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00100-00199-s0013-r0022-xAOD.root
+    - id: mc24_100116_00010_00019
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00010-00019-s0012-xAOD.root
+    - id: mc24_100117_00010_00019
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00010-00019-s0012-xAOD.root
+    - id: mc24_100116_00030_00039
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00030-00039-s0012-xAOD.root
+    - id: mc24_100117_00030_00039
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00030-00039-s0012-xAOD.root

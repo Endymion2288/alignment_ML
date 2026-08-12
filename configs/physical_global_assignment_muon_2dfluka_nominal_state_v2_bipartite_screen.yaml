@@ -1,0 +1,9 @@
+# Same source-disjoint nominal physical pilot, with the smallest justified
+# feature repair: the pairwise MLP additionally sees the two persisted,
+# refitted local endpoint states.  It does not receive truth, synthetic-role
+# labels, q/p measurements, or any Transformer/global neural context.
+base_config: physical_global_assignment_muon_2dfluka_nominal_bipartite_screen.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    feature_set: state_augmented_v2

@@ -1,0 +1,14 @@
+# Exact four-station assignment ablation on the expanded external-source MLP.
+# The saved pairwise checkpoint, physical candidates, and validation split are
+# fixed.  Only the truth-blind unit-capacity multistation solver is substituted
+# for independent station-pair assignment.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_train_aug.yaml
+
+physical_curriculum_mlp:
+  global_assignment_mlp:
+    methods: [multistation_flow]
+    scan_all_candidate_gates: true
+    multistation_flow_threshold_grid: [0.10, 0.50, 0.90]
+    multistation_flow_adaptive_threshold_quantiles: 3
+    multistation_flow_unmatched_penalties: [0.0, 0.5, 1.0]
+    multistation_flow_maximum_hypotheses: 10000

@@ -1,0 +1,15 @@
+# Validation-only global-assignment screen for the nominal 2D-FLUKA pilot.
+# It retains every required bipartite method while using a bounded validation
+# grid.  Exact multi-station MILP is evaluated only after this screen fixes a
+# viable pairwise operating point, so solver-grid cost cannot mask a baseline
+# failure or delay source-data diagnosis.
+base_config: physical_global_assignment_muon_2dfluka_nominal_pilot.yaml
+
+physical_curriculum_mlp:
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian, sinkhorn_hungarian]
+    threshold_grid: [0.10, 0.30, 0.50, 0.70, 0.90]
+    adaptive_threshold_quantiles: 3
+    unmatched_penalties: [-1.0, 0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.25, 0.50]
+    sinkhorn_iterations: 20

@@ -1,0 +1,10 @@
+# Local-quality feature ablation using the persisted six-bit SCT layer-side
+# hit pattern verified in NtupleDumper.  All kinematic/geometry inputs remain
+# the physical refit plus mode-0 Acts candidates; no truth or synthetic role is
+# added to the network input.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_train_aug.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    feature_set: state_hitpattern_v4
+    calibration_scope: station_pair

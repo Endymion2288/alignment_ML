@@ -1,0 +1,15 @@
+# Validation-only threshold-vector search for six already-trained, independent
+# station-pair MLPs.  This stays entirely within the pairwise MLP + explicit
+# global-assignment baseline: no retraining, no coordinate surrogate, and no
+# Transformer.  The sealed test split remains closed unless the predeclared
+# validation primary point is met.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_pair_ensemble.yaml
+
+physical_curriculum_mlp:
+  station_pair_threshold_baseline:
+    method: sinkhorn_hungarian
+    unmatched_penalties: [0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.5]
+    threshold_grid: [0.02, 0.10, 0.20, 0.35, 0.60]
+    initial_thresholds: [0.10, 0.35]
+    maximum_sweeps: 2

@@ -1,0 +1,42 @@
+# Validation-only repair of the initial V2 direct route-query integration.
+# The initial direct study demonstrated that replacing three edge log-odds by
+# one low-prior complete-route probability causes the solver to prefer partial
+# route decompositions.  This study keeps every physical candidate and frozen
+# V2 edge control unchanged, then applies the route query as a residual around
+# the adjacent-edge utility.  It has no test input or output dependency.
+base_config: geometry_aware_transformer_v2_direct_routes.yaml
+
+route_aware_transformer_v2_direct_routes:
+  input_contract:
+    allowed_splits: [validation]
+    forbidden_splits: [test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    curriculum_magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+
+  route_query_calibration:
+    method: platt
+    bins: 15
+
+  # ``context_weight=0`` is the exact frozen-edge route-assignment control.
+  # In residual mode the route score is a utility correction, not a candidate
+  # gate: all pre-existing physical complete chains remain eligible and the
+  # solver applies the calibrated contextual evidence continuously.  The only
+  # V2-specific selected control is therefore the residual weight, together
+  # with the shared dustbin utility.  No test-time control fitting is allowed.
+  route_query_selection:
+    complete_route_score_composition: residual
+    complete_route_context_weights: [0.0, 0.025, 0.05, 0.10, 0.20, 0.40, 0.70, 1.0]
+    complete_route_score_thresholds: [0.0]
+    unmatched_penalties: [-0.5, 0.0, 0.5, 1.0]
+    maximum_hypotheses: 100000
+    selection_policy: nominal_primary_then_validation_capture_count_then_maximum_magnitude_then_mean_route_quality
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05

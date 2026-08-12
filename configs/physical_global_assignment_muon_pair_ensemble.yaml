@@ -1,0 +1,8 @@
+# Station-pair-specialised MLP ablation.  All physical payloads, source-file
+# splits, overlays, candidate gates and validation operating rules are shared
+# with physical_global_assignment_muon.yaml; only the MLP topology changes.
+base_config: physical_global_assignment_muon.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    model_topology: station_pair_ensemble

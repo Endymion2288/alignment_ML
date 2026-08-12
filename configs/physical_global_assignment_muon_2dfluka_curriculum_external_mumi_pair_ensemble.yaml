@@ -1,0 +1,9 @@
+# Independent low-capacity MLPs for each ordered station pair, trained on the
+# expanded source-disjoint physical bank.  This tests pair-specific feature
+# response without a Transformer or cross-station message passing.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_train_aug.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    model_topology: station_pair_ensemble
+    calibration_scope: station_pair

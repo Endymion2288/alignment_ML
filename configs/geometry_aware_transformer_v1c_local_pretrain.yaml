@@ -1,0 +1,26 @@
+# V1c preserves the V1b physical graph, source-disjoint corpus, train-only
+# curriculum and validation-only decoder selection.  It adds a staged local
+# edge-residual pretraining phase before sparse multi-station context training.
+# The local head uses only persisted source/target state plus the verified Acts
+# candidate vector; it never receives a previous MLP score, truth feature, or
+# synthetic-role feature.
+base_config: geometry_aware_transformer_v1b.yaml
+
+geometry_aware_transformer_v1:
+  local_edge_pretrain_stages:
+    - name: nominal_to_0p1mm_local
+      maximum_magnitude_mm: 0.1
+      epochs: 25
+    - name: through_5mm_local
+      maximum_magnitude_mm: 5.0
+      epochs: 30
+    - name: through_50mm_local
+      maximum_magnitude_mm: 50.0
+      epochs: 35
+
+  training:
+    # The local two-layer decoder is substantially smaller than the 4-block
+    # context network.  Its rate is declared separately; the joint context
+    # phase remains at the V1b rate.
+    local_pretrain_learning_rate: 0.001
+

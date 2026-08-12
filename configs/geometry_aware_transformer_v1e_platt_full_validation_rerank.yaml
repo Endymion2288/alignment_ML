@@ -1,0 +1,11 @@
+# V1e retains the V1d selected weights and validation-only Platt calibration.
+# It does not enlarge or alter the threshold grid.  It uses the deterministic
+# 16-event-per-magnitude subset only to propose a finite set of controls, then
+# re-ranks the top 24 proposals over every validation event before freezing the
+# route operating point.  Test sources remain unopened.
+base_config: geometry_aware_transformer_v1d_platt.yaml
+
+geometry_aware_transformer_v1:
+  route_selection:
+    full_validation_rerank_candidates: 24
+

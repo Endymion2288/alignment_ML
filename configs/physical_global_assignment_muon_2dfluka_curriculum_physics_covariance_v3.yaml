@@ -1,0 +1,9 @@
+# Low-capacity pairwise MLP ablation with the full physical covariance shape.
+# It consumes the same SCT-cluster refit -> mode-0 Acts candidate records as
+# the v2 baseline; no truth, synthetic role, q/p measurement, or Transformer
+# feature enters the classifier.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    feature_set: physics_covariance_v3

@@ -1,0 +1,34 @@
+# Controlled unknown-association study after the physical refit capture scan.
+# The same deterministic overlay layout is generated from every payload's
+# independently refitted tracklets.  Mode 0 is mandatory because SegmentFit
+# q/p is a seed rather than a measured local parameter.
+synthetic_unknown_association:
+  synthetic_multitrack:
+    events: 100
+    tracks_per_event: 4
+    stations: [0, 1, 2, 3]
+    missing_tracklet_probability: 0.10
+    fake_mean_per_station: 0.50
+    minimum_truth_match_fraction: 0.99
+    synthetic_run_id: 990000
+    seed: 20260808
+  field_candidate_export:
+    q_over_p_mode: 0
+    target_z_tolerance_mm: 1.0e-6
+  field_chi2:
+    # Fixed before displaced-point evaluation.  The nominal audit is saved
+    # with the scan and confirms whether this retains all nominal truth pairs.
+    chi2_gate: 1500.0
+  mlp_pair_classifier:
+    validation_fraction: 0.30
+    hidden_dim: 64
+    epochs: 150
+    batch_size: 256
+    learning_rate: 1.0e-3
+    weight_decay: 1.0e-4
+    seed: 20260810
+    device: auto
+    candidate_chi2_gate: null
+  evaluation:
+    q_over_p_mode: 0
+    target_z_tolerance_mm: 1.0e-6

@@ -1,0 +1,14 @@
+# Final validation selection before the sealed nominal test evaluation.  Every
+# physical chi2 candidate graph is combined with a bounded decision-threshold
+# and global-assignment scan.  Test candidates remain unopened until this
+# complete validation selection yields the fixed per-method operating points.
+base_config: physical_global_assignment_muon_2dfluka_nominal_state_v2_bipartite_screen.yaml
+
+physical_curriculum_mlp:
+  global_assignment_mlp:
+    scan_all_candidate_gates: true
+    threshold_grid: [0.10, 0.50, 0.90]
+    adaptive_threshold_quantiles: 3
+    unmatched_penalties: [0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.50]
+    sinkhorn_iterations: 20

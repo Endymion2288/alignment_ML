@@ -1,0 +1,30 @@
+# CI-like command-line smoke configuration.  It uses an existing physical
+# synthetic manifest only to exercise the code path; it is not a physics result.
+physical_curriculum_mlp:
+  refit:
+    station_ids: [0, 1, 2, 3]
+  curriculum_mlp:
+    candidate_chi2_gates: [null]
+    calibration_bins: 5
+    threshold_grid: [0.5]
+    adaptive_threshold_quantiles: 3
+    stages:
+      - name: smoke
+        maximum_magnitude_mm: 50.0
+        epochs: 1
+    hidden_dim: 16
+    batch_size: 8192
+    learning_rate: 1.0e-3
+    weight_decay: 1.0e-4
+    seed: 20260810
+    device: cuda
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian, sinkhorn_hungarian]
+    threshold_grid: [0.5]
+    adaptive_threshold_quantiles: 3
+    unmatched_penalties: [0.0]
+    sinkhorn_temperatures: [1.0]
+    sinkhorn_iterations: 3
+    validation_selection_scope: nominal_only
+    target_inclusive_fake_rate: 1.0
+    target_inclusive_purity: 0.0

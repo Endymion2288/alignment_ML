@@ -1,0 +1,10 @@
+# Validation-only calibration ablation for the expanded physical MLP corpus.
+# It reuses the same trained pairwise MLP and all physical candidates; only the
+# temperature-fitting scope changes from one global scalar to one scalar per
+# ordered station pair.  Test remains sealed unless the unchanged primary
+# criteria are satisfied.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_train_aug.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    calibration_scope: station_pair

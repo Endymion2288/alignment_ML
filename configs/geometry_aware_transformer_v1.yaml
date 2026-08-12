@@ -1,0 +1,134 @@
+# Transformer V1 starts only after the physical refit/Acts candidate and
+# route-level MLP baseline are frozen.  This configuration inherits exactly
+# the source-disjoint MC24 physical curriculum; it never materializes a new
+# payload, shifts coordinates in ML, or changes q/p propagation mode.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_train_aug.yaml
+
+geometry_aware_transformer_v1:
+  station_path: [0, 1, 2, 3]
+  all_context_station_pairs: [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]
+  output_station_pairs: [[0, 1], [1, 2], [2, 3]]
+  candidate_chi2_gate: null
+  q_over_p_mode: 0
+
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+
+  # These stages reproduce the existing 0/0.1/1/5/10/50 mm physical
+  # curriculum using train-split source files only.  An epoch samples event
+  # graphs uniformly, not candidate rows, so wide candidate graphs do not
+  # dominate the supervision.
+  curriculum_stages:
+    - name: nominal_to_0p1mm
+      maximum_magnitude_mm: 0.1
+      epochs: 8
+    - name: through_5mm
+      maximum_magnitude_mm: 5.0
+      epochs: 10
+    - name: through_50mm
+      maximum_magnitude_mm: 50.0
+      epochs: 12
+
+  training:
+    batch_size: 64
+    learning_rate: 0.0003
+    weight_decay: 0.0001
+    seed: 20260812
+    device: cuda
+    early_stopping_patience: 5
+    focal_gamma: 1.5
+    hard_negative_weight: 2.0
+    maximum_positive_weight: 30.0
+
+  calibration:
+    scope: station_pair
+    bins: 15
+
+  # The route solver itself is unchanged.  Threshold and dustbin controls are
+  # selected on validation only with this finite, predeclared search.
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    # The lower bound avoids opening an unbounded route-hypothesis graph.  It
+    # matches the lowest validation-selected adjacent MLP threshold and is
+    # declared before any Transformer test score is inspected.
+    threshold_grid: [0.05, 0.10, 0.20, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.30
+      2->3: 0.35
+    unmatched_penalties: [0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    # Search a deterministic hash-selected validation subset without truth
+    # labels, then re-evaluate its fixed choice on every validation event.
+    # This prevents the finite grid search itself from becoming an accidental
+    # O(N_events x N_grid) compute bottleneck while preserving source isolation.
+    selection_events_per_magnitude: 24
+    selection_policy: nominal_primary_then_validation_capture_count_then_maximum_magnitude_then_mean_route_quality
+
+  # Declared before test is opened; identical to the frozen MLP route scan.
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05
+
+  ablations:
+    ordinary_sparse_transformer:
+      context_mode: full_event
+      use_geometric_bias: false
+      use_chi2_physics_term: false
+      chi2_hyperparameter_candidates:
+        - label: no_physics_term
+          chi2_lambda: 0.0
+          chi2_tau: 1000000.0
+
+    geometry_aware_transformer:
+      context_mode: full_event
+      use_geometric_bias: true
+      use_chi2_physics_term: true
+      # Validation-only scale selection.  The largest observed validation
+      # candidate chi2 is O(1e7), so these values give O(1-10) logit penalties
+      # only to manifestly implausible edges while keeping plausible truth
+      # edges available to learned attention.
+      chi2_hyperparameter_candidates:
+        - label: lambda_1_tau_500k
+          chi2_lambda: 1.0
+          chi2_tau: 500000.0
+        - label: lambda_1_tau_2000k
+          chi2_lambda: 1.0
+          chi2_tau: 2000000.0
+
+    geometry_aware_no_chi2_physics:
+      context_mode: full_event
+      use_geometric_bias: true
+      use_chi2_physics_term: false
+      chi2_hyperparameter_candidates:
+        - label: no_explicit_chi2_term
+          chi2_lambda: 0.0
+          chi2_tau: 1000000.0
+
+    geometry_aware_no_multistation_context:
+      context_mode: station_pair
+      # This ablation materializes three two-station graphs per synthetic
+      # event.  Scale the graph batch by three to retain approximately the
+      # same event occupancy and GPU work as a 64-event full-context batch.
+      batch_size: 192
+      use_geometric_bias: true
+      use_chi2_physics_term: true
+      inherit_chi2_hyperparameters_from: geometry_aware_transformer
+
+  # This checkpoint/result is the required non-neural ablation reference. It
+  # was calibrated and threshold-selected on validation before the controlled
+  # multi-direction test was opened.
+  mlp_baseline_reference:
+    checkpoint: outputs/mc24_muon_2dfluka_curriculum_external_full_train_aug_mlp_validation_v1/mlp_pair_classifier.pt
+    calibration: outputs/mc24_muon_2dfluka_curriculum_external_full_train_aug_shared_station_pair_thresholds_exact_dense_validation_v1/calibration.json
+    operating_point: outputs/mc24_muon_2dfluka_curriculum_external_full_train_aug_shared_station_pair_thresholds_exact_dense_validation_v1/validation_selected_operating_point.json
+    frozen_route_test: outputs/mc24_muon_2dfluka_multidirection_test_route_level_controlled_v4

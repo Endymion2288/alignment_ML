@@ -1,0 +1,15 @@
+# Final pre-test V1 ablation configuration.  It retains the same source-
+# disjoint physical curriculum, candidate graph, local-edge curriculum for the
+# geometry-aware models, validation-only Platt calibration, and full-validation
+# route reranking.  The sealed test manifest is not referenced here.
+base_config: geometry_aware_transformer_v1e_platt_full_validation_rerank.yaml
+
+geometry_aware_transformer_v1:
+  ablations:
+    ordinary_sparse_transformer:
+      # A genuine ordinary sparse-Transformer control: no geometric attention
+      # bias and no direct local geometric residual decoder.  Its edge scorer
+      # still sees the physical candidate descriptor, as does every V1 head.
+      architecture_overrides:
+        use_local_edge_residual: false
+

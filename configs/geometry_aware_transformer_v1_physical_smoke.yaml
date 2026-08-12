@@ -1,0 +1,21 @@
+# Short real-physical smoke for the Transformer V1 training/freeze contract.
+# It retains the complete source-disjoint 0--50 mm curriculum and validation
+# route selection, but uses three epochs total.  It is not a final comparison
+# configuration and never opens test event data.
+base_config: geometry_aware_transformer_v1.yaml
+
+geometry_aware_transformer_v1:
+  curriculum_stages:
+    - name: nominal_to_0p1mm_smoke
+      maximum_magnitude_mm: 0.1
+      epochs: 1
+    - name: through_5mm_smoke
+      maximum_magnitude_mm: 5.0
+      epochs: 1
+    - name: through_50mm_smoke
+      maximum_magnitude_mm: 50.0
+      epochs: 1
+
+  training:
+    batch_size: 64
+    early_stopping_patience: 1

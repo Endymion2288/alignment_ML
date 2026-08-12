@@ -1,0 +1,9 @@
+# Pairwise-only ablation for the physically refitted 2D-FLUKA curriculum.
+# Separate small MLPs are allowed to learn station-pair-specific score scales;
+# this remains a collection of pair classifiers, not a multi-station model.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    model_topology: station_pair_ensemble
+    calibration_scope: station_pair

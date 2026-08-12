@@ -1,0 +1,12 @@
+# V1d changes only the validation-only score-calibration family.  It reuses a
+# checkpoint whose geometry-bias candidate was already selected on validation
+# AP, then fits a monotonic slope-plus-intercept map to correct the prior shift
+# introduced by weighted edge BCE.  No physical input, candidate edge, model
+# parameter, route solver, train source, or test source changes.
+base_config: geometry_aware_transformer_v1c_local_pretrain.yaml
+
+geometry_aware_transformer_v1:
+  calibration:
+    scope: station_pair
+    method: platt
+

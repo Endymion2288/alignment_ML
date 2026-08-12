@@ -1,0 +1,26 @@
+# Controlled pooled-overlay data repair.  Physical tracklets and Acts records
+# are pooled only within one split and one identical injected payload; the
+# materializer namespaces repeated original run/event IDs as provenance only.
+physical_curriculum_mlp:
+  synthetic_multitrack:
+    source_pooling: within_split_same_payload
+    scale_events_by_pool_sources: true
+    events_per_payload: 80
+    tracks_per_event: 3
+    allow_duplicate_source_tracks: false
+    stations: [0, 1, 2, 3]
+    missing_tracklet_probability: 0.10
+    fake_mean_per_station: 0.0
+    random_easy_fake_mean_per_station: 0.25
+    random_easy_min_chi2: 1000.0
+    hard_negative_mean_per_target_station: 0.50
+    hard_negative_chi2_min: 1.0
+    hard_negative_chi2_max: 1000.0
+    hard_negative_max_trials: 256
+    minimum_truth_match_fraction: 0.99
+    synthetic_run_id_base: 993000
+    seed: 20260810
+
+  field_candidate_export:
+    q_over_p_mode: 0
+    target_z_tolerance_mm: 1.0e-6

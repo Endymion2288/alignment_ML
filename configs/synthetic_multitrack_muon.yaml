@@ -1,0 +1,9 @@
+synthetic_multitrack:
+  events: 100
+  tracks_per_event: 4
+  stations: [0, 1, 2, 3]
+  missing_tracklet_probability: 0.10
+  fake_mean_per_station: 0.50
+  minimum_truth_match_fraction: 0.99
+  synthetic_run_id: 990000
+  seed: 20260808

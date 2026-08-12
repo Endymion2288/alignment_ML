@@ -1,0 +1,9 @@
+# Controlled hard-negative occupancy point for the pairwise-MLP robustness
+# scan.  Every fake remains a physically propagated, truth-relative candidate
+# from the same payload; only its Poisson mean is changed from 0.50 to 0.25
+# per non-reference target station.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  synthetic_multitrack:
+    hard_negative_mean_per_target_station: 0.25

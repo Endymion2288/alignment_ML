@@ -1,0 +1,22 @@
+# Readout-level eligibility smoke for a diverse MC24 FLUKA source.  The point
+# is nominal only and is deliberately kept outside every train/val/test corpus
+# until the cluster -> segment-refit -> Acts contract has been verified.
+physical_refit_capture_scan:
+  input_xaod: /eos/experiment/faser/data0/sim/mc24/fluka/210010/rec/s0013-r0019/FaserMC-MC24_Fluka_2023_exp001_z448p6_d31p4_zsim3p99-210010-00000-00007-s0013-xAOD.root
+  nevents: 5
+  station_ids: [0, 1, 2, 3]
+  reference_station: 0
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  prior_sigma_mm: null
+  capture_tolerance_mm: 0.01
+  magnitudes_mm: [0.0]
+  direction_trials:
+    - name: nominal
+      unit_offsets_xy:
+        1: [1.0, 0.0]
+        2: [0.0, 1.0]
+        3: [0.7071067811865476, -0.7071067811865476]
+  run_alignment_closure: false

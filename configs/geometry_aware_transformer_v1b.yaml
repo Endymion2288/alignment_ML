@@ -1,0 +1,33 @@
+# V1b keeps the exact V1 physical data, candidate graph, sparse attention and
+# route assignment contracts.  It adds only a jointly trained local edge-logit
+# residual from the already standardized persisted endpoint state/quality and
+# geometric candidate vector.  The residual prevents event-level message
+# passing from discarding a strong local association cue; it does not consume a
+# pretrained MLP score, truth label, synthetic role, or new detector field.
+base_config: geometry_aware_transformer_v1.yaml
+
+geometry_aware_transformer_v1:
+  architecture:
+    use_local_edge_residual: true
+
+  training:
+    # BCE is the gamma=0 member of the declared weighted focal-BCE loss and is
+    # used here to preserve probability ranking for downstream route utility.
+    focal_gamma: 0.0
+
+  route_selection:
+    # The V1 validation diagnostic showed that positive dustbin rewards
+    # over-select calibrated near-0.5 fake chains.  This predeclared V1b
+    # validation grid adds neutral/negative alternatives and low thresholds;
+    # it is searched only on validation and then fully revalidated there.
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    selection_events_per_magnitude: 16
+
+  # Re-run all four required Transformer variants under the identical V1b
+  # decoder/loss contract.  The existing frozen MLP artifact remains the fifth
+  # reference ablation and is not retrained.

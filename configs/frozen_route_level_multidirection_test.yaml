@@ -1,0 +1,27 @@
+# Frozen route-level evaluation of the existing curriculum MLP.  This file
+# does not introduce a Transformer, fit a calibration, or search a threshold.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_full_train_aug_shared_station_pair_thresholds_exact_dense.yaml
+
+frozen_route_level_scan:
+  evaluation_split: test
+  station_path: [0, 1, 2, 3]
+  candidate_chi2_gate: null
+  maximum_hypotheses: 100000
+
+  # The exact station-pair MLP calibration, thresholds, and dustbin penalty
+  # are read from the validation-only frozen artifacts supplied on the CLI.
+  frozen_contract:
+    require_validation_only_calibration: true
+    require_validation_only_operating_point: true
+    required_assignment_method: sinkhorn_hungarian
+    route_score_source: calibrated_pairwise_mlp_probability
+    route_solver: adjacent_contiguous_unit_capacity_set_packing
+
+  # This is a fixed reporting criterion, declared before opening the new
+  # multi-direction test refits.  It is not an optimization target.
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05
+    # Duplicate rate is reported at every point as a route-fragmentation
+    # diagnostic, but it was not part of the already defined primary point.

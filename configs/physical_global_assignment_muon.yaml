@@ -1,0 +1,161 @@
+# Physical curriculum and global-assignment MLP study.  The split unit is the
+# original MC24 xAOD file, before any refit or synthetic overlay resampling.
+physical_curriculum_mlp:
+  sources:
+    - id: mc24_00000_00004
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00000-00004-s0012-xAOD.root
+    - id: mc24_00005_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00005-00009-s0012-xAOD.root
+    - id: mc24_00010_00014
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00010-00014-s0012-xAOD.root
+    - id: mc24_00015_00019
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00015-00019-s0012-xAOD.root
+    - id: mc24_00020_00024
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00020-00024-s0012-xAOD.root
+    - id: mc24_00025_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00025-00029-s0012-xAOD.root
+    - id: mc24_00030_00034
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00030-00034-s0012-xAOD.root
+    - id: mc24_00035_00039
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00035-00039-s0012-xAOD.root
+    - id: mc24_00040_00044
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00040-00044-s0012-xAOD.root
+    - id: mc24_00050_00054
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00050-00054-s0012-xAOD.root
+    - id: mc24_00055_00059
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00055-00059-s0012-xAOD.root
+    - id: mc24_00060_00064
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00060-00064-s0012-xAOD.root
+
+  refit:
+    nevents: 5
+    station_ids: [0, 1, 2, 3]
+    reference_station: 0
+    q_over_p_mode: 0
+    min_truth_match_fraction: 0.99
+    chi2_gate: 25.0
+    refinement_iterations: 1
+    prior_sigma_mm: null
+    capture_tolerance_mm: 0.01
+
+  payload_bank:
+    seed: 20260810
+    magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+    direction_trials_per_split:
+      train: 2
+      validation: 1
+      test: 1
+
+  synthetic_multitrack:
+    events_per_payload: 80
+    # Never clone the same single-muon source trajectory within one overlay.
+    tracks_per_event: 3
+    allow_duplicate_source_tracks: false
+    stations: [0, 1, 2, 3]
+    missing_tracklet_probability: 0.10
+    # Retained at zero only as a backwards-compatible field name.  The two
+    # explicit populations below are written with evaluation-only provenance.
+    fake_mean_per_station: 0.0
+    random_easy_fake_mean_per_station: 0.25
+    random_easy_min_chi2: 1000.0
+    hard_negative_mean_per_target_station: 0.50
+    hard_negative_chi2_min: 1.0
+    # Broad-gate hard negatives are physically close enough to survive the
+    # 1000 chi2 candidate gate, while random-easy fakes require min chi2 >=
+    # 1000 against every true anchor in the event.
+    hard_negative_chi2_max: 1000.0
+    hard_negative_max_trials: 256
+    minimum_truth_match_fraction: 0.99
+    synthetic_run_id_base: 992000
+    seed: 20260810
+
+  field_candidate_export:
+    q_over_p_mode: 0
+    target_z_tolerance_mm: 1.0e-6
+
+  # GPU curriculum for the deliberately small pairwise MLP.  No Transformer
+  # is configured or invoked by this study.
+  curriculum_mlp:
+    # ``shared`` is the original low-capacity MLP; an explicitly configured
+    # station_pair_ensemble remains a simple MLP ablation, not a Transformer.
+    model_topology: shared
+    # A shared MLP uses one scalar temperature.  A station-pair ensemble may
+    # instead fit a separate validation-only temperature per station pair,
+    # which makes independently trained probability scales comparable before
+    # applying one declared global assignment threshold.
+    calibration_scope: global
+    # V1 keeps residual/pull-only features.  The state_augmented_v2 ablation
+    # adds source/target states copied from the same physical segment refit.
+    feature_set: residual_v1
+    # Training uses the ungated physical candidate universe.  These gates are
+    # separately scanned on validation when constructing score matrices, so
+    # candidate recall and the global abstention point are selected together.
+    candidate_chi2_gates: [25.0, 250.0, 1000.0, 5000.0, null]
+    # First select a graph definition from validation candidate statistics:
+    # maximize AP subject to this nominal truth-candidate recall floor, then
+    # prefer the tighter gate.  Assignment parameters are scanned only on
+    # that fixed graph; this avoids a redundant full dustbin grid per gate.
+    #
+    # The audited physical mode-0 graph has a 0.98785 nominal raw truth-pair
+    # coverage ceiling: direct S0->S3 FaserActs propagation fails for a small
+    # subset of real refitted segments.  0.98 is therefore deliberately below
+    # that measured ceiling, not a relaxation of the association-efficiency
+    # denominator.  The coverage audit remains a required reported result.
+    candidate_gate_minimum_truth_recall: 0.98
+    calibration_bins: 15
+    target_inclusive_fake_rate: 0.05
+    target_inclusive_purity: 0.95
+    threshold_grid: [0.01, 0.03, 0.05, 0.08, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
+    adaptive_threshold_quantiles: 31
+    stages:
+      - name: nominal_to_0p1mm
+        maximum_magnitude_mm: 0.1
+        epochs: 50
+      - name: through_5mm
+        maximum_magnitude_mm: 5.0
+        epochs: 60
+      - name: through_50mm
+        maximum_magnitude_mm: 50.0
+        epochs: 80
+    hidden_dim: 64
+    batch_size: 8192
+    learning_rate: 1.0e-3
+    weight_decay: 1.0e-4
+    seed: 20260810
+    device: cuda
+
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian, sinkhorn_hungarian, multistation_flow]
+    # The scalar MLP temperature is fitted once from validation candidate
+    # labels.  The following values are the separate Sinkhorn temperatures.
+    threshold_grid: [0.05, 0.10, 0.20, 0.35, 0.50, 0.65, 0.80, 0.90, 0.95]
+    adaptive_threshold_quantiles: 9
+    unmatched_penalties: [-1.0, 0.0, 0.5, 1.0, 2.0]
+    sinkhorn_temperatures: [0.10, 0.25, 0.50, 1.00]
+    sinkhorn_iterations: 30
+    # Exact unit-capacity set-packing over 2--4 station paths.  Its smaller
+    # validation grid is intentional: every point is a physical MLP-score
+    # graph solved by MILP, not a coordinate-level proxy.
+    multistation_flow_threshold_grid: [0.10, 0.20, 0.35, 0.50, 0.65, 0.80]
+    multistation_flow_adaptive_threshold_quantiles: 5
+    multistation_flow_unmatched_penalties: [-1.0, 0.0, 0.5, 1.0, 2.0]
+    multistation_flow_maximum_hypotheses: 100000
+    validation_selection_scope: nominal_only
+    target_inclusive_fake_rate: 0.05
+    target_inclusive_purity: 0.95
+    # Primary validation protocol (declared before any baseline repair): a
+    # nominal model must satisfy the quality limits above while retaining at
+    # least 70% of truth associations.  Otherwise the test split stays sealed.
+    minimum_nominal_association_efficiency: 0.70

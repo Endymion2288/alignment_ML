@@ -1,0 +1,27 @@
+# Test-only evaluation of validation-frozen Geometry-Aware Transformer V1
+# artifacts.  The physical multi-direction payload/synthetic manifest is
+# supplied on the command line and must contain only the configured test files.
+base_config: geometry_aware_transformer_v1.yaml
+
+frozen_geometry_aware_transformer_v1:
+  evaluation_split: test
+  station_path: [0, 1, 2, 3]
+  candidate_chi2_gate: null
+  maximum_hypotheses: 100000
+
+  frozen_contract:
+    require_validation_only_model_selection: true
+    require_validation_only_calibration: true
+    require_validation_only_operating_point: true
+    required_assignment_method: adjacent_contiguous_unit_capacity_set_packing
+    # Calibration is frozen on validation only.  V1 supports either
+    # temperature scaling or monotonic Platt scaling; the concrete method is
+    # recorded in each model's validation calibration artifact.
+    route_score_source: validation_calibrated_transformer_probability
+    route_solver: adjacent_contiguous_unit_capacity_set_packing
+    transformer_attention: existing_mode0_acts_physical_candidate_edges_only
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05

@@ -1,0 +1,10 @@
+# Fast validation-only screen on the nominal controlled background corpus.
+# A passing MLP is rerun with the full Hungarian/Sinkhorn/multi-station method
+# grid before any test evaluation is allowed.
+base_config: physical_global_assignment_muon.yaml
+
+physical_curriculum_mlp:
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian]
+    threshold_grid: [0.05, 0.15, 0.30, 0.50, 0.65, 0.80, 0.90]
+    adaptive_threshold_quantiles: 7

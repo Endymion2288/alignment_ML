@@ -1,0 +1,95 @@
+# Route-aware V2 is deliberately standalone: it has no inherited test source,
+# no test-output reference, and no coordinate-level augmentation.  The caller
+# supplies the existing physical synthetic manifest, but the script is allowed
+# to resolve only its train and validation assets.
+route_aware_transformer_v2:
+  input_contract:
+    allowed_splits: [train, validation]
+    forbidden_splits: [test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    curriculum_magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+
+  # Keep the verified V1 physical backbone exactly fixed in width/depth.  The
+  # only new capacity is the small complete-route query and its edge correction.
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+    use_geometric_bias: true
+    use_chi2_physics_term: true
+    chi2_lambda: 1.0
+    chi2_tau: 2000000.0
+    use_local_edge_residual: true
+    route_hidden_dim: 128
+    route_pair_embedding_dim: 16
+    route_dropout: 0.10
+
+  # Event graphs, not candidate rows, are the sampling unit.  The batch is
+  # smaller than V1 because each graph also materializes all existing complete
+  # physical four-station route candidates.
+  training:
+    batch_size: 32
+    learning_rate: 0.0002
+    weight_decay: 0.0001
+    seed: 20260812
+    device: cuda
+    early_stopping_patience: 5
+    focal_gamma: 1.5
+    hard_negative_weight: 2.0
+    maximum_edge_positive_weight: 30.0
+    maximum_route_positive_weight: 80.0
+    edge_loss_weight: 1.0
+    route_consistency_weight: 1.0
+    one_to_one_competition_weight: 0.25
+    fake_route_penalty_weight: 0.25
+
+  curriculum_stages:
+    - name: nominal_to_0p1mm
+      maximum_magnitude_mm: 0.1
+      epochs: 8
+    - name: through_5mm
+      maximum_magnitude_mm: 5.0
+      epochs: 10
+    - name: through_50mm
+      maximum_magnitude_mm: 50.0
+      epochs: 12
+
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+
+  # This is the sole V2 operating-point search.  It is applied only to
+  # validation scores after model selection; no control gets a separate search.
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    selection_events_per_magnitude: 16
+    full_validation_rerank_candidates: 24
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05
+
+  validation_references:
+    v1_validation_dir: outputs/geometry_aware_transformer_v1f_final_validation_v1
+    mlp_checkpoint: outputs/mc24_muon_2dfluka_curriculum_external_full_train_aug_mlp_validation_v1/mlp_pair_classifier.pt
+    mlp_calibration: outputs/mc24_muon_2dfluka_curriculum_external_full_train_aug_mlp_validation_v1/calibration.json

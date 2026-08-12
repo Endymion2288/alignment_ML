@@ -1,0 +1,22 @@
+# One-epoch-per-stage physical smoke for V2 plumbing.  It inherits the sealed
+# train/validation-only contract and does not alter the full-study hypothesis.
+base_config: geometry_aware_transformer_v2.yaml
+
+route_aware_transformer_v2:
+  curriculum_stages:
+    - name: nominal_to_0p1mm_smoke
+      maximum_magnitude_mm: 0.1
+      epochs: 1
+    - name: through_5mm_smoke
+      maximum_magnitude_mm: 5.0
+      epochs: 1
+    - name: through_50mm_smoke
+      maximum_magnitude_mm: 50.0
+      epochs: 1
+  training:
+    early_stopping_patience: 2
+  route_selection:
+    # The smoke does not need a large route-control search; this does not
+    # replace the full V2 validation operating-point selection.
+    selection_events_per_magnitude: 4
+    full_validation_rerank_candidates: 2

@@ -1,0 +1,14 @@
+# Validation-only exact multi-station assignment ablation.  It shares a saved
+# pairwise MLP checkpoint and scans every already-calibrated physical chi2
+# candidate graph, so graph sparsification and four-station consistency are
+# evaluated jointly without introducing a Transformer.
+base_config: physical_global_assignment_muon_2dfluka_curriculum.yaml
+
+physical_curriculum_mlp:
+  global_assignment_mlp:
+    methods: [multistation_flow]
+    scan_all_candidate_gates: true
+    multistation_flow_threshold_grid: [0.10, 0.50, 0.90]
+    multistation_flow_adaptive_threshold_quantiles: 3
+    multistation_flow_unmatched_penalties: [0.0, 0.5, 1.0]
+    multistation_flow_maximum_hypotheses: 10000

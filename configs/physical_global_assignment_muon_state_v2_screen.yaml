@@ -1,0 +1,13 @@
+# Validation-only non-Transformer feature ablation.  It adds the source and
+# target refitted local states to the same physical residual/pull features.
+# The compact assignment grid is a screen; a passing model is rerun with the
+# full method comparison before any test access.
+base_config: physical_global_assignment_muon.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    feature_set: state_augmented_v2
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian]
+    threshold_grid: [0.05, 0.15, 0.30, 0.50, 0.65, 0.80, 0.90]
+    adaptive_threshold_quantiles: 7

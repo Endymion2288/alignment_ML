@@ -1,0 +1,19 @@
+# Validation-only operating-point repair for the shared low-capacity MLP after
+# extending the physical training bank with both 100043 mu- and 100044 mu+
+# FLUKA-E source files.  The MLP weights stay fixed; this file only permits
+# per-station-pair calibration and an exact finite score-threshold-vector
+# search on validation.  It is not a Transformer configuration.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_train_aug.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    calibration_scope: station_pair
+
+  station_pair_threshold_baseline:
+    method: sinkhorn_hungarian
+    unmatched_penalties: [0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.2, 0.5, 1.0]
+    threshold_grid: [0.0, 0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
+    initial_thresholds: [0.10, 0.35]
+    maximum_sweeps: 1
+    search_strategy: exact_pareto

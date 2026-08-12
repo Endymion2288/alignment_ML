@@ -1,0 +1,7 @@
+chi2_baseline:
+  seed: 7
+  source_station: 0
+  target_station: 1
+  chi2_gate: 50.0
+  max_events: null
+

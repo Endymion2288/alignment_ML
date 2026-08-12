@@ -1,0 +1,10 @@
+alignment_capture_scan:
+  reference_station: 0
+  magnitudes_mm: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0, 500.0, 1000.0]
+  trials: 100
+  seed: 20260808
+  chi2_gate: 25.0
+  refinement_iterations: 3
+  prior_sigma_mm: null
+  measurement_noise_scale: 0.0
+  capture_tolerance_mm: 0.01

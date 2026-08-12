@@ -1,0 +1,22 @@
+# Read-only compatibility smoke for an additional independent MC24 source.
+# A successful run proves the same persisted-cluster refit contract before
+# this production is ever admitted to the source-disjoint training corpus.
+physical_refit_capture_scan:
+  input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00000-00099-s0013-r0022-xAOD.root
+  nevents: 10
+  station_ids: [0, 1, 2, 3]
+  reference_station: 0
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  prior_sigma_mm: null
+  capture_tolerance_mm: 0.01
+  run_alignment_closure: false
+  magnitudes_mm: [0.0]
+  direction_trials:
+    - name: source_smoke
+      unit_offsets_xy:
+        1: [-0.5774853851976686, 0.8164010227107144]
+        2: [0.5597813141695331, -0.828640380567246]
+        3: [-0.029039065903523877, -0.99957827740075]

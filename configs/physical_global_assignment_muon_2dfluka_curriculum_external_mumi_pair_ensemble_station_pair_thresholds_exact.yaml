@@ -1,0 +1,9 @@
+# Exact validation-only selection over the declared finite station-pair score
+# grid.  Pairwise bipartite assignments are independent, so the selector
+# combines their additive correct/predicted counts through a Pareto frontier
+# rather than relying on coordinate-descent local optima.
+base_config: physical_global_assignment_muon_2dfluka_curriculum_external_mumi_pair_ensemble_station_pair_thresholds.yaml
+
+physical_curriculum_mlp:
+  station_pair_threshold_baseline:
+    search_strategy: exact_pareto

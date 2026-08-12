@@ -1,0 +1,9 @@
+# Validation-only repair screen for the nominal controlled corpus.  This is
+# still a low-capacity pairwise MLP: one model per ordered station pair, with
+# pair-specific validation calibration before the same global assignment scan.
+base_config: physical_global_assignment_muon_nominal_screen.yaml
+
+physical_curriculum_mlp:
+  curriculum_mlp:
+    model_topology: station_pair_ensemble
+    calibration_scope: station_pair

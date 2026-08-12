@@ -1,0 +1,85 @@
+# Physical misalignment curriculum following the validated nominal 2D-FLUKA
+# global-assignment primary point.  Every payload below is rebuilt from the
+# persisted SCT cluster container; neither tracklet coordinates nor residuals
+# are shifted in the ML layer.
+base_config: physical_global_assignment_muon_2dfluka_nominal_pilot.yaml
+
+physical_curriculum_mlp:
+  # Two remaining independently produced chunks are training-only additions.
+  # Validation and test source files remain unchanged and source-disjoint.
+  sources:
+    - id: mc24_100116_00000_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00000-00009-s0012-xAOD.root
+    - id: mc24_100116_00020_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00020-00029-s0012-xAOD.root
+    - id: mc24_100116_00040_00049
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00040-00049-s0012-xAOD.root
+    - id: mc24_100117_00000_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00000-00009-s0012-xAOD.root
+    - id: mc24_100117_00020_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00020-00029-s0012-xAOD.root
+    - id: mc24_100117_00040_00049
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00040-00049-s0012-xAOD.root
+    - id: mc24_100116_00010_00019
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00010-00019-s0012-xAOD.root
+    - id: mc24_100117_00010_00019
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00010-00019-s0012-xAOD.root
+    - id: mc24_100116_00030_00039
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00030-00039-s0012-xAOD.root
+    - id: mc24_100117_00030_00039
+      split: test
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100117/rec/s0012-r0019/FaserMC-MC24_PG_mumi_fasernu_2D_fluka-100117-00030-00039-s0012-xAOD.root
+
+  # The nominal pilot intentionally disabled hard negatives while repairing the
+  # basic score model.  The curriculum must include physically nearby fakes:
+  # they are selected only from same-payload mode-0 Acts chi2 bands during
+  # synthetic materialisation, never by perturbing tracklet coordinates.
+  synthetic_multitrack:
+    hard_negative_mean_per_target_station: 0.50
+    # Keep an injected hard fake within the physical absolute chi2 band, but
+    # require it to be slightly worse than its retained same-truth endpoint.
+    # This avoids treating a systematically truth-dominating overlay row as a
+    # normal background target while retaining geometry-near ambiguity.
+    hard_negative_min_truth_chi2_ratio: 1.10
+    hard_negative_max_truth_chi2_ratio: 10.0
+
+  payload_bank:
+    seed: 20260811
+    magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+    direction_trials_per_split:
+      train: 1
+      validation: 1
+      test: 1
+
+  curriculum_mlp:
+    feature_set: state_augmented_v2
+    stages:
+      - name: nominal_to_0p1mm
+        maximum_magnitude_mm: 0.1
+        epochs: 50
+      - name: through_5mm
+        maximum_magnitude_mm: 5.0
+        epochs: 60
+      - name: through_50mm
+        maximum_magnitude_mm: 50.0
+        epochs: 80
+
+  # These compact grids are reused after the physical bank is complete.  The
+  # final scan will evaluate every declared candidate gate on validation.
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian, sinkhorn_hungarian]
+    scan_all_candidate_gates: true
+    threshold_grid: [0.10, 0.50, 0.90]
+    adaptive_threshold_quantiles: 3
+    unmatched_penalties: [0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.50]
+    sinkhorn_iterations: 20
