@@ -56,6 +56,13 @@ The V1 test source remains sealed and no new final test bank has been made;
 see the V2 study document for the mechanism diagnosis and reproducible
 validation contract.
 
+Geometry-Aware Transformer V3 is now implemented as a train/validation-only
+structured global-assignment hypothesis. It preserves the physical candidate
+graph, the four-block route encoder, and unit-capacity solver, but trains
+against the strongest loss-augmented event-level competing assignment instead
+of independent edge/route BCE. Its enlarged physical corpus is being produced;
+there is not yet a V3 validation result or a new test bank.
+
 ```bash
 cd /eos/home-x/xcheng/FASER
 source alignment_ML/scripts/setup_environment.sh ml
@@ -121,6 +128,7 @@ contract and validation limits are linked below.
 - [Geometry-Aware Sparse Transformer V1](docs/geometry_aware_transformer_v1.md)
 - [Geometry-Aware Transformer V2 mechanism diagnosis](docs/geometry_aware_transformer_v2_diagnostics.md)
 - [Geometry-Aware Transformer V2 route-aware validation study](docs/geometry_aware_transformer_v2.md)
+- [Geometry-Aware Transformer V3 structured global-assignment study](docs/structured_assignment_v3.md)
 - [Chinese input schema and exporter contract](docs/tracklet_export_contract_cn.md)
 - [Chinese data audit](docs/data_audit_cn.md)
 - [Chinese baseline validation](docs/baseline_validation_cn.md)
@@ -136,4 +144,5 @@ contract and validation limits are linked below.
 - [Chinese Geometry-Aware Sparse Transformer V1](docs/geometry_aware_transformer_v1_cn.md)
 - [Chinese Geometry-Aware Transformer V2 mechanism diagnosis](docs/geometry_aware_transformer_v2_diagnostics_cn.md)
 - [Chinese Geometry-Aware Transformer V2 route-aware validation study](docs/geometry_aware_transformer_v2_cn.md)
+- [Chinese Geometry-Aware Transformer V3 structured global-assignment study](docs/structured_assignment_v3_cn.md)
 - [Chinese README](README_cn.md)

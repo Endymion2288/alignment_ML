@@ -22,7 +22,7 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 import yaml
 
-from datasets.physical_curriculum import load_synthetic_curriculum_manifest
+from datasets.physical_curriculum import load_synthetic_curriculum_manifest, uniform_condition_axis
 from models.transformer import SparseTransformerConfig
 from scripts.config_loader import load_yaml_with_base
 from training.curriculum_mlp import build_candidate_sets
@@ -50,6 +50,10 @@ from training.transformer_route_selection import select_route_operating_point
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "geometry_aware_transformer_v1.yaml"
+DEFAULT_ROUTE_SELECTION_POLICY = (
+    "nominal_primary_then_validation_capture_count_then_maximum_magnitude_"
+    "then_mean_route_quality"
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -129,6 +133,12 @@ def _load_config(path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, 
 def _validate_manifest_contract(
     root: Mapping[str, Any], transformer: Mapping[str, Any], manifest: Mapping[str, Any], samples: Sequence[object]
 ) -> None:
+    declared = root.get("allowed_splits")
+    if declared is not None and tuple(str(value) for value in declared) != ("train", "validation"):
+        raise ValueError("Transformer V1 train/validation study must allow exactly train and validation")
+    forbidden = {str(value) for value in root.get("forbidden_splits", ())}
+    if forbidden and "test" not in forbidden:
+        raise ValueError("Transformer V1 train/validation study must explicitly forbid test")
     if manifest.get("physical_geometry_repropagation") is not True:
         raise ValueError("synthetic manifest does not certify physical geometry repropagation")
     if int(manifest.get("q_over_p_mode", -1)) != 0 or int(root["refit"].get("q_over_p_mode", -1)) != 0:
@@ -137,14 +147,38 @@ def _validate_manifest_contract(
         raise ValueError("Transformer configuration must declare q_over_p_mode=0")
     if transformer.get("candidate_chi2_gate") is not None:
         raise ValueError("Transformer V1 must use the existing ungated physical candidate graph")
-    expected = tuple(float(value) for value in root.get("payload_bank", {}).get("magnitudes_mm", ()))
-    required = (0.0, 0.1, 1.0, 5.0, 10.0, 50.0)
-    if tuple(sorted(expected)) != required:
-        raise ValueError("Transformer V1 requires the fixed 0/0.1/1/5/10/50 mm physical curriculum")
+    rotation = root.get("rotation_curriculum")
+    if isinstance(rotation, Mapping):
+        expected_axis = str(rotation.get("condition_axis", ""))
+        raw_points = rotation.get("rotation_points")
+        if not expected_axis or not isinstance(raw_points, list) or not raw_points:
+            raise ValueError("Transformer V1 rotation curriculum configuration is incomplete")
+        expected = tuple(
+            sorted(
+                {
+                    float(point.get("condition_magnitude", abs(float(point["ry_mrad"]))))
+                    for point in raw_points
+                    if isinstance(point, Mapping) and ("condition_magnitude" in point or "ry_mrad" in point)
+                }
+            )
+        )
+    else:
+        expected_axis = "translation_xy_mm"
+        expected = tuple(
+            sorted(float(value) for value in root.get("payload_bank", {}).get("magnitudes_mm", ()))
+        )
+    if not expected:
+        raise ValueError("Transformer V1 configuration has no declared physical curriculum")
+    if uniform_condition_axis(samples) != expected_axis:
+        raise ValueError("Transformer V1 manifest condition axis differs from the frozen configuration")
     for split in ("train", "validation"):
-        observed = tuple(sorted({float(sample.magnitude_mm) for sample in samples if sample.split == split}))
-        if observed != required:
-            raise ValueError(f"{split} split does not contain the full fixed physical curriculum")
+        observed = tuple(
+            sorted({float(sample.curriculum_magnitude) for sample in samples if sample.split == split})
+        )
+        if observed != expected:
+            raise ValueError(f"{split} split does not contain the full declared physical curriculum")
+    if {str(sample.split) for sample in samples} != {"train", "validation"}:
+        raise ValueError("Transformer V1 loader must return only train and validation samples")
 
 
 def _candidate_grid(spec: Mapping[str, Any]) -> list[dict[str, object]]:
@@ -227,12 +261,13 @@ def _selection_payload(result: object) -> dict[str, object]:
 def _reference_artifacts(raw: Mapping[str, Any]) -> dict[str, object]:
     result: dict[str, object] = {}
     for name, value in raw.items():
-        resolved = (PROJECT_ROOT / str(value)).resolve()
         if name == "frozen_route_test":
-            if not resolved.is_dir():
-                raise FileNotFoundError(resolved)
-            result[name] = str(resolved)
+            # The historical test reference is intentionally retained as a
+            # label in legacy configuration only.  Do not resolve or inspect
+            # a sealed test artifact during a train/validation study.
+            result[name] = {"excluded": True, "reason": "sealed_test_boundary"}
             continue
+        resolved = (PROJECT_ROOT / str(value)).resolve()
         if not resolved.is_file():
             raise FileNotFoundError(resolved)
         result[name] = {"path": str(resolved), "sha256": _sha256(resolved)}
@@ -254,7 +289,11 @@ def main() -> None:
 
     config_path = Path(args.config).expanduser().resolve()
     supplied, root, transformer = _load_config(config_path)
-    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
+    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(
+        args.synthetic_manifest,
+        require_all_splits=False,
+        allowed_splits=("train", "validation"),
+    )
     _validate_manifest_contract(root, transformer, manifest, samples)
     source_audit = source_disjoint_audit(samples)
     train_samples = [sample for sample in samples if sample.split == "train"]
@@ -279,6 +318,7 @@ def main() -> None:
             "synthetic_manifest_sha256": _sha256(manifest_path),
             "physical_geometry_repropagation": True,
             "q_over_p_mode": 0,
+            "condition_axis": uniform_condition_axis(samples),
             "candidate_chi2_gate": None,
             "candidate_graph": "existing_mode0_acts_physical_candidates_all_six_station_pairs",
             "output_station_pairs": [f"{left}->{right}" for left, right in ADJACENT_STATION_PAIRS],
@@ -289,6 +329,7 @@ def main() -> None:
             },
             "source_audit": source_audit,
             "loaded_event_splits": ["train", "validation"],
+            "forbidden_splits": ["test"],
             "test_events_loaded": False,
             "test_opened": False,
             "mlp_baseline_reference": _reference_artifacts(
@@ -524,7 +565,11 @@ def main() -> None:
                 "thresholds": selection_payload["thresholds"],
                 "unmatched_penalty": selection_payload["unmatched_penalty"],
                 "capture_success_criteria": dict(criteria),
-                "selection_policy": str(route_selection["selection_policy"]),
+                # The expanded controls use the same selection implementation
+                # but need not repeat this legacy metadata-only label.
+                "selection_policy": str(
+                    route_selection.get("selection_policy", DEFAULT_ROUTE_SELECTION_POLICY)
+                ),
                 "validation_route_selection": selection_payload,
             },
         )

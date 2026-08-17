@@ -22,7 +22,11 @@ import numpy as np
 import yaml
 
 from baselines.route_assignment import RouteAssignmentConfig, adjacent_station_pairs
-from datasets.physical_curriculum import CurriculumSample, load_synthetic_curriculum_manifest
+from datasets.physical_curriculum import (
+    CurriculumSample,
+    load_synthetic_curriculum_manifest,
+    uniform_condition_axis,
+)
 from models.route_transformer import RouteAwareTransformerConfig
 from scripts.config_loader import load_yaml_with_base
 from training.curriculum_mlp import CandidateSet, build_candidate_sets
@@ -34,6 +38,7 @@ from training.geometry_aware_transformer import (
     calibrate_transformer_scores,
     candidate_score_metrics,
     source_disjoint_audit,
+    stages_from_payload,
 )
 from training.route_assignment import evaluate_adjacent_route_assignment_sets
 from training.route_aware_transformer import (
@@ -157,6 +162,14 @@ def _capture_success(route: Mapping[str, object], criteria: Mapping[str, object]
     return True
 
 
+def _condition_fields(sample: CurriculumSample) -> dict[str, object]:
+    return {
+        "condition_axis": sample.condition_axis,
+        "condition_value": float(sample.condition_value),
+        "condition_magnitude": float(sample.curriculum_magnitude),
+    }
+
+
 def _route_trial_rows(
     label: str,
     samples: Sequence[CurriculumSample],
@@ -181,7 +194,7 @@ def _route_trial_rows(
                 "score_stream": label,
                 "source_id": sample.source_id,
                 "payload_id": sample.payload_id,
-                "magnitude_mm": float(sample.magnitude_mm),
+                **_condition_fields(sample),
                 "direction_trial": sample.direction_trial,
                 "capture_success": success,
                 **dict(route),
@@ -191,7 +204,7 @@ def _route_trial_rows(
             {
                 "source_id": sample.source_id,
                 "payload_id": sample.payload_id,
-                "magnitude_mm": float(sample.magnitude_mm),
+                **_condition_fields(sample),
                 "direction_trial": sample.direction_trial,
                 "capture_success": success,
                 "evaluation": evaluation,
@@ -218,8 +231,13 @@ def _route_magnitude_summary(
         "missing_station_recovery",
     )
     result: list[dict[str, object]] = []
-    for magnitude in sorted({float(sample.magnitude_mm) for sample in samples}):
-        keys = {_sample_key(sample) for sample in samples if np.isclose(sample.magnitude_mm, magnitude)}
+    condition_axis = uniform_condition_axis(samples)
+    for magnitude in sorted({float(sample.curriculum_magnitude) for sample in samples}):
+        keys = {
+            _sample_key(sample)
+            for sample in samples
+            if np.isclose(sample.curriculum_magnitude, magnitude)
+        }
         selected = [
             index for index, candidate_set in enumerate(candidate_sets)
             if _sample_key(candidate_set.sample) in keys
@@ -233,10 +251,15 @@ def _route_magnitude_summary(
         route = evaluation.get("route")
         if not isinstance(route, Mapping):
             raise RuntimeError("pooled route evaluation is malformed")
-        trials = [row for row in trial_rows if np.isclose(float(row["magnitude_mm"]), magnitude)]
+        trials = [
+            row
+            for row in trial_rows
+            if np.isclose(float(row["condition_magnitude"]), magnitude)
+        ]
         row: dict[str, object] = {
             "score_stream": label,
-            "magnitude_mm": magnitude,
+            "condition_axis": condition_axis,
+            "condition_magnitude": magnitude,
             "direction_trials": len(trials),
             "capture_successes": int(sum(bool(trial["capture_success"]) for trial in trials)),
             "capture_fraction": float(np.mean([bool(trial["capture_success"]) for trial in trials])),
@@ -302,18 +325,24 @@ def _validate_input_contract(
         raise ValueError("V2 requires the existing residual_v1 full-event graph contract")
     if tuple(int(value) for value in contract.get("station_path", ())) != (0, 1, 2, 3):
         raise ValueError("V2 requires the IFT -> S1 -> S2 -> S3 station path")
-    expected_magnitudes = tuple(float(value) for value in contract.get("curriculum_magnitudes_mm", ()))
-    required = (0.0, 0.1, 1.0, 5.0, 10.0, 50.0)
-    if expected_magnitudes != required:
-        raise ValueError("V2 configuration must declare the fixed six-point physical curriculum")
+    expected_axis = str(contract.get("condition_axis", "translation_xy_mm"))
+    legacy_magnitudes = contract.get("curriculum_magnitudes_mm")
+    declared_magnitudes = contract.get("curriculum_condition_magnitudes", legacy_magnitudes)
+    if not isinstance(declared_magnitudes, (list, tuple)) or not declared_magnitudes:
+        raise ValueError("V2 configuration must declare its physical condition magnitudes")
+    expected_magnitudes = tuple(sorted(float(value) for value in declared_magnitudes))
     if manifest.get("physical_geometry_repropagation") is not True or int(manifest.get("q_over_p_mode", -1)) != 0:
         raise ValueError("V2 manifest does not certify physical mode-0 repropagation")
     if {sample.split for sample in samples} != {"train", "validation"}:
         raise ValueError("V2 loader did not return exactly train and validation samples")
+    if uniform_condition_axis(samples) != expected_axis:
+        raise ValueError("V2 manifest condition axis differs from the frozen input contract")
     for split in ("train", "validation"):
-        observed = tuple(sorted({float(sample.magnitude_mm) for sample in samples if sample.split == split}))
-        if observed != required:
-            raise ValueError(f"V2 {split} sample set is missing a physical curriculum magnitude")
+        observed = tuple(
+            sorted({float(sample.curriculum_magnitude) for sample in samples if sample.split == split})
+        )
+        if observed != expected_magnitudes:
+            raise ValueError(f"V2 {split} sample set is missing a physical curriculum condition")
 
 
 def main() -> None:
@@ -377,9 +406,7 @@ def main() -> None:
         **architecture,
     )
     training_config = RouteAwareTrainingConfig(**training)
-    from training.geometry_aware_transformer import CurriculumStage
-
-    stages = tuple(CurriculumStage(**dict(value)) for value in raw_stages)
+    stages = stages_from_payload(raw_stages)
     bins = int(calibration_config["bins"])
     model, artifact, history = train_route_aware_transformer_v2(
         train_bundle,
@@ -491,6 +518,7 @@ def main() -> None:
             "test_artifacts_opened": False,
             "physical_geometry_repropagation": True,
             "q_over_p_mode": 0,
+            "condition_axis": uniform_condition_axis(samples),
             "candidate_chi2_gate": None,
             "candidate_graph": "existing_mode0_acts_physical_candidates_all_six_station_pairs",
             "route_candidates": "complete_chains_of_existing_adjacent_physical_edges_only",

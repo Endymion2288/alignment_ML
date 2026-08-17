@@ -97,7 +97,7 @@ def _group_by_magnitude(
         raise ValueError("candidate sets and scores are not aligned")
     grouped: dict[float, tuple[list[CandidateSet], list[np.ndarray]]] = {}
     for candidate_set, score in zip(candidate_sets, scores):
-        magnitude = float(candidate_set.sample.magnitude_mm)
+        magnitude = float(candidate_set.sample.curriculum_magnitude)
         sets, values = grouped.setdefault(magnitude, ([], []))
         sets.append(candidate_set)
         values.append(np.asarray(score, dtype=np.float64))

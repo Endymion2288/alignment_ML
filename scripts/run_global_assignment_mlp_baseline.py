@@ -31,7 +31,12 @@ from baselines.mlp_pair_classifier import (
     save_pair_classifier,
 )
 from baselines.multistation_assignment import MultiStationAssignmentConfig
-from datasets.physical_curriculum import CurriculumSample, load_synthetic_curriculum_manifest
+from datasets.physical_curriculum import (
+    CurriculumSample,
+    condition_axis_label,
+    load_synthetic_curriculum_manifest,
+    uniform_condition_axis,
+)
 from evaluation.pairwise_metrics import apply_temperature, binary_calibration, calibration_report
 from training.curriculum_mlp import (
     adaptive_threshold_grid,
@@ -100,6 +105,19 @@ def _load_config(path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, 
     return dict(root), dict(mlp), dict(assignment)
 
 
+def _load_manifest_for_scope(
+    manifest_path: str | Path, *, validation_only: bool
+) -> tuple[Path, list[CurriculumSample], Mapping[str, object]]:
+    """Load only the assets permitted by the declared execution scope."""
+    if validation_only:
+        return load_synthetic_curriculum_manifest(
+            manifest_path,
+            require_all_splits=False,
+            allowed_splits=("train", "validation"),
+        )
+    return load_synthetic_curriculum_manifest(manifest_path)
+
+
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -140,6 +158,29 @@ def _source_split_audit(samples: Sequence[CurriculumSample]) -> dict[str, object
         "source_event_uid_overlap": overlaps,
         "strictly_disjoint": True,
     }
+
+
+def _validate_condition_contract(root: Mapping[str, Any], samples: Sequence[CurriculumSample]) -> str:
+    """Reject silently relabelled or mixed physical condition axes."""
+    axis = uniform_condition_axis(samples)
+    contract = root.get("condition_contract")
+    if contract is None:
+        return axis
+    if not isinstance(contract, Mapping):
+        raise ValueError("condition_contract must be a mapping when supplied")
+    if str(contract.get("condition_axis", "")) != axis:
+        raise ValueError("MLP condition axis differs from its declared physical contract")
+    declared = contract.get("curriculum_condition_magnitudes")
+    if not isinstance(declared, (list, tuple)) or not declared:
+        raise ValueError("MLP condition contract lacks curriculum_condition_magnitudes")
+    expected = tuple(sorted(float(value) for value in declared))
+    for split in ("train", "validation"):
+        observed = tuple(
+            sorted({float(sample.curriculum_magnitude) for sample in samples if sample.split == split})
+        )
+        if observed != expected:
+            raise ValueError(f"MLP {split} split differs from its frozen physical condition curriculum")
+    return axis
 
 
 def _flatten_scores(scores: Sequence[np.ndarray], sets: Sequence[object]) -> tuple[np.ndarray, np.ndarray]:
@@ -285,6 +326,52 @@ def _gate_key(gate: float | None) -> str:
     return "ungated" if gate is None else f"chi2_le_{gate:g}"
 
 
+def _row_condition_magnitude(row: Mapping[str, object]) -> float:
+    """Read a condition magnitude without silently relabelling rotations as mm."""
+    value = row.get("condition_magnitude")
+    if value is None:
+        value = row.get("magnitude_mm")
+    if value is None:
+        raise ValueError("assignment row lacks condition_magnitude")
+    return float(value)
+
+
+def _annotate_condition_row(
+    row: dict[str, object], *, condition_axis: str, condition_magnitude: float
+) -> None:
+    """Attach generic condition metadata and retain mm only for translations."""
+    row["condition_axis"] = condition_axis
+    row["condition_magnitude"] = float(condition_magnitude)
+    if condition_axis == "translation_xy_mm":
+        row["magnitude_mm"] = float(condition_magnitude)
+    else:
+        row.pop("magnitude_mm", None)
+
+
+def _annotate_assignment_scan_row(
+    row: dict[str, object], *, condition_axis: str, selection_scope: str
+) -> None:
+    """Describe the condition domain represented by one scan aggregate.
+
+    ``scan_global_assignment`` and ``scan_multistation_assignment`` return
+    one aggregate row for the exact collection of sets supplied to them.  A
+    nominal-only scan therefore has a known condition coordinate (zero), but
+    an all-condition scan must remain explicitly aggregate rather than being
+    assigned an invented magnitude.
+    """
+    if selection_scope == "nominal_only":
+        _annotate_condition_row(
+            row, condition_axis=condition_axis, condition_magnitude=0.0
+        )
+        return
+    if selection_scope != "all_magnitudes":
+        raise ValueError("assignment selection scope is unsupported")
+    row["condition_axis"] = condition_axis
+    row["condition_scope"] = "all_configured_magnitudes"
+    row.pop("condition_magnitude", None)
+    row.pop("magnitude_mm", None)
+
+
 def _assignment_scan_gate_keys(
     views: Mapping[str, object], selected_key: str, scan_all_candidate_gates: bool
 ) -> list[str]:
@@ -311,7 +398,8 @@ def _choose_candidate_gate(
     scoped = [
         row
         for row in rows
-        if scope == "all_magnitudes" or np.isclose(float(row["magnitude_mm"]), 0.0)
+        if scope == "all_magnitudes"
+        or np.isclose(_row_condition_magnitude(row), 0.0)
     ]
     eligible: list[Mapping[str, object]] = []
     for row in scoped:
@@ -340,7 +428,7 @@ def _select_magnitude(
     selected_sets: list[object] = []
     selected_scores: list[np.ndarray] = []
     for candidate_set, values in zip(sets, scores):
-        if np.isclose(float(candidate_set.sample.magnitude_mm), magnitude):
+        if np.isclose(float(candidate_set.sample.curriculum_magnitude), magnitude):
             selected_sets.append(candidate_set)
             selected_scores.append(values)
     return selected_sets, selected_scores
@@ -421,7 +509,8 @@ def _candidate_rows(
 ) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     default = AssignmentConfig(method="greedy", score_threshold=1.0)
-    for magnitude in sorted({float(candidate_set.sample.magnitude_mm) for candidate_set in sets}):
+    condition_axis = uniform_condition_axis([candidate_set.sample for candidate_set in sets])
+    for magnitude in sorted({float(candidate_set.sample.curriculum_magnitude) for candidate_set in sets}):
         selected_sets, selected_scores = _select_magnitude(sets, scores, magnitude)
         _, selected_raw_scores = _select_magnitude(sets, raw_scores, magnitude)
         result = evaluate_global_assignment_sets(selected_sets, selected_scores, default, calibration_bins)
@@ -430,9 +519,9 @@ def _candidate_rows(
         )
         candidate = result["candidate"]
         raw_candidate = raw_result["candidate"]
-        rows.append(
-            {
-                "magnitude_mm": magnitude,
+        row: dict[str, object] = {
+                "condition_axis": condition_axis,
+                "condition_magnitude": magnitude,
                 "candidate_chi2_gate": candidate_chi2_gate,
                 "candidate_calibration_scope": candidate_calibration_scope,
                 "candidate_calibration_temperature": candidate_calibration_temperature,
@@ -448,7 +537,8 @@ def _candidate_rows(
                 "negative_log_likelihood": candidate["negative_log_likelihood"],
                 "expected_calibration_error": candidate["expected_calibration_error"],
             }
-        )
+        _annotate_condition_row(row, condition_axis=condition_axis, condition_magnitude=magnitude)
+        rows.append(row)
     return rows
 
 
@@ -473,7 +563,8 @@ def _evaluation_rows(
     )
     magnitude_rows: list[dict[str, object]] = []
     pair_rows: list[dict[str, object]] = []
-    for magnitude in sorted({float(candidate_set.sample.magnitude_mm) for candidate_set in sets}):
+    condition_axis = uniform_condition_axis([candidate_set.sample for candidate_set in sets])
+    for magnitude in sorted({float(candidate_set.sample.curriculum_magnitude) for candidate_set in sets}):
         selected_sets, selected_scores = _select_magnitude(sets, scores, magnitude)
         result = (
             evaluate_multistation_assignment_sets(
@@ -487,10 +578,10 @@ def _evaluation_rows(
         candidate = result["candidate"]
         association = result["association"]
         unmatched = result["unmatched"]
-        magnitude_rows.append(
-            {
+        magnitude_row: dict[str, object] = {
                 "assignment_method": method,
-                "magnitude_mm": magnitude,
+                "condition_axis": condition_axis,
+                "condition_magnitude": magnitude,
                 "candidate_chi2_gate": candidate_chi2_gate,
                 "candidate_calibration_scope": candidate_calibration_scope,
                 "candidate_calibration_temperature": candidate_calibration_temperature,
@@ -508,15 +599,18 @@ def _evaluation_rows(
                 **association,
                 **unmatched,
             }
+        _annotate_condition_row(
+            magnitude_row, condition_axis=condition_axis, condition_magnitude=magnitude
         )
+        magnitude_rows.append(magnitude_row)
         for station_pair, payload in result["by_station_pair"].items():
             pair_candidate = payload["candidate"]
             pair_association = payload["association"]
             pair_unmatched = payload["unmatched"]
-            pair_rows.append(
-                {
+            pair_row: dict[str, object] = {
                     "assignment_method": method,
-                    "magnitude_mm": magnitude,
+                    "condition_axis": condition_axis,
+                    "condition_magnitude": magnitude,
                     "station_pair": station_pair,
                     "candidate_chi2_gate": candidate_chi2_gate,
                     "candidate_calibration_scope": candidate_calibration_scope,
@@ -533,7 +627,10 @@ def _evaluation_rows(
                     **pair_association,
                     **pair_unmatched,
                 }
+            _annotate_condition_row(
+                pair_row, condition_axis=condition_axis, condition_magnitude=magnitude
             )
+            pair_rows.append(pair_row)
     return magnitude_rows, pair_rows
 
 
@@ -552,16 +649,17 @@ def _plot(path: Path, rows: Sequence[Mapping[str, object]]) -> None:
     )
     for axis, (field, label) in zip(axes.flat, metrics):
         for method, group in sorted(grouped.items()):
-            ordered = sorted(group, key=lambda row: float(row["magnitude_mm"]))
-            x_values = [float(row["magnitude_mm"]) for row in ordered]
+            ordered = sorted(group, key=_row_condition_magnitude)
+            x_values = [_row_condition_magnitude(row) for row in ordered]
             y_values = [row[field] for row in ordered]
             axis.plot(x_values, y_values, marker="o", label=method)
         axis.set_ylabel(label)
         axis.set_ylim(-0.02, 1.02)
         axis.grid(True, alpha=0.25)
         axis.legend(fontsize=8)
-    axes[1, 0].set_xlabel("injected misalignment magnitude [mm]")
-    axes[1, 1].set_xlabel("injected misalignment magnitude [mm]")
+    label = condition_axis_label(str(rows[0].get("condition_axis", "translation_xy_mm")))
+    axes[1, 0].set_xlabel(label)
+    axes[1, 1].set_xlabel(label)
     figure.savefig(path, dpi=160)
     plt.close(figure)
 
@@ -582,9 +680,9 @@ def _plot_candidate_gates(path: Path, rows: Sequence[Mapping[str, object]]) -> N
     )
     for axis, (field, label) in zip(axes, metrics):
         for gate, group in sorted(grouped.items(), key=lambda item: (item[0] is None, item[0] or 0.0)):
-            ordered = sorted(group, key=lambda row: float(row["magnitude_mm"]))
+            ordered = sorted(group, key=_row_condition_magnitude)
             axis.plot(
-                [float(row["magnitude_mm"]) for row in ordered],
+                [_row_condition_magnitude(row) for row in ordered],
                 [np.nan if row[field] is None else float(row[field]) for row in ordered],
                 marker="o",
                 label="ungated" if gate is None else f"chi2 <= {gate:g}",
@@ -593,7 +691,7 @@ def _plot_candidate_gates(path: Path, rows: Sequence[Mapping[str, object]]) -> N
         axis.set_ylim(-0.02, 1.02)
         axis.grid(True, alpha=0.25)
         axis.legend(fontsize=8)
-        axis.set_xlabel("injected misalignment magnitude [mm]")
+        axis.set_xlabel(condition_axis_label(str(rows[0].get("condition_axis", "translation_xy_mm"))))
     figure.savefig(path, dpi=160)
     plt.close(figure)
 
@@ -618,11 +716,21 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
     config_path = Path(args.config).expanduser().resolve()
     root, mlp, assignment = _load_config(config_path)
+    if args.validation_only:
+        declared = root.get("allowed_splits")
+        if declared is not None and tuple(str(value) for value in declared) != ("train", "validation"):
+            raise ValueError("validation-only MLP control must allow exactly train and validation")
+        forbidden = {str(value) for value in root.get("forbidden_splits", ())}
+        if forbidden and "test" not in forbidden:
+            raise ValueError("validation-only MLP control must explicitly forbid test")
+    manifest_path, samples, manifest = _load_manifest_for_scope(
+        args.synthetic_manifest, validation_only=bool(args.validation_only)
+    )
     if int(manifest.get("q_over_p_mode", -1)) != 0:
         raise ValueError("global-assignment baseline supports only physical mode-0 propagation")
+    condition_axis = _validate_condition_contract(root, samples)
     output_root = Path(args.output_dir).expanduser().resolve()
     if output_root.exists() and any(output_root.iterdir()):
         raise FileExistsError("refusing to overwrite a non-empty global-assignment output directory")
@@ -649,9 +757,13 @@ def main() -> None:
             "candidate_chi2_gates": candidate_gates,
             "calibration_scope": calibration_scope,
             "q_over_p_mode": 0,
+            "condition_axis": condition_axis,
             "physical_geometry_repropagation": True,
             "model_family": "pairwise_mlp_plus_global_assignment_only",
             "validation_only": bool(args.validation_only),
+            "loaded_event_splits": sorted({str(sample.split) for sample in samples}),
+            "forbidden_splits": ["test"] if args.validation_only else [],
+            "test_events_loaded": False if args.validation_only else None,
             "reused_checkpoint": (
                 None if args.checkpoint is None else str(Path(args.checkpoint).expanduser().resolve())
             ),
@@ -849,6 +961,11 @@ def main() -> None:
         calibration = gate_calibrations[gate_key]
         temperature = calibration.get("temperature")
         for row in gate_rows:
+            _annotate_assignment_scan_row(
+                row,
+                condition_axis=condition_axis,
+                selection_scope=scope,
+            )
             row["candidate_chi2_gate"] = gate
             row["candidate_calibration_scope"] = calibration_scope
             row["candidate_calibration_temperature"] = (
@@ -916,6 +1033,11 @@ def main() -> None:
             calibration = gate_calibrations[flow_gate_key]
             temperature = calibration.get("temperature")
             for row in gate_flow_rows:
+                _annotate_assignment_scan_row(
+                    row,
+                    condition_axis=condition_axis,
+                    selection_scope=scope,
+                )
                 row["maximum_hypotheses"] = flow_maximum_hypotheses
                 row["candidate_chi2_gate"] = flow_gate
                 row["candidate_calibration_scope"] = calibration_scope
@@ -940,6 +1062,19 @@ def main() -> None:
             "candidate_gate_calibrations": gate_calibrations,
         },
     )
+    # Route-level controls require one explicit station-pair calibration map.
+    # Only an ungated physical graph is compatible with the V1/V2/V3 route
+    # contract, so publish this convenience artifact only when that map exists.
+    if "ungated" in gate_calibrations:
+        _write_json(
+            output_root / "route_calibration.json",
+            {
+                "fit_split": "validation_only",
+                "calibration": gate_calibrations["ungated"],
+                "candidate_chi2_gate": None,
+                "physical_candidate_graph": "ungated_mode0_acts",
+            },
+        )
     _write_csv(output_root / "validation_candidate_metrics_by_gate_and_magnitude.csv", validation_candidate_rows)
     _plot_candidate_gates(
         output_root / "validation_candidate_gates_vs_misalignment.png",
@@ -1001,8 +1136,12 @@ def main() -> None:
         {
             "selection_split": "validation_only",
             "selection_scope": scope,
+            "condition_axis": condition_axis,
+            "selection_condition_magnitudes": [0.0] if scope == "nominal_only" else sorted(
+                {float(candidate_set.sample.curriculum_magnitude) for candidate_set in validation_sets}
+            ),
             "selection_magnitudes_mm": [0.0] if scope == "nominal_only" else sorted(
-                {float(candidate_set.sample.magnitude_mm) for candidate_set in validation_sets}
+                {float(candidate_set.sample.curriculum_magnitude) for candidate_set in validation_sets}
             ),
             "maximum_inclusive_fake_rate": float(assignment["target_inclusive_fake_rate"]),
             "minimum_inclusive_purity": float(assignment["target_inclusive_purity"]),
@@ -1028,8 +1167,12 @@ def main() -> None:
         output_root / "validation_operating_points.json",
         {
             "selection_scope": scope,
+            "condition_axis": condition_axis,
+            "selection_condition_magnitudes": [0.0] if scope == "nominal_only" else sorted(
+                {float(candidate_set.sample.curriculum_magnitude) for candidate_set in validation_sets}
+            ),
             "selection_magnitudes_mm": [0.0] if scope == "nominal_only" else sorted(
-                {float(candidate_set.sample.magnitude_mm) for candidate_set in validation_sets}
+                {float(candidate_set.sample.curriculum_magnitude) for candidate_set in validation_sets}
             ),
             "candidate_chi2_gates": candidate_gates,
             "candidate_gate_selection": {
@@ -1157,6 +1300,7 @@ def main() -> None:
             "transformer_started": False,
             "physical_geometry_repropagation": True,
             "q_over_p_mode": 0,
+            "condition_axis": condition_axis,
             "source_split_audit": split_audit,
             "candidate_chi2_gates": candidate_gates,
             "candidate_gate_selection": candidate_gate_selection,
@@ -1165,6 +1309,7 @@ def main() -> None:
             "validation_quality_diagnostic_operating_points": quality_diagnostic_selections,
             "primary_validation_operating_point": primary,
             "test_opened": bool(not args.validation_only and has_validation_operating_point),
+            "test_events_loaded": bool(not args.validation_only and has_validation_operating_point),
             "test_withheld_reason": (
                 "validation_only"
                 if args.validation_only

@@ -1,0 +1,56 @@
+# Validation-only pairwise MLP baseline for the physical IFT R_y curriculum.
+# It inherits only the source-disjoint train/validation source list and never
+# opens the permanently sealed historical test bank.
+base_config: physical_curriculum_ift_ry_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  condition_contract:
+    condition_axis: ift_ry_mrad
+    curriculum_condition_magnitudes: [0.0, 10.0, 25.0, 40.0, 60.0]
+    reference_station_ids: [1, 2, 3]
+    movable_station_ids: [0]
+
+  curriculum_mlp:
+    model_topology: shared
+    calibration_scope: station_pair
+    feature_set: residual_v1
+    candidate_chi2_gates: [null]
+    candidate_gate_minimum_truth_recall: 0.98
+    calibration_bins: 15
+    target_inclusive_fake_rate: 0.05
+    target_inclusive_purity: 0.95
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
+    adaptive_threshold_quantiles: 31
+    stages:
+      - name: through_10mrad
+        maximum_condition_magnitude: 10.0
+        epochs: 50
+      - name: through_40mrad
+        maximum_condition_magnitude: 40.0
+        epochs: 60
+      - name: through_60mrad
+        maximum_condition_magnitude: 60.0
+        epochs: 80
+    hidden_dim: 64
+    batch_size: 8192
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    seed: 20260814
+    device: cuda
+
+  global_assignment_mlp:
+    methods: [greedy, hungarian, dustbin_hungarian, sinkhorn_hungarian, multistation_flow]
+    threshold_grid: [0.10, 0.20, 0.35, 0.50, 0.65, 0.80]
+    adaptive_threshold_quantiles: 5
+    unmatched_penalties: [-1.0, 0.0, 0.5, 1.0]
+    sinkhorn_temperatures: [0.2, 0.5, 1.0]
+    sinkhorn_iterations: 20
+    multistation_flow_threshold_grid: [0.001, 0.01, 0.05, 0.10, 0.20, 0.35, 0.50, 0.65, 0.80]
+    multistation_flow_adaptive_threshold_quantiles: 7
+    multistation_flow_unmatched_penalties: [-1.0, -0.5, 0.0, 0.5, 1.0]
+    multistation_flow_maximum_hypotheses: 100000
+    validation_selection_scope: nominal_only
+    target_inclusive_fake_rate: 0.05
+    target_inclusive_purity: 0.95
+    minimum_nominal_association_efficiency: 0.70
+    scan_all_candidate_gates: false

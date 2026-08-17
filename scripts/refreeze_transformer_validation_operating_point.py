@@ -42,6 +42,10 @@ from training.transformer_route_selection import select_route_operating_point
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_ROUTE_SELECTION_POLICY = (
+    "nominal_primary_then_validation_capture_count_then_maximum_magnitude_"
+    "then_mean_route_quality"
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -187,7 +191,14 @@ def main() -> None:
     if method not in {"temperature", "platt"} or scope not in {"global", "station_pair"}:
         raise ValueError("calibration method/scope is invalid")
 
-    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
+    # A validation refreeze must not require, resolve, or open a sealed test
+    # split.  The V3 expanded corpus deliberately has only train/validation
+    # samples until its hypothesis is frozen.
+    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(
+        args.synthetic_manifest,
+        require_all_splits=False,
+        allowed_splits=("train", "validation"),
+    )
     _validate_manifest_contract(root, transformer, manifest, list(samples))
     source_audit = source_disjoint_audit(samples)
     validation_samples = [sample for sample in samples if sample.split == "validation"]
@@ -316,7 +327,13 @@ def main() -> None:
             "thresholds": selection_payload["thresholds"],
             "unmatched_penalty": selection_payload["unmatched_penalty"],
             "capture_success_criteria": dict(criteria),
-            "selection_policy": str(route_config["selection_policy"]),
+            # Earlier V1 configurations declared this explanatory label
+            # explicitly.  The expanded V3 control uses the same policy via
+            # ``select_route_operating_point`` but does not duplicate the
+            # optional key, so retain the exact documented default.
+            "selection_policy": str(
+                route_config.get("selection_policy", DEFAULT_ROUTE_SELECTION_POLICY)
+            ),
             "validation_route_selection": selection_payload,
         },
     )

@@ -161,3 +161,60 @@ def test_allowed_split_boundary_does_not_resolve_excluded_test_assets(tmp_path):
         allowed_splits=("validation",),
     )
     assert [entry.split for entry in loaded] == ["validation"]
+
+
+def test_manifest_loader_accepts_explicit_ift_ry_condition_without_mm_relabelling(tmp_path):
+    assets = {}
+    for name in (
+        "physical_tracklets",
+        "physical_propagations",
+        "physical_payload_manifest",
+        "synthetic_tracklets",
+        "field_candidates",
+    ):
+        path = tmp_path / f"{name}.root"
+        path.touch()
+        assets[name] = str(path)
+    manifest = tmp_path / "rotation_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": SYNTHETIC_CORPUS_SCHEMA,
+                "physical_geometry_repropagation": True,
+                "samples": [
+                    {
+                        "source_id": "pooled_train",
+                        "source_ids": ["train_source"],
+                        "split": "train",
+                        "payload_id": "ry_p40",
+                        "condition_axis": "ift_ry_mrad",
+                        "condition_value": 40.0,
+                        "condition_magnitude": 40.0,
+                        "direction_trial": "positive",
+                        "injected_station_transforms": {
+                            "0": [0.0, 0.0, 0.0, 0.0, 0.04, 0.0],
+                            "1": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                            "2": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                            "3": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                        },
+                        "source_event_uids": ["train_source:1:2"],
+                        "physical_event_uids": ["train_source:1:2"],
+                        "physical_geometry_repropagation": True,
+                        **assets,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _, samples, _ = load_synthetic_curriculum_manifest(
+        manifest,
+        require_all_splits=False,
+        allowed_splits=("train",),
+    )
+
+    assert samples[0].condition_axis == "ift_ry_mrad"
+    assert samples[0].condition_value == 40.0
+    assert samples[0].curriculum_magnitude == 40.0
+    assert samples[0].injected_offsets_xy_mm == {}

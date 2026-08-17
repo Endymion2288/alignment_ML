@@ -81,6 +81,11 @@ class CurriculumStage:
     maximum_magnitude_mm: float
     epochs: int
 
+    @property
+    def maximum_condition_magnitude(self) -> float:
+        """Generic curriculum limit; legacy field name is retained for ABI compatibility."""
+        return float(self.maximum_magnitude_mm)
+
 
 @dataclass(frozen=True)
 class TransformerTrainingConfig:
@@ -901,7 +906,9 @@ def _weighted_focal_bce(
 
 def _stage_graphs(bundle: TransformerGraphBundle, maximum_magnitude_mm: float) -> list[TransformerGraph]:
     selected = [
-        graph for graph in bundle.graphs if float(graph.sample.magnitude_mm) <= maximum_magnitude_mm + 1.0e-12
+        graph
+        for graph in bundle.graphs
+        if float(graph.sample.curriculum_magnitude) <= maximum_magnitude_mm + 1.0e-12
     ]
     if not selected:
         raise ValueError("curriculum stage selects no physical graphs")
@@ -913,7 +920,7 @@ def _positive_weight(graphs: Sequence[TransformerGraph], maximum: float) -> tupl
     positives = int(np.count_nonzero(labels))
     negatives = int(labels.size - positives)
     if not positives or not negatives:
-        raise ValueError(f"curriculum stage through {maximum:g} mm lacks both label classes")
+        raise ValueError(f"curriculum stage through {maximum:g} condition units lacks both label classes")
     return negatives / positives, positives, negatives
 
 
@@ -1367,8 +1374,18 @@ def training_config_from_mapping(payload: Mapping[str, object]) -> TransformerTr
 
 
 def stages_from_payload(values: Sequence[Mapping[str, object]]) -> tuple[CurriculumStage, ...]:
-    """Parse the existing physical curriculum stage declaration."""
-    return tuple(CurriculumStage(**dict(value)) for value in values)
+    """Parse legacy-mm or explicit generic-condition curriculum stages."""
+    result: list[CurriculumStage] = []
+    for raw in values:
+        value = dict(raw)
+        generic = value.pop("maximum_condition_magnitude", None)
+        legacy = value.get("maximum_magnitude_mm")
+        if generic is not None:
+            if legacy is not None and not math.isclose(float(generic), float(legacy)):
+                raise ValueError("curriculum stage has conflicting generic and legacy magnitude limits")
+            value["maximum_magnitude_mm"] = generic
+        result.append(CurriculumStage(**value))
+    return tuple(result)
 
 
 def artifact_summary(artifact: TransformerArtifact) -> dict[str, object]:

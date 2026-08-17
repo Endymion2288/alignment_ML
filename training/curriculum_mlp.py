@@ -47,6 +47,7 @@ def build_candidate_sets(
     chi2_gate: float | None,
     target_z_tolerance_mm: float = 1.0e-6,
     feature_set: str = "residual_v1",
+    max_events_per_sample: int | None = None,
 ) -> list[CandidateSet]:
     """Load only same-payload synthetic/Acts pairs and build physical candidates."""
     pairs = tuple((int(source), int(target)) for source, target in station_pairs)
@@ -54,9 +55,15 @@ def build_candidate_sets(
         raise ValueError("station_pairs must contain forward station pairs")
     if len(set(pairs)) != len(pairs):
         raise ValueError("station_pairs contains duplicates")
+    if max_events_per_sample is not None and max_events_per_sample < 1:
+        raise ValueError("max_events_per_sample must be positive when supplied")
     result: list[CandidateSet] = []
     for sample in samples:
-        events = load_events(sample.synthetic_tracklets, require_mc_labels=True)
+        events = load_events(
+            sample.synthetic_tracklets,
+            require_mc_labels=True,
+            max_events=max_events_per_sample,
+        )
         records = load_propagation_records(sample.field_candidates)
         for event in events:
             for source_station, target_station in pairs:
@@ -413,11 +420,19 @@ def train_curriculum_pair_classifier(
     previous_limit = -np.inf
     for stage_index, stage in enumerate(stages):
         name = str(stage["name"])
-        maximum = float(stage["maximum_magnitude_mm"])
+        if "maximum_condition_magnitude" in stage:
+            maximum = float(stage["maximum_condition_magnitude"])
+        else:
+            # Legacy translation configurations retain this key.
+            maximum = float(stage["maximum_magnitude_mm"])
         if maximum < previous_limit:
             raise ValueError("curriculum stages must have non-decreasing magnitudes")
         previous_limit = maximum
-        selected = [candidate_set for candidate_set in train_sets if candidate_set.sample.magnitude_mm <= maximum]
+        selected = [
+            candidate_set
+            for candidate_set in train_sets
+            if candidate_set.sample.curriculum_magnitude <= maximum
+        ]
         features, labels = concatenate_candidate_sets(selected)
         sampling_weights = payload_balanced_sampling_weights(selected)
         stage_config = replace(
@@ -441,7 +456,7 @@ def train_curriculum_pair_classifier(
         summary.append(
             {
                 "name": name,
-                "maximum_magnitude_mm": maximum,
+                "maximum_condition_magnitude": maximum,
                 "epochs": stage_config.epochs,
                 "training_candidate_rows": int(labels.size),
                 "training_positive_candidate_rows": int(np.count_nonzero(labels)),

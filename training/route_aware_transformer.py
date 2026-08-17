@@ -475,7 +475,7 @@ def _stage_graphs(bundle: TransformerGraphBundle, maximum_magnitude_mm: float) -
     graphs = [
         graph
         for graph in bundle.graphs
-        if float(graph.sample.magnitude_mm) <= maximum_magnitude_mm + 1.0e-12
+        if float(graph.sample.curriculum_magnitude) <= maximum_magnitude_mm + 1.0e-12
     ]
     if not graphs:
         raise ValueError("V2 curriculum stage selects no physical graphs")
@@ -487,7 +487,7 @@ def _edge_positive_weight(graphs: Sequence[TransformerGraph], maximum: float, ca
     positives = int(np.count_nonzero(labels))
     negatives = int(labels.size - positives)
     if not positives or not negatives:
-        raise ValueError(f"V2 curriculum through {maximum:g} mm lacks both edge label classes")
+        raise ValueError(f"V2 curriculum through {maximum:g} condition units lacks both edge label classes")
     return min(negatives / positives, cap), positives, negatives
 
 

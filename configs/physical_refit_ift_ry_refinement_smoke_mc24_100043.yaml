@@ -1,0 +1,76 @@
+# Adaptive physical probes for a second IFT R_y closure iteration.  These are
+# independent real payload/refit/Acts jobs, not synthetic response points.
+physical_refit_capture_scan:
+  scan_mode: ift_ry_rotation
+  input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+  nevents: 10
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  condition_axis: ift_ry_mrad
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  # The first held-out response curve estimates about +56/-53 mrad.  The
+  # central probes below define local physical derivatives at +/-50 mrad;
+  # the +/-60 mrad payload remains held out when the step is evaluated.
+  rotation_points:
+    - name: ry_0
+      direction_trial: nominal
+      ry_mrad: 0.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p45
+      direction_trial: positive_refinement_lower
+      ry_mrad: 45.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.045, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p50
+      direction_trial: positive_refinement_anchor
+      ry_mrad: 50.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.050, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p55
+      direction_trial: positive_refinement_upper
+      ry_mrad: 55.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.055, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m45
+      direction_trial: negative_refinement_upper
+      ry_mrad: -45.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.045, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m50
+      direction_trial: negative_refinement_anchor
+      ry_mrad: -50.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.050, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m55
+      direction_trial: negative_refinement_lower
+      ry_mrad: -55.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.055, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

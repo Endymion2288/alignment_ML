@@ -1,0 +1,36 @@
+# Validation-only route-level evaluator for the re-trained expanded-corpus MLP.
+# It intentionally has no V2 checkpoint, historical MLP, or test reference.
+route_aware_transformer_v2:
+  input_contract:
+    allowed_splits: [train, validation]
+    forbidden_splits: [test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    curriculum_magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    selection_events_per_magnitude: 16
+    full_validation_rerank_candidates: 24
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05

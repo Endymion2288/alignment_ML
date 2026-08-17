@@ -1,0 +1,83 @@
+# V1 controls on the physical IFT R_y bank.  Only full context and the
+# no-multi-station-context ablation are required for the rotation comparison.
+base_config: physical_curriculum_ift_ry_expanded_trainval.yaml
+
+geometry_aware_transformer_v1:
+  station_path: [0, 1, 2, 3]
+  all_context_station_pairs: [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]
+  output_station_pairs: [[0, 1], [1, 2], [2, 3]]
+  candidate_chi2_gate: null
+  q_over_p_mode: 0
+
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+
+  curriculum_stages:
+    - name: through_10mrad
+      maximum_condition_magnitude: 10.0
+      epochs: 8
+    - name: through_40mrad
+      maximum_condition_magnitude: 40.0
+      epochs: 10
+    - name: through_60mrad
+      maximum_condition_magnitude: 60.0
+      epochs: 12
+
+  training:
+    batch_size: 64
+    learning_rate: 0.0003
+    weight_decay: 0.0001
+    seed: 20260814
+    device: cuda
+    early_stopping_patience: 5
+    focal_gamma: 1.5
+    hard_negative_weight: 2.0
+    maximum_positive_weight: 30.0
+
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    selection_events_per_magnitude: 16
+    full_validation_rerank_candidates: 24
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05
+
+  ablations:
+    geometry_aware_full_context:
+      context_mode: full_event
+      use_geometric_bias: true
+      use_chi2_physics_term: true
+      chi2_hyperparameter_candidates:
+        - label: lambda_1_tau_2000k
+          chi2_lambda: 1.0
+          chi2_tau: 2000000.0
+    geometry_aware_no_multistation_context:
+      context_mode: station_pair
+      batch_size: 192
+      use_geometric_bias: true
+      use_chi2_physics_term: true
+      inherit_chi2_hyperparameters_from: geometry_aware_full_context
+
+  mlp_baseline_reference: {}

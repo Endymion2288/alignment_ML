@@ -1,0 +1,13 @@
+# Synthetic overlay policy for one dedicated source-disjoint physical
+# alignment iteration.  The physical payloads themselves remain independent
+# cluster -> segment -> mode-0 Acts refits.  Sharing only the deterministic
+# overlay RNG stream across anchor/probe/reference samples lets the frozen
+# route-selected update intersect the same synthetic origins across the real
+# geometry responses.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  synthetic_multitrack:
+    overlay_seed_scope: alignment_iteration_shared_across_payloads

@@ -64,6 +64,11 @@ point。当前 route context 回退到与 edge-only control 完全相同的解�
 仍然可用。V1 test source 继续封存，也没有生成新的 final test bank；机制诊断和可复现 validation
 contract 见 V2 文档。
 
+Geometry-Aware Transformer V3 已实现为只允许 train/validation 的结构化全局指派假设。它保留真实
+candidate graph、四层 route encoder 与 unit-capacity solver，但训练时直接比较 loss-augmented 的 event-level
+最强竞争 assignment，而不再使用独立 edge/route BCE。扩展物理语料正在生产中，尚无 V3 validation 结果，也
+没有新的 test bank。
+
 ```bash
 cd /eos/home-x/xcheng/FASER
 source alignment_ML/scripts/setup_environment.sh ml
@@ -122,3 +127,5 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [Geometry-Aware Transformer V2 机制诊断（中文）](docs/geometry_aware_transformer_v2_diagnostics_cn.md)
 - [Geometry-Aware Transformer V2 route-aware 验证研究（英文）](docs/geometry_aware_transformer_v2.md)
 - [Geometry-Aware Transformer V2 route-aware 验证研究（中文）](docs/geometry_aware_transformer_v2_cn.md)
+- [Geometry-Aware Transformer V3 结构化全局指派研究（英文）](docs/structured_assignment_v3.md)
+- [Geometry-Aware Transformer V3 结构化全局指派研究（中文）](docs/structured_assignment_v3_cn.md)

@@ -1,0 +1,95 @@
+# Source-disjoint train/validation-only physical curriculum for the first
+# multi-DoF global-alignment stage.  This supersedes an axis-by-axis study:
+# every non-probe point jointly changes IFT dx, dy, and R_y in a real
+# /Tracker/Align payload.  The sealed test source is deliberately absent.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+
+  # V1 active alignment block.  The payload/closure code understands all six
+  # rigid station components, but Rx/Rz/dz remain disabled until the physical
+  # Jacobian audit establishes rank and conditioning for this first block.
+  alignment_hierarchy:
+    active_level: station
+    active_parameters: [ift_dx_mm, ift_dy_mm, ift_ry_mrad]
+    reserved_future_levels: [station, layer, module]
+    reserved_station_components: [dx_mm, dy_mm, dz_mm, rx_mrad, ry_mrad, rz_mrad]
+    activation_rule: finite_difference_rank_condition_and_held_out_closure
+
+  joint_rigid_curriculum:
+    scan_mode: station_rigid_multidof
+    condition_axis: ift_dx_dy_ry_joint_l2
+    seed: 20260815
+    reference_station_ids: [1, 2, 3]
+    movable_station_ids: [0]
+
+    # severity_scale defines the dimensionless condition magnitude
+    # sqrt(sum((theta_i / scale_i)^2)); it is not a replacement for the
+    # individual parameter values persisted in every payload manifest.
+    alignment_parameter_specs:
+      - name: ift_dx_mm
+        station_id: 0
+        component: dx_mm
+        unit: mm
+        finite_difference_step: 0.5
+        severity_scale: 5.0
+      - name: ift_dy_mm
+        station_id: 0
+        component: dy_mm
+        unit: mm
+        finite_difference_step: 0.5
+        severity_scale: 5.0
+      - name: ift_ry_mrad
+        station_id: 0
+        component: ry_mrad
+        unit: mrad
+        finite_difference_step: 10.0
+        severity_scale: 60.0
+
+    # One point in each stage is sampled once per split from the declared
+    # seed, then identically refitted for every source in that split.  That
+    # preserves valid pooled synthetic events without mixing geometry payloads.
+    curriculum_stages:
+      - name: joint_small
+        points_per_split: 1
+        ranges:
+          ift_dx_mm: [-0.1, 0.1]
+          ift_dy_mm: [-0.1, 0.1]
+          ift_ry_mrad: [-10.0, 10.0]
+      - name: joint_medium
+        points_per_split: 1
+        ranges:
+          ift_dx_mm: [-1.0, 1.0]
+          ift_dy_mm: [-1.0, 1.0]
+          ift_ry_mrad: [-25.0, 25.0]
+      - name: joint_broad_a
+        points_per_split: 1
+        ranges:
+          ift_dx_mm: [-5.0, 5.0]
+          ift_dy_mm: [-5.0, 5.0]
+          ift_ry_mrad: [-60.0, 60.0]
+      - name: joint_broad_b
+        points_per_split: 1
+        ranges:
+          ift_dx_mm: [-5.0, 5.0]
+          ift_dy_mm: [-5.0, 5.0]
+          ift_ry_mrad: [-60.0, 60.0]
+
+    # These joint points are physically refitted but excluded from the
+    # finite-difference derivative definition.  They are the held-out closure
+    # checks used to decide whether the active three-DoF block is adequate.
+    held_out_closure_stages:
+      - name: heldout_joint
+        points_per_split: 2
+        ranges:
+          ift_dx_mm: [-3.0, 3.0]
+          ift_dy_mm: [-3.0, 3.0]
+          ift_ry_mrad: [-45.0, 45.0]
+
+  synthetic_multitrack:
+    # Joint points have distinct payload values rather than a shared scalar
+    # magnitude.  Retain payload-specific overlay seeds so every trial remains
+    # reproducible and no different transform vectors share an RNG identity.
+    overlay_seed_scope: payload

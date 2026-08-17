@@ -38,11 +38,32 @@ def parse_offset(value: str) -> tuple[int, float, float]:
     return station, dx_mm, dy_mm
 
 
+def parse_transform(value: str) -> tuple[int, tuple[float, float, float, float, float, float]]:
+    """Parse one exact global station transform for the physical refit chain."""
+    parts = value.split(":")
+    if len(parts) != 7:
+        raise argparse.ArgumentTypeError(
+            "transform must have the form STATION:DX_MM:DY_MM:DZ_MM:RX_RAD:RY_RAD:RZ_RAD"
+        )
+    try:
+        station = int(parts[0])
+        components = tuple(float(component) for component in parts[1:])
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "transform must have an integer station and finite floating-point components"
+        ) from error
+    if station not in (0, 1, 2, 3):
+        raise argparse.ArgumentTypeError("station must be one of 0, 1, 2, 3")
+    if len(components) != 6 or not all(math.isfinite(component) for component in components):
+        raise argparse.ArgumentTypeError("transform components must be finite")
+    return station, components
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Create a station-level /Tracker/Align SQLite+POOL payload for "
-            "a controlled FASERNU-04 x/y alignment injection."
+            "a controlled FASERNU-04 rigid alignment injection."
         )
     )
     parser.add_argument(
@@ -54,9 +75,20 @@ def parse_args() -> argparse.Namespace:
         "--offset",
         action="append",
         type=parse_offset,
-        required=True,
+        default=[],
         metavar="STATION:DX_MM:DY_MM",
-        help="Global station translation in mm; repeat for multiple stations",
+        help="Legacy global x/y station translation in mm; repeat for multiple stations",
+    )
+    parser.add_argument(
+        "--transform",
+        action="append",
+        type=parse_transform,
+        default=[],
+        metavar="STATION:DX_MM:DY_MM:DZ_MM:RX_RAD:RY_RAD:RZ_RAD",
+        help=(
+            "Exact global station transform; translations are mm and rotations are rad. "
+            "Repeat for every station represented in the payload."
+        ),
     )
     parser.add_argument("--geometry", default="FASERNU-04")
     parser.add_argument("--global-tag", default="OFLCOND-FASER-06")
@@ -73,11 +105,20 @@ def main() -> int:
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", args.tag):
         raise SystemExit("--tag may contain only letters, digits, underscore, dot, and hyphen")
 
-    offsets: dict[int, tuple[float, float]] = {}
+    if not args.offset and not args.transform:
+        raise SystemExit("at least one --offset or --transform is required")
+
+    transforms: dict[int, tuple[float, float, float, float, float, float]] = {}
     for station, dx_mm, dy_mm in args.offset:
-        if station in offsets:
-            raise SystemExit(f"duplicate offset for station {station}")
-        offsets[station] = (dx_mm, dy_mm)
+        if station in transforms:
+            raise SystemExit(f"duplicate transform for station {station}")
+        transforms[station] = (dx_mm, dy_mm, 0.0, 0.0, 0.0, 0.0)
+    for station, transform in args.transform:
+        if station in transforms:
+            raise SystemExit(
+                f"station {station} was specified more than once; use one --transform instead of --offset"
+            )
+        transforms[station] = transform
 
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -90,8 +131,8 @@ def main() -> int:
             raise SystemExit(f"refusing to overwrite existing artifact: {path}")
 
     alignment_constants = {
-        f"station:{station}": [dx_mm, dy_mm, 0.0, 0.0, 0.0, 0.0]
-        for station, (dx_mm, dy_mm) in sorted(offsets.items())
+        f"station:{station}": list(transform)
+        for station, transform in sorted(transforms.items())
     }
 
     # The POOL catalog is generated relative to the process working directory.
@@ -156,6 +197,9 @@ def main() -> int:
         "station_transform_convention": {
             "frame": "global",
             "components": "[dx_mm, dy_mm, dz_mm, rx_rad, ry_rad, rz_rad]",
+            "composition": "T(dx,dy,dz) * Rz(rz) * Ry(ry) * Rx(rx)",
+            "rotation_units": "rad",
+            "implementation": "TrackerAlignDBTool::stationAlignment",
         },
         "alignment_constants": alignment_constants,
         "sqlite": str(sqlite_path),

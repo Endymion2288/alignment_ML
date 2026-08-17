@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
-from typing import Mapping, Sequence
+from typing import Hashable, Mapping, Sequence
 
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, milp
@@ -28,6 +28,7 @@ from datasets.root_loader import EventTracklets
 # the probability precision used by the MLP and never turns a non-positive
 # dustbin improvement into a selected route.
 _CONTINUATION_TIE_BREAK = 1.0e-9
+_ORDERED_HYPEREDGE_DP_MAX_STATES = 200_000
 
 
 @dataclass(frozen=True)
@@ -73,6 +74,23 @@ class RouteAssignmentResult:
     selected_routes: int
 
 
+@dataclass(frozen=True)
+class UnitCapacityPackingResult:
+    """Exact selection for a fixed set of pre-existing route hypotheses.
+
+    This generic helper is intentionally lower-level than ``Route``.  It is
+    used by V3 structured learning to obtain a loss-augmented competing
+    assignment from the *same* physical route candidates that inference uses.
+    ``endpoint_rows`` contains arbitrary hashable endpoint IDs; it does not
+    create a candidate edge, inspect truth, or assume a station topology.
+    """
+
+    selected: np.ndarray
+    objective: float
+    endpoints: tuple[Hashable, ...]
+    endpoint_loads: np.ndarray
+
+
 def adjacent_station_pairs(station_path: Sequence[int]) -> tuple[tuple[int, int], ...]:
     """Return ordered physical edges for a route path."""
     stations = tuple(int(station) for station in station_path)
@@ -81,6 +99,232 @@ def adjacent_station_pairs(station_path: Sequence[int]) -> tuple[tuple[int, int]
     if any(left >= right for left, right in zip(stations, stations[1:])):
         raise ValueError("station_path must be strictly forward ordered")
     return tuple(zip(stations, stations[1:]))
+
+
+def _solve_ordered_hyperedge_component(
+    rows: Sequence[tuple[Hashable, ...]],
+    utilities: np.ndarray,
+) -> np.ndarray | None:
+    """Exactly solve a small fixed-order multipartite hyperedge component.
+
+    V3 complete routes are ordered IFT/S1/S2/S3 tuples.  When every endpoint
+    occurs in exactly one tuple position, routes can be processed one IFT
+    endpoint group at a time while a bit mask tracks occupied later-station
+    endpoints.  This is an exact dynamic programme, not a relaxation.  The
+    generic MILP remains the fallback for mixed-length routes, non-partitioned
+    endpoint IDs, and unusually large state spaces.
+    """
+    if not rows or utilities.shape != (len(rows),):
+        raise ValueError("ordered hyperedge utilities must align with component rows")
+    width = len(rows[0])
+    if width < 2 or any(len(row) != width for row in rows):
+        return None
+    position_by_endpoint: dict[Hashable, int] = {}
+    for row in rows:
+        for position, endpoint in enumerate(row):
+            prior = position_by_endpoint.setdefault(endpoint, position)
+            if prior != position:
+                return None
+
+    by_first_endpoint: dict[Hashable, list[int]] = {}
+    for route, row in enumerate(rows):
+        by_first_endpoint.setdefault(row[0], []).append(route)
+    later_endpoints = tuple(
+        sorted(
+            (endpoint for endpoint, position in position_by_endpoint.items() if position > 0),
+            key=repr,
+        )
+    )
+    # A dynamic programme over more than 200k masks is not a reliable fast
+    # path.  Returning None preserves the established exact MILP behaviour.
+    if len(later_endpoints) >= 63 or 2 ** len(later_endpoints) > _ORDERED_HYPEREDGE_DP_MAX_STATES:
+        return None
+    bit_by_endpoint = {endpoint: bit for bit, endpoint in enumerate(later_endpoints)}
+    masks = np.zeros(len(rows), dtype=np.uint64)
+    for route, row in enumerate(rows):
+        mask = 0
+        for endpoint in row[1:]:
+            mask |= 1 << bit_by_endpoint[endpoint]
+        masks[route] = np.uint64(mask)
+
+    # ``records`` retain one predecessor per reachable occupancy state.  The
+    # augmented utilities already carry the generic solver's deterministic
+    # tiny tie-break, so a strict comparison is sufficient.
+    current: dict[int, float] = {0: 0.0}
+    layers: list[dict[int, tuple[float, int, int]]] = []
+    for endpoint in sorted(by_first_endpoint, key=repr):
+        records: dict[int, tuple[float, int, int]] = {}
+        for occupied, utility in current.items():
+            records[occupied] = (utility, occupied, -1)
+        for occupied, utility in current.items():
+            for route in by_first_endpoint[endpoint]:
+                route_mask = int(masks[route])
+                if occupied & route_mask:
+                    continue
+                updated = occupied | route_mask
+                candidate = utility + float(utilities[route])
+                prior = records.get(updated)
+                if prior is None or candidate > prior[0]:
+                    records[updated] = (candidate, occupied, route)
+        if len(records) > _ORDERED_HYPEREDGE_DP_MAX_STATES:
+            return None
+        layers.append(records)
+        current = {occupied: record[0] for occupied, record in records.items()}
+    selected = np.zeros(len(rows), dtype=bool)
+    occupied = max(current, key=lambda mask: current[mask])
+    for records in reversed(layers):
+        _, predecessor, route = records[occupied]
+        if route >= 0:
+            selected[route] = True
+        occupied = predecessor
+    return selected
+
+
+def solve_unit_capacity_route_packing(
+    endpoint_rows: Sequence[Sequence[Hashable]] | np.ndarray,
+    utilities: Sequence[float] | np.ndarray,
+) -> UnitCapacityPackingResult:
+    """Solve a unit-capacity route set-packing problem exactly.
+
+    The returned Boolean mask is aligned to the supplied route rows.  Empty
+    selection is always feasible, so non-positive utilities are excluded from
+    the optimization rather than being selected merely by a deterministic tie.
+    This is important for the structured hinge: a loss-augmented competitor
+    must improve the objective rather than be an arbitrary zero-utility route.
+    """
+    raw_rows = list(endpoint_rows)
+    values = np.asarray(utilities, dtype=np.float64)
+    if values.ndim != 1 or values.size != len(raw_rows):
+        raise ValueError("route utilities must be a finite vector aligned with endpoint rows")
+    if not np.isfinite(values).all():
+        raise ValueError("route utilities must be finite")
+    if not raw_rows:
+        return UnitCapacityPackingResult(
+            selected=np.empty(0, dtype=bool),
+            objective=0.0,
+            endpoints=(),
+            endpoint_loads=np.empty(0, dtype=np.int64),
+        )
+
+    normalized_rows: list[tuple[Hashable, ...]] = []
+    for row in raw_rows:
+        endpoints = tuple(row)
+        if not endpoints:
+            raise ValueError("every route must contain at least one endpoint")
+        try:
+            unique = set(endpoints)
+        except TypeError as error:
+            raise ValueError("route endpoint IDs must be hashable") from error
+        if len(unique) != len(endpoints):
+            raise ValueError("one route repeats an endpoint")
+        normalized_rows.append(endpoints)
+
+    # Selecting a non-positive route can never improve against the explicit
+    # dustbin/empty assignment.  Solve the positive subset and reconstruct the
+    # full candidate-aligned mask afterwards.
+    active = np.flatnonzero(values > 0.0)
+    selected = np.zeros(values.shape, dtype=bool)
+    if not active.size:
+        endpoints = tuple(sorted({endpoint for row in normalized_rows for endpoint in row}, key=repr))
+        return UnitCapacityPackingResult(
+            selected=selected,
+            objective=0.0,
+            endpoints=endpoints,
+            endpoint_loads=np.zeros(len(endpoints), dtype=np.int64),
+        )
+
+    active_rows = [normalized_rows[int(index)] for index in active]
+    endpoints = tuple(sorted({endpoint for row in active_rows for endpoint in row}, key=repr))
+    endpoint_row = {endpoint: row for row, endpoint in enumerate(endpoints)}
+
+    # A synthetic overlay can contain many mutually disconnected trajectory
+    # groups.  Unit-capacity constraints never couple such groups, so solving
+    # each route-conflict component independently is exactly equivalent to one
+    # monolithic MILP.  This keeps V3's loss-augmented oracle exact while
+    # avoiding one solver invocation over unrelated tracks in every event.
+    memberships: dict[Hashable, list[int]] = {}
+    for column, route in enumerate(active_rows):
+        for endpoint in route:
+            memberships.setdefault(endpoint, []).append(column)
+    visited = np.zeros(active.size, dtype=bool)
+    components: list[np.ndarray] = []
+    for root in range(active.size):
+        if visited[root]:
+            continue
+        pending = [int(root)]
+        visited[root] = True
+        component: list[int] = []
+        while pending:
+            column = pending.pop()
+            component.append(column)
+            for endpoint in active_rows[column]:
+                for neighbor in memberships[endpoint]:
+                    if not visited[neighbor]:
+                        visited[neighbor] = True
+                        pending.append(neighbor)
+        components.append(np.asarray(sorted(component), dtype=np.int64))
+
+    active_utilities = values[active]
+    # Keep exact objective differences intact.  The bounded perturbation only
+    # resolves mathematically identical set-packings reproducibly.  Its index
+    # remains global to the active route list even when the problem splits.
+    tie_break = np.linspace(0.0, 1.0e-12, active.size, dtype=np.float64)
+    selected_active = np.zeros(active.size, dtype=bool)
+    for component in components:
+        component_rows = [active_rows[int(column)] for column in component]
+        component_endpoints = tuple(
+            sorted({endpoint for route in component_rows for endpoint in route}, key=repr)
+        )
+        component_endpoint_row = {
+            endpoint: row for row, endpoint in enumerate(component_endpoints)
+        }
+        incidence = np.zeros(
+            (len(component_endpoints), component.size), dtype=np.float64
+        )
+        for local_column, route in enumerate(component_rows):
+            for endpoint in route:
+                incidence[component_endpoint_row[endpoint], local_column] = 1.0
+
+        # If no endpoint is shared, all active routes have positive utility
+        # and can be selected directly.  This is common for clean multi-track
+        # events and is still the exact empty-dustbin optimum.
+        if component.size == 1 or np.all(incidence.sum(axis=1) <= 1.0):
+            selected_active[component] = True
+            continue
+        adjusted_utilities = active_utilities[component] - tie_break[component]
+        ordered_solution = _solve_ordered_hyperedge_component(
+            component_rows, adjusted_utilities
+        )
+        if ordered_solution is not None:
+            selected_active[component] = ordered_solution
+            continue
+        result = milp(
+            c=-adjusted_utilities,
+            integrality=np.ones(component.size, dtype=np.int8),
+            bounds=Bounds(0.0, 1.0),
+            constraints=LinearConstraint(
+                incidence, -np.inf, np.ones(len(component_endpoints))
+            ),
+            options={"disp": False},
+        )
+        if not result.success or result.x is None:
+            raise RuntimeError(f"unit-capacity route-packing MILP failed: {result.message}")
+        selected_active[component] = np.asarray(result.x > 0.5, dtype=bool)
+
+    selected[active] = selected_active
+    loads = np.zeros(len(endpoints), dtype=np.float64)
+    for route, chosen in zip(active_rows, selected_active):
+        if chosen:
+            for endpoint in route:
+                loads[endpoint_row[endpoint]] += 1.0
+    if np.any(loads > 1.0 + 1.0e-8):  # pragma: no cover - MILP contract
+        raise RuntimeError("unit-capacity route-packing solver violated an endpoint constraint")
+    return UnitCapacityPackingResult(
+        selected=selected,
+        objective=float(np.dot(values, selected.astype(np.float64))),
+        endpoints=endpoints,
+        endpoint_loads=np.rint(loads).astype(np.int64),
+    )
 
 
 def _validate_config(config: RouteAssignmentConfig) -> tuple[tuple[int, ...], tuple[tuple[int, int], ...]]:
@@ -246,26 +490,11 @@ def _select_disjoint_routes(routes: Sequence[Route]) -> tuple[Route, ...]:
     """Solve the endpoint-capacity set packing exactly for one small event."""
     if not routes:
         return ()
-    endpoints = sorted({endpoint for route in routes for endpoint in route.endpoints})
-    endpoint_row = {endpoint: row for row, endpoint in enumerate(endpoints)}
-    incidence = np.zeros((len(endpoints), len(routes)), dtype=np.float64)
-    for column, route in enumerate(routes):
-        for endpoint in route.endpoints:
-            incidence[endpoint_row[endpoint], column] = 1.0
-    utilities = np.asarray([route.utility for route in routes], dtype=np.float64)
-    # Only stabilises residual equal-objective ties after the continuity
-    # preference above; keep it bounded so it cannot outweigh that preference.
-    tie_break = np.linspace(0.0, 1.0e-12, len(routes), dtype=np.float64)
-    result = milp(
-        c=-(utilities - tie_break),
-        integrality=np.ones(len(routes), dtype=np.int8),
-        bounds=Bounds(0.0, 1.0),
-        constraints=LinearConstraint(incidence, -np.inf, np.ones(len(endpoints))),
-        options={"disp": False},
+    packing = solve_unit_capacity_route_packing(
+        [route.endpoints for route in routes],
+        [route.utility for route in routes],
     )
-    if not result.success or result.x is None:
-        raise RuntimeError(f"route assignment MILP failed: {result.message}")
-    return tuple(route for route, selected in zip(routes, result.x) if float(selected) > 0.5)
+    return tuple(route for route, selected in zip(routes, packing.selected) if bool(selected))
 
 
 def adjacent_route_assignment(

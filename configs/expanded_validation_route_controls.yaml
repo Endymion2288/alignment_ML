@@ -1,0 +1,16 @@
+# Validation-only comparison inputs for the completed expanded-corpus controls.
+# No test source, artifact, or path is declared here.
+expanded_validation_route_controls:
+  magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+  methods:
+    - label: Pairwise MLP + route solver
+      summary_csv: outputs/mc24_v3_expanded_trainval_mlp_route_validation_v1/validation_route_magnitude_summary.csv
+    - label: V2 BCE route query
+      summary_csv: outputs/mc24_v3_expanded_trainval_v2_direct_route_validation_v1/validation_route_magnitude_summary.csv
+      score_stream: v2_direct_route_query
+    - label: V3 exact margin
+      summary_csv: outputs/mc24_v3_expanded_trainval_v3_route_validation_v1/validation_route_magnitude_summary.csv
+      score_stream: v3_structured_route_utility
+    - label: V3 exact margin + soft control
+      summary_csv: outputs/mc24_v3_expanded_trainval_v3_soft_route_validation_v1/validation_route_magnitude_summary.csv
+      score_stream: v3_structured_route_utility

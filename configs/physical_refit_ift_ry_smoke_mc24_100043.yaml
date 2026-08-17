@@ -1,0 +1,132 @@
+# Physical IFT R_y smoke only.  Every point is an independently written
+# /Tracker/Align SQLite/POOL payload followed by cluster -> SegmentFitRefit ->
+# SegmentsRefit -> NtupleDumper -> mode-0 Acts propagation.  This file contains
+# no validation or sealed-test source and must never be used with a coordinate
+# payload surrogate.
+physical_refit_capture_scan:
+  scan_mode: ift_ry_rotation
+  input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+  nevents: 10
+  station_ids: [0, 1, 2, 3]
+
+  # Downstream 3ST is the fixed physical frame.  Only the IFT station may
+  # move in this study; every point repeats zero transforms for S1--S3 so the
+  # conditions payload itself carries the reference-frame contract.
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  condition_axis: ift_ry_mrad
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  rotation_points:
+    - name: ry_0
+      direction_trial: nominal
+      ry_mrad: 0.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p10
+      direction_trial: positive
+      ry_mrad: 10.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.010, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m10
+      direction_trial: negative
+      ry_mrad: -10.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.010, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p25
+      direction_trial: positive
+      ry_mrad: 25.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.025, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m25
+      direction_trial: negative
+      ry_mrad: -25.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.025, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p40
+      direction_trial: positive
+      ry_mrad: 40.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m40
+      direction_trial: negative
+      ry_mrad: -40.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p60
+      direction_trial: positive
+      ry_mrad: 60.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.060, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m60
+      direction_trial: negative
+      ry_mrad: -60.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.060, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Small joint physical trials test the interaction with the existing
+    # translation curriculum.  They are retained for association robustness,
+    # but excluded from the one-parameter R_y closure fit.
+    - name: ry_p40_dx_p1_dy_m1
+      direction_trial: joint_dxdy_a
+      ry_mrad: 40.0
+      station_transforms:
+        0: [1.0, -1.0, 0.0, 0.0, 0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_p40_dx_m1_dy_p1
+      direction_trial: joint_dxdy_b
+      ry_mrad: 40.0
+      station_transforms:
+        0: [-1.0, 1.0, 0.0, 0.0, 0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m40_dx_p1_dy_p1
+      direction_trial: joint_dxdy_c
+      ry_mrad: -40.0
+      station_transforms:
+        0: [1.0, 1.0, 0.0, 0.0, -0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: ry_m40_dx_m1_dy_m1
+      direction_trial: joint_dxdy_d
+      ry_mrad: -40.0
+      station_transforms:
+        0: [-1.0, -1.0, 0.0, 0.0, -0.040, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

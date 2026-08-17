@@ -6,6 +6,7 @@ from evaluation.physical_capture_scan import (
     collect_physical_capture_scan,
     write_capture_scan_artifacts,
 )
+from scripts.run_physical_refit_capture_scan import _build_plan, _has_ntuple_tree
 
 
 def _diagnostics() -> dict[str, object]:
@@ -64,3 +65,47 @@ def test_physical_capture_collection_records_real_refit_metrics(tmp_path):
     assert summary["by_magnitude"][0]["capture_fraction"] == 1.0
     assert (tmp_path / "capture_scan.png").is_file()
     assert (tmp_path / "capture_scan_station_pair_diagnostics.csv").is_file()
+
+
+def test_ift_ry_plan_requires_downstream_reference_and_explicit_global_transforms():
+    identity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    config = {
+        "scan_mode": "ift_ry_rotation",
+        "station_ids": [0, 1, 2, 3],
+        "reference_station_ids": [1, 2, 3],
+        "movable_station_ids": [0],
+        "condition_axis": "ift_ry_mrad",
+        "q_over_p_mode": 0,
+        "rotation_points": [
+            {
+                "name": "ry_0",
+                "ry_mrad": 0.0,
+                "station_transforms": {0: identity, 1: identity, 2: identity, 3: identity},
+            },
+            {
+                "name": "ry_p60",
+                "ry_mrad": 60.0,
+                "station_transforms": {
+                    0: [0.0, 0.0, 0.0, 0.0, 0.060, 0.0],
+                    1: identity,
+                    2: identity,
+                    3: identity,
+                },
+            },
+        ],
+    }
+
+    plan = _build_plan(config)
+
+    assert plan["scan_mode"] == "ift_ry_rotation"
+    assert plan["reference_station_ids"] == [1, 2, 3]
+    assert plan["movable_station_ids"] == [0]
+    assert plan["points"][1]["condition_value"] == 60.0
+    assert plan["points"][1]["injected_station_transforms"]["0"][4] == 0.060
+
+
+def test_refit_resume_rejects_partial_root_header(tmp_path):
+    partial = tmp_path / "interrupted.root"
+    partial.write_bytes(b"root\x00partial-output")
+
+    assert _has_ntuple_tree(partial) is False

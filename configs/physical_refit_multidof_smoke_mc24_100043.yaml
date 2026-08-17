@@ -1,0 +1,132 @@
+# Minimal real multi-DoF smoke.  All nine points independently write a full
+# /Tracker/Align conditions payload and rerun cluster -> segment refit ->
+# mode-0 Acts.  The two observed joint points are held out from the central
+# finite-difference Jacobian probes.
+physical_refit_capture_scan:
+  scan_mode: station_rigid_multidof
+  input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+  nevents: 10
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  condition_axis: ift_dx_dy_ry_joint_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_ry_mrad
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+
+  rigid_points:
+    - name: joint_nominal
+      point_role: nominal
+      direction_trial: nominal
+      alignment_parameter_values: {ift_dx_mm: 0.0, ift_dy_mm: 0.0, ift_ry_mrad: 0.0}
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_dx_mm_p
+      point_role: finite_difference_positive
+      finite_difference_for: ift_dx_mm
+      probe_sign: positive
+      direction_trial: fd_dx_positive
+      alignment_parameter_values: {ift_dx_mm: 0.5, ift_dy_mm: 0.0, ift_ry_mrad: 0.0}
+      station_transforms:
+        0: [0.5, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_dx_mm_m
+      point_role: finite_difference_negative
+      finite_difference_for: ift_dx_mm
+      probe_sign: negative
+      direction_trial: fd_dx_negative
+      alignment_parameter_values: {ift_dx_mm: -0.5, ift_dy_mm: 0.0, ift_ry_mrad: 0.0}
+      station_transforms:
+        0: [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_dy_mm_p
+      point_role: finite_difference_positive
+      finite_difference_for: ift_dy_mm
+      probe_sign: positive
+      direction_trial: fd_dy_positive
+      alignment_parameter_values: {ift_dx_mm: 0.0, ift_dy_mm: 0.5, ift_ry_mrad: 0.0}
+      station_transforms:
+        0: [0.0, 0.5, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_dy_mm_m
+      point_role: finite_difference_negative
+      finite_difference_for: ift_dy_mm
+      probe_sign: negative
+      direction_trial: fd_dy_negative
+      alignment_parameter_values: {ift_dx_mm: 0.0, ift_dy_mm: -0.5, ift_ry_mrad: 0.0}
+      station_transforms:
+        0: [0.0, -0.5, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_ry_mrad_p
+      point_role: finite_difference_positive
+      finite_difference_for: ift_ry_mrad
+      probe_sign: positive
+      direction_trial: fd_ry_positive
+      alignment_parameter_values: {ift_dx_mm: 0.0, ift_dy_mm: 0.0, ift_ry_mrad: 10.0}
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.010, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: fd_ift_ry_mrad_m
+      point_role: finite_difference_negative
+      finite_difference_for: ift_ry_mrad
+      probe_sign: negative
+      direction_trial: fd_ry_negative
+      alignment_parameter_values: {ift_dx_mm: 0.0, ift_dy_mm: 0.0, ift_ry_mrad: -10.0}
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, -0.010, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: closure_joint_a
+      point_role: held_out_closure
+      direction_trial: joint_positive
+      alignment_parameter_values: {ift_dx_mm: 2.0, ift_dy_mm: -1.5, ift_ry_mrad: 35.0}
+      station_transforms:
+        0: [2.0, -1.5, 0.0, 0.0, 0.035, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    - name: closure_joint_b
+      point_role: held_out_closure
+      direction_trial: joint_negative
+      alignment_parameter_values: {ift_dx_mm: -3.0, ift_dy_mm: 2.5, ift_ry_mrad: -45.0}
+      station_transforms:
+        0: [-3.0, 2.5, 0.0, 0.0, -0.045, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

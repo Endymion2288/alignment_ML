@@ -1,0 +1,83 @@
+# Frozen V2 BCE route-query control on the physical IFT R_y curriculum.
+base_config: physical_curriculum_ift_ry_expanded_trainval.yaml
+
+route_aware_transformer_v2:
+  input_contract:
+    allowed_splits: [train, validation]
+    forbidden_splits: [test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    condition_axis: ift_ry_mrad
+    curriculum_condition_magnitudes: [0.0, 10.0, 25.0, 40.0, 60.0]
+
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+    use_geometric_bias: true
+    use_chi2_physics_term: true
+    chi2_lambda: 1.0
+    chi2_tau: 2000000.0
+    use_local_edge_residual: true
+    route_hidden_dim: 128
+    route_pair_embedding_dim: 16
+    route_dropout: 0.10
+
+  training:
+    batch_size: 32
+    learning_rate: 0.0002
+    weight_decay: 0.0001
+    seed: 20260814
+    device: cuda
+    early_stopping_patience: 5
+    focal_gamma: 1.5
+    hard_negative_weight: 2.0
+    maximum_edge_positive_weight: 30.0
+    maximum_route_positive_weight: 80.0
+    edge_loss_weight: 1.0
+    route_consistency_weight: 1.0
+    one_to_one_competition_weight: 0.25
+    fake_route_penalty_weight: 0.25
+
+  curriculum_stages:
+    - name: through_10mrad
+      maximum_condition_magnitude: 10.0
+      epochs: 8
+    - name: through_40mrad
+      maximum_condition_magnitude: 40.0
+      epochs: 10
+    - name: through_60mrad
+      maximum_condition_magnitude: 60.0
+      epochs: 12
+
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    selection_events_per_magnitude: 16
+    full_validation_rerank_candidates: 24
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05

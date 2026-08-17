@@ -6,7 +6,11 @@ import numpy as np
 import pytest
 
 from alignment.closure import AlignmentMeasurements, select_measurements
-from alignment.payload import apply_station_coordinate_offsets, load_station_alignment_payload
+from alignment.payload import (
+    apply_station_coordinate_offsets,
+    load_station_alignment_payload,
+    load_station_rigid_alignment_payload,
+)
 
 
 def _manifest(tmp_path, constants: dict[str, list[float]]):
@@ -68,6 +72,24 @@ def test_payload_manifest_rejects_non_v1_transform_components(tmp_path):
         load_station_alignment_payload(manifest)
 
 
+def test_rigid_payload_loader_preserves_ry_for_physical_refit_only(tmp_path):
+    manifest = _manifest(
+        tmp_path,
+        {
+            "station:0": [1.0, -2.0, 0.0, 0.0, 0.060, 0.0],
+            "station:1": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        },
+    )
+
+    rigid = load_station_rigid_alignment_payload(manifest)
+
+    assert rigid.transform_for_station(0) == (1.0, -2.0, 0.0, 0.0, 0.06, 0.0)
+    assert rigid.rotation_for_station(0) == (0.0, 0.06, 0.0)
+    assert rigid.transform_for_station(3) == (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    with pytest.raises(ValueError, match="only station-level dx/dy"):
+        load_station_alignment_payload(manifest)
+
+
 def test_measurement_selection_keeps_pair_arrays_aligned():
     measurements = AlignmentMeasurements(
         source_station_id=np.asarray([0, 0, 1], dtype=np.int16),
@@ -82,4 +104,3 @@ def test_measurement_selection_keeps_pair_arrays_aligned():
     np.testing.assert_array_equal(selected.source_station_id, [0, 1])
     np.testing.assert_array_equal(selected.target_station_id, [1, 2])
     np.testing.assert_allclose(selected.nominal_residual_xy_mm, [[1.0, 2.0], [5.0, 6.0]])
-

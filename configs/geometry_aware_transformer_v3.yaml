@@ -1,0 +1,100 @@
+# V3 is deliberately standalone and contains no inherited test source or test
+# output path.  It preserves the verified physical candidate graph, the V2
+# route encoder, and the exact unit-capacity route backend.
+structured_assignment_v3:
+  input_contract:
+    allowed_splits: [train, validation]
+    forbidden_splits: [test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    curriculum_magnitudes_mm: [0.0, 0.1, 1.0, 5.0, 10.0, 50.0]
+
+  # This is the unchanged V1/V2 four-block 128-dimensional backbone.  V3
+  # changes supervision and route utility only; it does not deepen the model.
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+    use_geometric_bias: true
+    use_chi2_physics_term: true
+    chi2_lambda: 1.0
+    chi2_tau: 2000000.0
+    use_local_edge_residual: true
+    route_hidden_dim: 128
+    route_pair_embedding_dim: 16
+    route_dropout: 0.10
+
+  # Primary loss is the exact loss-augmented structured hinge.  Both
+  # independent edge BCE and independent route BCE remain disabled.  The
+  # optional capacity-normalized soft assignment is a labelled control and is
+  # disabled in the primary run.
+  training:
+    # The fixed V1/V2 backbone fits comfortably at batch 16 on the available
+    # GPU.  Structured inference remains per event inside the batch, so this
+    # changes throughput only, not the event-level objective or graph.
+    batch_size: 16
+    learning_rate: 0.0002
+    weight_decay: 0.0001
+    seed: 20260813
+    device: cuda
+    early_stopping_patience: 5
+    margin: 1.0
+    mixed_truth_penalty: 1.0
+    fake_endpoint_penalty: 1.5
+    hard_negative_penalty: 0.25
+    duplicate_truth_penalty: 1.0
+    endpoint_conflict_penalty: 0.50
+    soft_assignment_weight: 0.0
+    soft_assignment_temperature: 1.0
+    soft_assignment_iterations: 8
+    soft_assignment_dual_step: 0.50
+    soft_assignment_capacity_weight: 0.25
+
+  curriculum_stages:
+    - name: nominal_to_0p1mm
+      maximum_magnitude_mm: 0.1
+      epochs: 8
+    - name: through_5mm
+      maximum_magnitude_mm: 5.0
+      epochs: 10
+    - name: through_50mm
+      maximum_magnitude_mm: 50.0
+      epochs: 12
+
+  # Validation-only settings consumed by evaluate_structured_assignment_v3.py.
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing_with_v3_route_utility
+    threshold_grid: [0.001, 0.005, 0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50]
+    initial_thresholds:
+      0->1: 0.05
+      1->2: 0.05
+      2->3: 0.05
+    unmatched_penalties: [-1.0, -0.5, 0.0, 0.25, 0.5, 1.0]
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
+    selection_events_per_magnitude: 16
+    full_validation_rerank_candidates: 24
+    route_utility_temperatures: [0.50, 1.0, 2.0, 4.0]
+    complete_route_score_thresholds: [0.0]
+
+  capture_success:
+    minimum_complete_track_efficiency: 0.70
+    minimum_complete_track_purity: 0.95
+    maximum_track_fake_rate: 0.05
+
+  # The expanded-corpus comparison is frozen before any new test bank exists.
+  validation_controls: [mlp_retrained, v1_retrained, v2_retrained, v3_structured_margin]

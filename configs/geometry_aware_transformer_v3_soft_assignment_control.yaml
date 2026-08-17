@@ -1,0 +1,8 @@
+# Explicit V3 soft-assignment control.  It inherits no test sources; only the
+# primary loss weight changes, so validation can distinguish exact structured
+# ranking from a differentiable capacity-normalized surrogate.
+base_config: geometry_aware_transformer_v3.yaml
+
+structured_assignment_v3:
+  training:
+    soft_assignment_weight: 1.0

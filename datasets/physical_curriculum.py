@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -31,6 +31,37 @@ class CurriculumSample:
     physical_payload_manifest: Path
     synthetic_tracklets: Path
     field_candidates: Path
+    # Legacy translation corpora store only ``magnitude_mm``.  New physical
+    # corpora name the condition explicitly so a rotation can never be
+    # reported as a displacement in millimetres.
+    condition_axis: str = "translation_xy_mm"
+    condition_value: float | None = None
+    condition_magnitude: float | None = None
+    injected_station_transforms: Mapping[str, object] = field(default_factory=dict)
+    alignment_parameter_values: Mapping[str, object] = field(default_factory=dict)
+
+    @property
+    def curriculum_magnitude(self) -> float:
+        """Non-negative curriculum coordinate in the declared condition unit."""
+        return float(self.magnitude_mm if self.condition_magnitude is None else self.condition_magnitude)
+
+
+def uniform_condition_axis(samples: Sequence[CurriculumSample]) -> str:
+    """Require a single explicitly named physical condition axis per study."""
+    axes = {str(sample.condition_axis) for sample in samples}
+    if len(axes) != 1:
+        raise ValueError("a curriculum study cannot mix physical condition axes")
+    return next(iter(axes))
+
+
+def condition_axis_label(axis: str) -> str:
+    """Human-facing axis label for plots and tables, kept separate from IDs."""
+    labels = {
+        "translation_xy_mm": "injected translation magnitude [mm]",
+        "ift_ry_mrad": "injected IFT R_y [mrad]",
+        "ift_dx_dy_ry_joint_l2": "injected joint IFT transform severity [normalized]",
+    }
+    return labels.get(str(axis), f"injected {axis}")
 
 
 def _read_mapping(path: str | Path) -> tuple[Path, dict[str, Any]]:
@@ -134,15 +165,55 @@ def load_synthetic_curriculum_manifest(
             )
         if raw.get("physical_geometry_repropagation") is not True:
             raise ValueError(f"sample {source_id}/{payload_id} is not a physical refit")
+        condition_axis = str(raw.get("condition_axis", "translation_xy_mm"))
+        if not condition_axis:
+            raise ValueError(f"sample {source_id}/{payload_id} has an empty condition axis")
+        try:
+            raw_legacy_magnitude = raw.get("magnitude_mm")
+            raw_condition_magnitude = raw.get("condition_magnitude")
+            if raw_legacy_magnitude is None and raw_condition_magnitude is None:
+                raise KeyError("magnitude_mm or condition_magnitude")
+            magnitude_mm = float(
+                raw_legacy_magnitude
+                if raw_legacy_magnitude is not None
+                else raw_condition_magnitude
+            )
+            condition_value = float(raw.get("condition_value", magnitude_mm))
+            condition_magnitude = float(
+                raw_condition_magnitude
+                if raw_condition_magnitude is not None
+                else abs(condition_value)
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"sample {source_id}/{payload_id} has invalid condition metadata") from error
+        if condition_magnitude < 0.0:
+            raise ValueError(f"sample {source_id}/{payload_id} has a negative condition magnitude")
+        raw_transforms = raw.get("injected_station_transforms", {})
+        if not isinstance(raw_transforms, Mapping):
+            raise ValueError(f"sample {source_id}/{payload_id} has invalid station transforms")
+        raw_parameter_values = raw.get("alignment_parameter_values", {})
+        if not isinstance(raw_parameter_values, Mapping):
+            raise ValueError(f"sample {source_id}/{payload_id} has invalid alignment parameter values")
+        raw_offsets = raw.get("injected_offsets_xy_mm", {})
+        if not isinstance(raw_offsets, Mapping):
+            raise ValueError(f"sample {source_id}/{payload_id} has invalid translation offsets")
+        if condition_axis == "ift_ry_mrad" and not raw_transforms:
+            raise ValueError(
+                f"sample {source_id}/{payload_id} is an IFT R_y sample without station transforms"
+            )
+        if condition_axis == "ift_dx_dy_ry_joint_l2" and not raw_transforms:
+            raise ValueError(
+                f"sample {source_id}/{payload_id} is a joint rigid sample without station transforms"
+            )
         samples.append(
             CurriculumSample(
                 source_id=source_id,
                 source_ids=constituent_source_ids,
                 split=split,
                 payload_id=payload_id,
-                magnitude_mm=float(raw["magnitude_mm"]),
+                magnitude_mm=magnitude_mm,
                 direction_trial=str(raw["direction_trial"]),
-                injected_offsets_xy_mm=dict(raw["injected_offsets_xy_mm"]),
+                injected_offsets_xy_mm=dict(raw_offsets),
                 source_event_uids=tuple(uids),
                 physical_event_uids=tuple(physical_uids),
                 physical_tracklets=_require_path(raw, "physical_tracklets"),
@@ -150,6 +221,11 @@ def load_synthetic_curriculum_manifest(
                 physical_payload_manifest=_require_path(raw, "physical_payload_manifest"),
                 synthetic_tracklets=_require_path(raw, "synthetic_tracklets"),
                 field_candidates=_require_path(raw, "field_candidates"),
+                condition_axis=condition_axis,
+                condition_value=condition_value,
+                condition_magnitude=condition_magnitude,
+                injected_station_transforms=dict(raw_transforms),
+                alignment_parameter_values=dict(raw_parameter_values),
             )
         )
     if require_all_splits:

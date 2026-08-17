@@ -1,0 +1,139 @@
+# Rotation-only successor to the expanded V3 physical corpus.  Inherit the
+# exact source-file-disjoint train/validation list but replace its payload
+# semantics with an explicit IFT R_y physical bank.  The sealed test source is
+# absent from the parent and remains forbidden here.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+
+  refit:
+    nevents: 100
+    station_ids: [0, 1, 2, 3]
+    q_over_p_mode: 0
+    min_truth_match_fraction: 0.99
+    chi2_gate: 25.0
+    refinement_iterations: 1
+
+  # The downstream three stations define the fixed frame.  Each payload
+  # explicitly writes their identities and rotates only IFT/station 0.  No
+  # coordinate-level injection is permitted in this corpus.
+  rotation_curriculum:
+    scan_mode: ift_ry_rotation
+    condition_axis: ift_ry_mrad
+    reference_station_ids: [1, 2, 3]
+    movable_station_ids: [0]
+    rotation_points:
+      - name: ry_0
+        direction_trial: nominal
+        ry_mrad: 0.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p10
+        direction_trial: positive
+        ry_mrad: 10.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, 0.010, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m10
+        direction_trial: negative
+        ry_mrad: -10.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, -0.010, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p25
+        direction_trial: positive
+        ry_mrad: 25.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, 0.025, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m25
+        direction_trial: negative
+        ry_mrad: -25.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, -0.025, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p40
+        direction_trial: positive
+        ry_mrad: 40.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, 0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m40
+        direction_trial: negative
+        ry_mrad: -40.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, -0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p60
+        direction_trial: positive
+        ry_mrad: 60.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, 0.060, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m60
+        direction_trial: negative
+        ry_mrad: -60.0
+        station_transforms:
+          0: [0.0, 0.0, 0.0, 0.0, -0.060, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p40_dx_p1_dy_m1
+        direction_trial: joint_dxdy_a
+        ry_mrad: 40.0
+        station_transforms:
+          0: [1.0, -1.0, 0.0, 0.0, 0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_p40_dx_m1_dy_p1
+        direction_trial: joint_dxdy_b
+        ry_mrad: 40.0
+        station_transforms:
+          0: [-1.0, 1.0, 0.0, 0.0, 0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m40_dx_p1_dy_p1
+        direction_trial: joint_dxdy_c
+        ry_mrad: -40.0
+        station_transforms:
+          0: [1.0, 1.0, 0.0, 0.0, -0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      - name: ry_m40_dx_m1_dy_m1
+        direction_trial: joint_dxdy_d
+        ry_mrad: -40.0
+        station_transforms:
+          0: [-1.0, -1.0, 0.0, 0.0, -0.040, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+  # Synthetic overlay parameters are inherited unchanged.  The future
+  # rotation materializer will store condition_axis/value separately from the
+  # historical translation magnitude label.
+  synthetic_multitrack:
+    # Keep opposite R_y directions at one absolute angle on the same overlay
+    # stream, while including the condition axis in the seed identity.
+    overlay_seed_scope: condition_magnitude_shared_across_direction_trials

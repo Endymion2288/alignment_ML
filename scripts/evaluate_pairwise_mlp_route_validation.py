@@ -24,7 +24,11 @@ import yaml
 from baselines.field_chi2_matching import PAIR_FEATURE_SETS, pair_feature_names
 from baselines.mlp_pair_classifier import load_pair_classifier
 from baselines.route_assignment import RouteAssignmentConfig
-from datasets.physical_curriculum import CurriculumSample, load_synthetic_curriculum_manifest
+from datasets.physical_curriculum import (
+    CurriculumSample,
+    load_synthetic_curriculum_manifest,
+    uniform_condition_axis,
+)
 from scripts.config_loader import load_yaml_with_base
 from scripts.run_global_assignment_mlp_baseline import _apply_frozen_calibration_sets
 from training.curriculum_mlp import CandidateSet, build_candidate_sets, score_candidate_sets
@@ -171,7 +175,13 @@ def _trial_rows(
             {
                 "source_id": sample.source_id,
                 "payload_id": sample.payload_id,
-                "magnitude_mm": float(sample.magnitude_mm),
+                "condition_axis": sample.condition_axis,
+                "condition_value": float(
+                    sample.curriculum_magnitude
+                    if sample.condition_value is None
+                    else sample.condition_value
+                ),
+                "condition_magnitude": float(sample.curriculum_magnitude),
                 "direction_trial": sample.direction_trial,
                 "capture_success": success,
                 **dict(route),
@@ -181,7 +191,13 @@ def _trial_rows(
             {
                 "source_id": sample.source_id,
                 "payload_id": sample.payload_id,
-                "magnitude_mm": float(sample.magnitude_mm),
+                "condition_axis": sample.condition_axis,
+                "condition_value": float(
+                    sample.curriculum_magnitude
+                    if sample.condition_value is None
+                    else sample.condition_value
+                ),
+                "condition_magnitude": float(sample.curriculum_magnitude),
                 "direction_trial": sample.direction_trial,
                 "capture_success": success,
                 "evaluation": evaluation,
@@ -207,11 +223,12 @@ def _magnitude_rows(
         "track_fake_rate",
         "missing_station_recovery",
     )
-    for magnitude in sorted({float(sample.magnitude_mm) for sample in samples}):
+    condition_axis = uniform_condition_axis(samples)
+    for magnitude in sorted({float(sample.curriculum_magnitude) for sample in samples}):
         sample_keys = {
             _sample_key(sample)
             for sample in samples
-            if np.isclose(float(sample.magnitude_mm), magnitude)
+            if np.isclose(float(sample.curriculum_magnitude), magnitude)
         }
         selected = [
             index
@@ -228,10 +245,13 @@ def _magnitude_rows(
         if not isinstance(route, Mapping):
             raise RuntimeError("pooled route evaluation is malformed")
         magnitude_trials = [
-            trial for trial in trials if np.isclose(float(trial["magnitude_mm"]), magnitude)
+            trial
+            for trial in trials
+            if np.isclose(float(trial["condition_magnitude"]), magnitude)
         ]
         row: dict[str, object] = {
-            "magnitude_mm": magnitude,
+            "condition_axis": condition_axis,
+            "condition_magnitude": magnitude,
             "direction_trials": len(magnitude_trials),
             "capture_successes": int(sum(bool(trial["capture_success"]) for trial in magnitude_trials)),
             "capture_fraction": float(
@@ -312,10 +332,18 @@ def _validate_contract(
         raise ValueError("MLP route comparison requires mode-0 Acts propagation")
     if {sample.split for sample in samples} != {"validation"}:
         raise ValueError("MLP route comparison loaded a non-validation sample")
-    required = (0.0, 0.1, 1.0, 5.0, 10.0, 50.0)
-    observed = tuple(sorted({float(sample.magnitude_mm) for sample in samples}))
+    expected_axis = str(contract.get("condition_axis", "translation_xy_mm"))
+    declared = contract.get(
+        "curriculum_condition_magnitudes", contract.get("curriculum_magnitudes_mm")
+    )
+    if not isinstance(declared, (list, tuple)) or not declared:
+        raise ValueError("V2 input contract lacks physical condition magnitudes")
+    if uniform_condition_axis(samples) != expected_axis:
+        raise ValueError("validation physical curriculum condition axis differs from the V2 contract")
+    required = tuple(sorted(float(value) for value in declared))
+    observed = tuple(sorted({float(sample.curriculum_magnitude) for sample in samples}))
     if observed != required:
-        raise ValueError("validation physical curriculum is missing a required magnitude")
+        raise ValueError("validation physical curriculum is missing a required condition magnitude")
 
 
 def _artifact_feature_set(feature_names: tuple[str, ...]) -> str:
@@ -477,6 +505,7 @@ def main() -> None:
             "test_artifacts_opened": False,
             "physical_geometry_repropagation": True,
             "q_over_p_mode": 0,
+            "condition_axis": uniform_condition_axis(samples),
             "candidate_chi2_gate": None,
             "candidate_graph": "existing_mode0_acts_physical_candidates_all_six_station_pairs",
             "mlp_feature_set": feature_set,

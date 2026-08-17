@@ -5,11 +5,29 @@ from types import SimpleNamespace
 import numpy as np
 
 from scripts.run_global_assignment_mlp_baseline import (
+    _annotate_assignment_scan_row,
     _assignment_scan_gate_keys,
     _apply_frozen_calibration_sets,
     _calibrate_score_sets,
     _choose_candidate_gate,
 )
+
+
+def test_assignment_scan_rows_use_zero_only_for_nominal_selection():
+    nominal: dict[str, object] = {}
+    _annotate_assignment_scan_row(
+        nominal, condition_axis="ift_ry_mrad", selection_scope="nominal_only"
+    )
+    assert nominal == {"condition_axis": "ift_ry_mrad", "condition_magnitude": 0.0}
+
+    all_conditions: dict[str, object] = {"magnitude_mm": 50.0}
+    _annotate_assignment_scan_row(
+        all_conditions, condition_axis="ift_ry_mrad", selection_scope="all_magnitudes"
+    )
+    assert all_conditions == {
+        "condition_axis": "ift_ry_mrad",
+        "condition_scope": "all_configured_magnitudes",
+    }
 
 
 def test_assignment_scan_gate_mode_expands_only_when_explicitly_requested():

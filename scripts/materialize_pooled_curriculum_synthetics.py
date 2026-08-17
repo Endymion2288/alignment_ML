@@ -15,8 +15,10 @@ import json
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 import zlib
+
+import numpy as np
 
 from datasets.physical_curriculum import PHYSICAL_CORPUS_SCHEMA, SYNTHETIC_CORPUS_SCHEMA
 from datasets.pooled_physical import (
@@ -45,6 +47,66 @@ def _load_json(path: Path) -> dict[str, Any]:
     return dict(payload)
 
 
+def _load_resumable_synthetic_manifest(
+    path: Path,
+    physical_manifest: Path,
+) -> list[dict[str, object]]:
+    """Load prior samples only when they belong to the same physical corpus."""
+    with path.open(encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, Mapping) or payload.get("schema_version") != SYNTHETIC_CORPUS_SCHEMA:
+        raise ValueError("existing synthetic manifest has an unexpected schema")
+    previous_physical = Path(str(payload.get("physical_corpus_manifest", ""))).expanduser().resolve()
+    if previous_physical != physical_manifest.resolve():
+        raise ValueError("existing synthetic manifest belongs to a different physical corpus")
+    if payload.get("physical_geometry_repropagation") is not True or int(payload.get("q_over_p_mode", -1)) != 0:
+        raise ValueError("existing synthetic manifest violates the mode-0 physical contract")
+    raw_samples = payload.get("samples")
+    if not isinstance(raw_samples, list) or any(not isinstance(sample, Mapping) for sample in raw_samples):
+        raise ValueError("existing synthetic manifest has invalid samples")
+    return [dict(sample) for sample in raw_samples]
+
+
+def _merge_resumed_samples(
+    existing: Sequence[Mapping[str, object]],
+    generated: Sequence[Mapping[str, object]],
+    replaced_splits: set[str],
+) -> list[dict[str, object]]:
+    """Replace only materialized splits while preserving other valid splits.
+
+    This is what makes ``--split train`` followed by ``--split validation
+    --resume`` safe: the second invocation adds validation samples instead of
+    replacing the train-only manifest.
+    """
+    allowed = {"train", "validation", "test"}
+    if not replaced_splits or not replaced_splits <= allowed:
+        raise ValueError("resumed materialization has invalid replacement splits")
+    result = [dict(sample) for sample in existing if str(sample.get("split")) not in replaced_splits]
+    result.extend(dict(sample) for sample in generated)
+    identities: set[tuple[str, str]] = set()
+    for sample in result:
+        split = str(sample.get("split", ""))
+        payload_id = str(sample.get("payload_id", ""))
+        if split not in allowed or not payload_id:
+            raise ValueError("synthetic manifest sample has invalid split or payload ID")
+        identity = (split, payload_id)
+        if identity in identities:
+            raise ValueError(f"synthetic manifest has duplicate sample identity: {split}/{payload_id}")
+        identities.add(identity)
+    return sorted(result, key=lambda sample: (str(sample["split"]), str(sample["payload_id"])))
+
+
+def _sources_by_split_from_samples(samples: Sequence[Mapping[str, object]]) -> dict[str, list[str]]:
+    result: dict[str, set[str]] = {"train": set(), "validation": set(), "test": set()}
+    for sample in samples:
+        split = str(sample["split"])
+        source_ids = sample.get("source_ids", [sample.get("source_id")])
+        if not isinstance(source_ids, (list, tuple)):
+            raise ValueError("synthetic manifest sample has invalid source_ids")
+        result[split].update(str(source_id) for source_id in source_ids)
+    return {split: sorted(source_ids) for split, source_ids in result.items()}
+
+
 def _load_config(path: Path | None, physical: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     source = Path(str(physical["config_source"])).expanduser().resolve() if path is None else path
     supplied = load_yaml_with_base(source)
@@ -62,26 +124,56 @@ def _stable_seed(
     base: int,
     split: str,
     payload_id: str,
-    magnitude_mm: float,
-    scope: str,
+    condition_axis_or_magnitude: str | float,
+    condition_magnitude_or_scope: float | str,
+    scope: str | None = None,
 ) -> int:
     """Derive a deterministic overlay seed without touching physical states.
 
     The legacy ``payload`` scope gives every geometry payload an independent
     synthetic overlay.  A direction scan instead uses
     ``magnitude_shared_across_direction_trials`` so all directions at one
-    magnitude begin with the same source-track/fake RNG stream.  Any later
-    difference is then attributable to a real refit/Acts response or to a
-    geometry-dependent physical-fake acceptance, not a new arbitrary seed.
+    condition magnitude begin with the same source-track/fake RNG stream.
+    Any later difference is then attributable to a real refit/Acts response
+    or to a geometry-dependent physical-fake acceptance, not a new arbitrary
+    seed.  The condition axis is part of the seed identity, so a rotation is
+    never silently treated as a translation of the same numeric value.  The
+    alignment-iteration scope intentionally uses one stream across every
+    payload in an iteration bank: it lets truth-free selected routes be
+    intersected across the central point and physical finite-difference
+    probes.  It is only appropriate for a dedicated closed-loop bank, not for
+    independent curriculum augmentation samples.
     """
+    # Keep the five-argument translation contract used by already materialized
+    # curriculum manifests.  New callers pass an explicit condition axis so a
+    # 40 mm translation and a 40 mrad rotation cannot share an RNG stream.
+    legacy_translation_call = scope is None
+    if legacy_translation_call:
+        condition_axis = "translation_xy_mm"
+        condition_magnitude = float(condition_axis_or_magnitude)
+        scope = str(condition_magnitude_or_scope)
+    else:
+        condition_axis = str(condition_axis_or_magnitude)
+        condition_magnitude = float(condition_magnitude_or_scope)
+
     if scope == "payload":
         identity = f"pooled/{split}/{payload_id}"
-    elif scope == "magnitude_shared_across_direction_trials":
-        identity = f"pooled/{split}/magnitude/{float(magnitude_mm):.17g}"
+    elif scope in {
+        "magnitude_shared_across_direction_trials",
+        "condition_magnitude_shared_across_direction_trials",
+    }:
+        if legacy_translation_call:
+            identity = f"pooled/{split}/magnitude/{condition_magnitude:.17g}"
+        else:
+            identity = f"pooled/{split}/condition/{condition_axis}/{condition_magnitude:.17g}"
+    elif scope == "alignment_iteration_shared_across_payloads":
+        identity = f"pooled/{split}/alignment_iteration"
     else:
         raise ValueError(
-            "synthetic_multitrack.overlay_seed_scope must be 'payload' or "
-            "'magnitude_shared_across_direction_trials'"
+            "synthetic_multitrack.overlay_seed_scope must be 'payload', "
+            "'magnitude_shared_across_direction_trials', or "
+            "'condition_magnitude_shared_across_direction_trials', or "
+            "'alignment_iteration_shared_across_payloads'"
         )
     return int((base + zlib.crc32(identity.encode("utf-8"))) % (2**31 - 1))
 
@@ -91,11 +183,54 @@ def _write_json(path: Path, payload: Mapping[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _payload_signature(point: Mapping[str, Any]) -> tuple[float, str, str]:
+def _condition_metadata(point: Mapping[str, Any]) -> dict[str, object]:
+    """Read one explicit physical condition without unit relabelling."""
+    axis = str(point.get("condition_axis", "translation_xy_mm"))
+    if not axis:
+        raise ValueError("physical point has an empty condition_axis")
+    raw_magnitude = point.get("condition_magnitude", point.get("magnitude_mm"))
+    if raw_magnitude is None:
+        raise ValueError(f"physical point '{point.get('name')}' has no condition magnitude")
+    try:
+        magnitude = float(raw_magnitude)
+        value = float(point.get("condition_value", raw_magnitude))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"physical point '{point.get('name')}' has invalid condition metadata") from error
+    if not np.isfinite(magnitude) or magnitude < 0.0 or not np.isfinite(value):
+        raise ValueError(f"physical point '{point.get('name')}' has non-finite condition metadata")
+    transforms = point.get("injected_station_transforms", {})
+    offsets = point.get("injected_offsets_xy_mm", {})
+    parameter_values = point.get("alignment_parameter_values", {})
+    if (
+        not isinstance(transforms, Mapping)
+        or not isinstance(offsets, Mapping)
+        or not isinstance(parameter_values, Mapping)
+    ):
+        raise ValueError(f"physical point '{point.get('name')}' has invalid payload metadata")
+    if axis == "ift_ry_mrad" and not transforms:
+        raise ValueError(f"IFT R_y physical point '{point.get('name')}' lacks station transforms")
+    if axis == "ift_dx_dy_ry_joint_l2" and not transforms:
+        raise ValueError(f"joint rigid physical point '{point.get('name')}' lacks station transforms")
+    return {
+        "condition_axis": axis,
+        "condition_value": value,
+        "condition_magnitude": magnitude,
+        "injected_station_transforms": dict(transforms),
+        "injected_offsets_xy_mm": dict(offsets),
+        "alignment_parameter_values": dict(parameter_values),
+    }
+
+
+def _payload_signature(point: Mapping[str, Any]) -> tuple[str, float, float, str, str, str, str]:
+    condition = _condition_metadata(point)
     return (
-        float(point["magnitude_mm"]),
+        str(condition["condition_axis"]),
+        float(condition["condition_value"]),
+        float(condition["condition_magnitude"]),
         str(point["direction_trial"]),
-        json.dumps(point["injected_offsets_xy_mm"], sort_keys=True),
+        json.dumps(condition["injected_station_transforms"], sort_keys=True),
+        json.dumps(condition["injected_offsets_xy_mm"], sort_keys=True),
+        json.dumps(condition["alignment_parameter_values"], sort_keys=True),
     )
 
 
@@ -175,22 +310,38 @@ def main() -> None:
     if not bool(synthetic.get("scale_events_by_pool_sources", True)):
         raise ValueError("pooled materializer requires scale_events_by_pool_sources=true")
     overlay_seed_scope = str(synthetic.get("overlay_seed_scope", "payload"))
-    if overlay_seed_scope not in {"payload", "magnitude_shared_across_direction_trials"}:
+    if overlay_seed_scope not in {
+        "payload",
+        "magnitude_shared_across_direction_trials",
+        "condition_magnitude_shared_across_direction_trials",
+        "alignment_iteration_shared_across_payloads",
+    }:
         raise ValueError(
-            "synthetic_multitrack.overlay_seed_scope must be 'payload' or "
-            "'magnitude_shared_across_direction_trials'"
+            "synthetic_multitrack.overlay_seed_scope must be 'payload', "
+            "'magnitude_shared_across_direction_trials', or "
+            "'condition_magnitude_shared_across_direction_trials', or "
+            "'alignment_iteration_shared_across_payloads'"
         )
     output_root = Path(args.output_dir).expanduser().resolve()
     if output_root.exists() and any(output_root.iterdir()) and not args.resume:
         raise FileExistsError("refusing to overwrite a non-empty pooled synthetic output")
     output_root.mkdir(parents=True, exist_ok=True)
     selected_splits = None if args.split is None else set(args.split)
+    physical_allowed_splits = {str(split) for split in physical.get("allowed_splits", ("train", "validation", "test"))}
+    if selected_splits is not None and not selected_splits <= physical_allowed_splits:
+        disallowed = sorted(selected_splits - physical_allowed_splits)
+        raise ValueError("selected split is excluded by the physical corpus: " + ", ".join(disallowed))
+    manifest_path = output_root / "synthetic_corpus_manifest.json"
+    previous_samples: list[dict[str, object]] = []
+    if args.resume and manifest_path.is_file():
+        previous_samples = _load_resumable_synthetic_manifest(manifest_path, physical_path)
     groups, sources_by_split = _groups(physical, selected_splits=selected_splits)
     if not groups:
         raise ValueError("no physical payload groups remain after split selection")
     samples: list[dict[str, object]] = []
     for group_index, ((split, payload_id), members) in enumerate(sorted(groups.items())):
         point = members[0]["point"]
+        condition = _condition_metadata(point)
         source_ids = sorted(str(member["source"]["source_id"]) for member in members)
         sample_root = output_root / "samples" / split / payload_id
         pooled_tracklets = sample_root / "pooled_physical_tracklets.root"
@@ -237,14 +388,21 @@ def main() -> None:
             "split": split,
             "payload_id": payload_id,
             "source_ids": source_ids,
-            "magnitude_mm": float(point["magnitude_mm"]),
+            "condition_axis": condition["condition_axis"],
+            "condition_value": condition["condition_value"],
+            "condition_magnitude": condition["condition_magnitude"],
             "direction_trial": str(point["direction_trial"]),
-            "injected_offsets_xy_mm": dict(point["injected_offsets_xy_mm"]),
+            "injected_station_transforms": condition["injected_station_transforms"],
+            "injected_offsets_xy_mm": condition["injected_offsets_xy_mm"],
+            "alignment_parameter_values": condition["alignment_parameter_values"],
             "origin_namespaces": origin_namespaces,
             "physical_geometry_repropagation": True,
             "q_over_p_mode": 0,
             "overlay_seed_scope": overlay_seed_scope,
         }
+        if str(condition["condition_axis"]) == "translation_xy_mm":
+            # Read-only compatibility for historical translation consumers.
+            descriptor["magnitude_mm"] = float(condition["condition_magnitude"])
         if not (args.resume and pooled_tracklets.is_file()):
             write_pooled_tracklets_root(all_events, pooled_tracklets, descriptor)
         if not (args.resume and pooled_propagations.is_file()):
@@ -256,7 +414,8 @@ def main() -> None:
             int(synthetic["seed"]),
             split,
             payload_id,
-            float(point["magnitude_mm"]),
+            str(condition["condition_axis"]),
+            float(condition["condition_magnitude"]),
             overlay_seed_scope,
         )
         if not (args.resume and synthetic_tracklets.is_file()):
@@ -340,9 +499,13 @@ def main() -> None:
                 "split": split,
                 "payload_id": payload_id,
                 "point_name": str(point["name"]),
-                "magnitude_mm": float(point["magnitude_mm"]),
+                "condition_axis": condition["condition_axis"],
+                "condition_value": condition["condition_value"],
+                "condition_magnitude": condition["condition_magnitude"],
                 "direction_trial": str(point["direction_trial"]),
-                "injected_offsets_xy_mm": dict(point["injected_offsets_xy_mm"]),
+                "injected_station_transforms": condition["injected_station_transforms"],
+                "injected_offsets_xy_mm": condition["injected_offsets_xy_mm"],
+                "alignment_parameter_values": condition["alignment_parameter_values"],
                 "source_event_uids": source_event_uids,
                 "physical_event_uids": sorted(physical_event_uids),
                 "physical_tracklets": str(pooled_tracklets),
@@ -355,6 +518,10 @@ def main() -> None:
                 "origin_namespace_descriptor": str(descriptor_path),
             }
         )
+        if str(condition["condition_axis"]) == "translation_xy_mm":
+            samples[-1]["magnitude_mm"] = float(condition["condition_magnitude"])
+    replaced_splits = {str(sample["split"]) for sample in samples}
+    final_samples = _merge_resumed_samples(previous_samples, samples, replaced_splits)
     manifest = {
         "schema_version": SYNTHETIC_CORPUS_SCHEMA,
         "created_utc": datetime.now(timezone.utc).isoformat(),
@@ -364,17 +531,26 @@ def main() -> None:
         "source_event_uid_convention": physical["source_event_uid_convention"],
         "q_over_p_mode": 0,
         "source_pooling": "within_split_same_payload",
-        "sources_by_split": {key: sorted(value) for key, value in sources_by_split.items()},
+        "sources_by_split": _sources_by_split_from_samples(final_samples),
         "materialized_splits": sorted(
-            {str(sample["split"]) for sample in samples}
+            {str(sample["split"]) for sample in final_samples}
         ),
         "synthetic_multitrack": synthetic,
         "field_candidate_export": field,
-        "samples": samples,
+        "condition_axes": sorted({str(sample.get("condition_axis", "translation_xy_mm")) for sample in final_samples}),
+        "samples": final_samples,
     }
-    manifest_path = output_root / "synthetic_corpus_manifest.json"
     _write_json(manifest_path, manifest)
-    print(json.dumps({"manifest": str(manifest_path), "samples": len(samples)}, indent=2))
+    print(
+        json.dumps(
+            {
+                "manifest": str(manifest_path),
+                "samples_generated_this_run": len(samples),
+                "samples_in_manifest": len(final_samples),
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

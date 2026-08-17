@@ -1,0 +1,15 @@
+# Standalone expanded-corpus no-multistation-context control.  The primary
+# geometry-aware configuration has exactly one predeclared chi2 candidate;
+# spell it out here so this ablation can be reproduced independently without
+# retraining the already completed full-context checkpoint merely to inherit
+# a value.  No data, architecture size, graph, or validation grid changes.
+base_config: geometry_aware_transformer_v1_expanded_control.yaml
+
+geometry_aware_transformer_v1:
+  ablations:
+    geometry_aware_no_multistation_context:
+      inherit_chi2_hyperparameters_from: null
+      chi2_hyperparameter_candidates:
+        - label: lambda_1_tau_2000k_predeclared
+          chi2_lambda: 1.0
+          chi2_tau: 2000000.0
