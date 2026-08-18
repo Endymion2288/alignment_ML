@@ -66,7 +66,12 @@ def _torch() -> Any:
 
 def _device(torch: Any, requested: str) -> Any:
     if requested == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not torch.cuda.is_available():
+            raise ValueError(
+                "device 'auto' requires CUDA for model training and inference; "
+                "pass an explicit 'cpu' only for unit tests or non-model tools"
+            )
+        return torch.device("cuda")
     device = torch.device(requested)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise ValueError("a CUDA device was requested but CUDA is unavailable")

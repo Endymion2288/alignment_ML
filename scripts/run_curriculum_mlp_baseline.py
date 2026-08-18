@@ -495,7 +495,24 @@ def main() -> None:
             "the validation-only calibration and threshold scan are recomputed"
         ),
     )
+    parser.add_argument(
+        "--allow-sealed-test",
+        action="store_true",
+        help=(
+            "permit this legacy pre-seal evaluation tool to open the sealed test "
+            "split; only for reproducing a historical evaluation, never for model "
+            "selection"
+        ),
+    )
     args = parser.parse_args()
+    if not args.allow_sealed_test:
+        raise ValueError(
+            "run_curriculum_mlp_baseline is a legacy pre-seal evaluation tool whose "
+            "metrics are computed on the sealed test split; pass --allow-sealed-test "
+            "only to reproduce a historical evaluation (never for model selection), "
+            "or use scripts/run_frozen_route_level_scan.py / "
+            "scripts/run_frozen_geometry_aware_transformer_v1_scan.py"
+        )
     manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
     config_path = Path(args.config).expanduser().resolve()
     root_config, config = _load_config(config_path)

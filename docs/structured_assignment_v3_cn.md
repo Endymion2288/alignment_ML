@@ -2,7 +2,7 @@
 
 ## 当前状态与边界
 
-V3 已实现为只允许 train/validation 的研究假设。扩展后的真实物理语料已经完成，但 V3 尚未在其上完成训练和评估；因此本记录只给出已完成 control 的结果，不给出 V3 性能结论。
+V3 已作为只允许 train/validation 的研究假设，在完成的扩展物理语料上完成训练与评估。结构化 loss-augmented 目标在所有 validation magnitude 上都没有 capture（`v3_structured_route_utility` 流 `capture_successes=0`，包括 nominal 点），且未超过冻结的 pairwise route 控制；V3 因此作为已记录的负结果暂停。本记录保留该假设、精确 oracle/surrogate 机制，以及 `outputs/mc24_v3_expanded_trainval_v3_route_validation_v1/` 下的 validation 证据。
 
 V1 test source 继续永久封存。V3 的配置、训练、calibration、threshold 选择和物理 source production 都显式排除 `test`；不会打开 V1 test event 或 artifact，也不创建新的 test bank。
 

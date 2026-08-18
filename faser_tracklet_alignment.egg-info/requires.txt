@@ -1,5 +1,0 @@
-awkward>=2
-matplotlib>=3
-numpy>=1.23
-PyYAML>=6
-uproot>=5

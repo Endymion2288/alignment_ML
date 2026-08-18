@@ -56,12 +56,21 @@ The V1 test source remains sealed and no new final test bank has been made;
 see the V2 study document for the mechanism diagnosis and reproducible
 validation contract.
 
-Geometry-Aware Transformer V3 is now implemented as a train/validation-only
-structured global-assignment hypothesis. It preserves the physical candidate
-graph, the four-block route encoder, and unit-capacity solver, but trains
-against the strongest loss-augmented event-level competing assignment instead
-of independent edge/route BCE. Its enlarged physical corpus is being produced;
-there is not yet a V3 validation result or a new test bank.
+Geometry-Aware Transformer V3 was trained and validated as a
+train/validation-only structured global-assignment hypothesis on the completed
+expanded physical corpus (994 train / 796 validation events, source-file
+disjoint). The structured loss-augmented objective did not beat the frozen
+pairwise route control on validation, so the V3 line is suspended as a
+documented negative result; no new test bank was opened.
+
+The IFT R_y physical-rotation study closes the rotational leg of the chain:
+real `/Tracker/Align` rotation payloads refit through the same physical chain,
+and a local alignment step recovers injected +/-60 mrad IFT rotations to better
+than 1 mrad. The frozen MLP/V1/V2 route controls keep their validation primary
+gates out to 60 mrad, so R_y alone is not the association bottleneck at that
+scale. The current mainline is a multi-DoF (dx, dy, R_y) global alignment loop
+on a multi-source iteration-0 physical bank; read the multi-DoF loop document
+and the project audit before starting new work.
 
 ```bash
 cd /eos/home-x/xcheng/FASER
@@ -129,6 +138,10 @@ contract and validation limits are linked below.
 - [Geometry-Aware Transformer V2 mechanism diagnosis](docs/geometry_aware_transformer_v2_diagnostics.md)
 - [Geometry-Aware Transformer V2 route-aware validation study](docs/geometry_aware_transformer_v2.md)
 - [Geometry-Aware Transformer V3 structured global-assignment study](docs/structured_assignment_v3.md)
+- [Multi-direction route-level physical scan](docs/multidirection_route_level_physical_scan.md)
+- [IFT R_y physical rotation study](docs/ift_ry_physical_rotation.md)
+- [Multi-DoF global alignment loop](docs/global_alignment_multidof_loop.md)
+- [Project audit and next-stage plan](docs/project_audit_and_next_plan.md)
 - [Chinese input schema and exporter contract](docs/tracklet_export_contract_cn.md)
 - [Chinese data audit](docs/data_audit_cn.md)
 - [Chinese baseline validation](docs/baseline_validation_cn.md)
@@ -145,4 +158,8 @@ contract and validation limits are linked below.
 - [Chinese Geometry-Aware Transformer V2 mechanism diagnosis](docs/geometry_aware_transformer_v2_diagnostics_cn.md)
 - [Chinese Geometry-Aware Transformer V2 route-aware validation study](docs/geometry_aware_transformer_v2_cn.md)
 - [Chinese Geometry-Aware Transformer V3 structured global-assignment study](docs/structured_assignment_v3_cn.md)
+- [Chinese multi-direction route-level physical scan](docs/multidirection_route_level_physical_scan_cn.md)
+- [Chinese IFT R_y physical rotation study](docs/ift_ry_physical_rotation_cn.md)
+- [Chinese multi-DoF global alignment loop](docs/global_alignment_multidof_loop_cn.md)
+- [Chinese project audit and next-stage plan](docs/project_audit_and_next_plan_cn.md)
 - [Chinese README](README_cn.md)

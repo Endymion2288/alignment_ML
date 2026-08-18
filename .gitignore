@@ -2,7 +2,12 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+*.egg-info/
 data/*.root
 outputs/*
 !outputs/.gitkeep
+
+# Kerberos credential caches must never be tracked
+xcheng.cc
+krb5cc_*
 

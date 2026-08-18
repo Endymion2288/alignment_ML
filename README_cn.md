@@ -64,10 +64,15 @@ point。当前 route context 回退到与 edge-only control 完全相同的解�
 仍然可用。V1 test source 继续封存，也没有生成新的 final test bank；机制诊断和可复现 validation
 contract 见 V2 文档。
 
-Geometry-Aware Transformer V3 已实现为只允许 train/validation 的结构化全局指派假设。它保留真实
-candidate graph、四层 route encoder 与 unit-capacity solver，但训练时直接比较 loss-augmented 的 event-level
-最强竞争 assignment，而不再使用独立 edge/route BCE。扩展物理语料正在生产中，尚无 V3 validation 结果，也
-没有新的 test bank。
+Geometry-Aware Transformer V3 已作为只允许 train/validation 的结构化全局指派假设，在完成的扩展物理语料
+（994 train / 796 validation events，源文件级互斥）上完成训练与验证。结构化 loss-augmented 目标在
+validation 上没有超过冻结的 pairwise route 控制，V3 路线作为已记录的负结果暂停；没有打开新的 test bank。
+
+IFT R_y 真实转动研究闭合了链路的转动环节：真实 `/Tracker/Align` 转动 payload 经由同一物理链路 refit，
+局部 alignment step 以优于 1 mrad 的误差恢复注入的 ±60 mrad IFT 转动。冻结的 MLP/V1/V2 route 控制在
+60 mrad 以内保持 validation primary gate，因此单独的 R_y 在该尺度下不是关联瓶颈。当前主线是
+multi-DoF（dx、dy、R_y）全局 alignment 闭环，基于多源 iteration-0 物理库；开始新工作前请先阅读
+multi-DoF loop 文档与项目审查报告。
 
 ```bash
 cd /eos/home-x/xcheng/FASER
@@ -129,3 +134,11 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [Geometry-Aware Transformer V2 route-aware 验证研究（中文）](docs/geometry_aware_transformer_v2_cn.md)
 - [Geometry-Aware Transformer V3 结构化全局指派研究（英文）](docs/structured_assignment_v3.md)
 - [Geometry-Aware Transformer V3 结构化全局指派研究（中文）](docs/structured_assignment_v3_cn.md)
+- [多方向 route-level 物理扫描（英文）](docs/multidirection_route_level_physical_scan.md)
+- [多方向 route-level 物理扫描（中文）](docs/multidirection_route_level_physical_scan_cn.md)
+- [IFT R_y 真实转动研究（英文）](docs/ift_ry_physical_rotation.md)
+- [IFT R_y 真实转动研究（中文）](docs/ift_ry_physical_rotation_cn.md)
+- [multi-DoF 全局 alignment 闭环（英文）](docs/global_alignment_multidof_loop.md)
+- [multi-DoF 全局 alignment 闭环（中文）](docs/global_alignment_multidof_loop_cn.md)
+- [项目审查与下一阶段计划（英文）](docs/project_audit_and_next_plan.md)
+- [项目审查与下一阶段计划（中文）](docs/project_audit_and_next_plan_cn.md)

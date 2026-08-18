@@ -349,3 +349,21 @@ def test_station_pair_platt_calibration_round_trip_is_monotonic_and_frozen():
         np.testing.assert_allclose(first, second)
         assert np.all((first >= 0.0) & (first <= 1.0))
         assert first[np.argmax(raw[0])] > first[np.argmin(raw[0])]
+
+
+def test_resolve_device_auto_fails_loudly_without_cuda(monkeypatch):
+    from training.geometry_aware_transformer import resolve_device
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(ValueError, match="requires CUDA"):
+        resolve_device("auto")
+    assert resolve_device("cpu").type == "cpu"
+
+
+def test_mlp_device_auto_fails_loudly_without_cuda(monkeypatch):
+    from baselines.mlp_pair_classifier import _device
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(ValueError, match="requires CUDA"):
+        _device(torch, "auto")
+    assert _device(torch, "cpu").type == "cpu"

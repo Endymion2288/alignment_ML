@@ -156,7 +156,12 @@ class TransformerArtifact:
 def resolve_device(requested: str) -> torch.device:
     """Resolve the declared CPU/GPU device without silently changing a request."""
     if requested == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not torch.cuda.is_available():
+            raise ValueError(
+                "device 'auto' requires CUDA for model training and inference; "
+                "pass an explicit 'cpu' only for unit tests or non-model tools"
+            )
+        return torch.device("cuda")
     device = torch.device(requested)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise ValueError("a CUDA device was requested but CUDA is unavailable")

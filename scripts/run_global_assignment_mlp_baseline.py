@@ -707,6 +707,14 @@ def main() -> None:
         help="train and select on train/validation only; never materialize test candidates",
     )
     parser.add_argument(
+        "--allow-sealed-test",
+        action="store_true",
+        help=(
+            "permit this legacy entry point to open the sealed test split; only for "
+            "reproducing a historical pre-seal evaluation, never for model selection"
+        ),
+    )
+    parser.add_argument(
         "--checkpoint",
         default=None,
         help=(
@@ -718,15 +726,16 @@ def main() -> None:
 
     config_path = Path(args.config).expanduser().resolve()
     root, mlp, assignment = _load_config(config_path)
-    if args.validation_only:
+    test_permitted = bool(args.allow_sealed_test) and not args.validation_only
+    if not test_permitted:
         declared = root.get("allowed_splits")
         if declared is not None and tuple(str(value) for value in declared) != ("train", "validation"):
-            raise ValueError("validation-only MLP control must allow exactly train and validation")
+            raise ValueError("test-forbidding runs must allow exactly train and validation")
         forbidden = {str(value) for value in root.get("forbidden_splits", ())}
         if forbidden and "test" not in forbidden:
-            raise ValueError("validation-only MLP control must explicitly forbid test")
+            raise ValueError("test-forbidding runs must explicitly forbid test")
     manifest_path, samples, manifest = _load_manifest_for_scope(
-        args.synthetic_manifest, validation_only=bool(args.validation_only)
+        args.synthetic_manifest, validation_only=not test_permitted
     )
     if int(manifest.get("q_over_p_mode", -1)) != 0:
         raise ValueError("global-assignment baseline supports only physical mode-0 propagation")
@@ -760,10 +769,11 @@ def main() -> None:
             "condition_axis": condition_axis,
             "physical_geometry_repropagation": True,
             "model_family": "pairwise_mlp_plus_global_assignment_only",
-            "validation_only": bool(args.validation_only),
+            "validation_only": not test_permitted,
+            "sealed_test_permitted": test_permitted,
             "loaded_event_splits": sorted({str(sample.split) for sample in samples}),
-            "forbidden_splits": ["test"] if args.validation_only else [],
-            "test_events_loaded": False if args.validation_only else None,
+            "forbidden_splits": [] if test_permitted else ["test"],
+            "test_events_loaded": False if not test_permitted else None,
             "reused_checkpoint": (
                 None if args.checkpoint is None else str(Path(args.checkpoint).expanduser().resolve())
             ),
@@ -1214,11 +1224,12 @@ def main() -> None:
 
     # Test candidates and scores are materialised only after every candidate
     # gate, calibration temperature and assignment hyperparameter above is
-    # fixed on validation.  --validation-only never opens a test ROOT file.
+    # fixed on validation.  Without --allow-sealed-test the loader never
+    # resolves a test path, so no test ROOT file can be opened here.
     candidate_rows: list[dict[str, object]] = []
     summary_rows: list[dict[str, object]] = []
     pair_rows: list[dict[str, object]] = []
-    if not args.validation_only and has_validation_operating_point:
+    if test_permitted and has_validation_operating_point:
         test_sets = build_candidate_sets(
             test_samples, station_pairs, chi2_gate=None, feature_set=feature_set
         )
@@ -1308,14 +1319,14 @@ def main() -> None:
             "validation_operating_points": selections,
             "validation_quality_diagnostic_operating_points": quality_diagnostic_selections,
             "primary_validation_operating_point": primary,
-            "test_opened": bool(not args.validation_only and has_validation_operating_point),
-            "test_events_loaded": bool(not args.validation_only and has_validation_operating_point),
+            "test_opened": bool(test_permitted and has_validation_operating_point),
+            "test_events_loaded": bool(test_permitted and has_validation_operating_point),
             "test_withheld_reason": (
-                "validation_only"
-                if args.validation_only
+                None
+                if test_permitted and has_validation_operating_point
                 else (
-                    None
-                    if has_validation_operating_point
+                    "sealed_test_not_permitted"
+                    if not test_permitted
                     else "no_validation_operating_point_satisfies_primary_constraints"
                 )
             ),
@@ -1332,7 +1343,7 @@ def main() -> None:
                 "validation_operating_methods": [
                     method for method, selected in selections.items() if selected is not None
                 ],
-                "test_opened": bool(not args.validation_only and has_validation_operating_point),
+                "test_opened": bool(test_permitted and has_validation_operating_point),
                 "test_evaluated_methods": sorted({row["assignment_method"] for row in summary_rows}),
             },
             indent=2,

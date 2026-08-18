@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import json
+import sys
+
+import pytest
 
 from datasets.physical_curriculum import SYNTHETIC_CORPUS_SCHEMA
 from scripts.run_global_assignment_mlp_baseline import _load_manifest_for_scope
+from scripts.run_station_pair_threshold_baseline import (
+    _load_manifest_for_scope as _station_pair_load_manifest_for_scope,
+)
 from scripts.refreeze_transformer_validation_operating_point import (
     DEFAULT_ROUTE_SELECTION_POLICY,
     _validate_manifest_contract,
@@ -76,6 +82,70 @@ def test_v1_reference_audit_never_resolves_a_sealed_test_path():
     result = _reference_artifacts({"frozen_route_test": "does/not/exist"})
 
     assert result == {"frozen_route_test": {"excluded": True, "reason": "sealed_test_boundary"}}
+
+
+def _three_split_manifest(tmp_path) -> object:
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": SYNTHETIC_CORPUS_SCHEMA,
+                "physical_geometry_repropagation": True,
+                "q_over_p_mode": 0,
+                "samples": [
+                    _sample(tmp_path, "train", "source_train", existing=True),
+                    _sample(tmp_path, "validation", "source_validation", existing=True),
+                    _sample(tmp_path, "test", "sealed_test", existing=False),
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return manifest
+
+
+def test_station_pair_loader_defaults_to_the_sealed_test_boundary(tmp_path):
+    manifest = _three_split_manifest(tmp_path)
+
+    _, samples, _ = _station_pair_load_manifest_for_scope(manifest, evaluate_test=False)
+
+    assert {sample.split for sample in samples} == {"train", "validation"}
+
+
+def test_station_pair_loader_resolves_test_only_with_evaluate_test(tmp_path):
+    manifest = _three_split_manifest(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="sealed_test"):
+        _station_pair_load_manifest_for_scope(manifest, evaluate_test=True)
+
+
+def test_global_assignment_loader_forbids_test_unless_explicitly_permitted(tmp_path):
+    manifest = _three_split_manifest(tmp_path)
+
+    _, samples, _ = _load_manifest_for_scope(manifest, validation_only=True)
+
+    assert {sample.split for sample in samples} == {"train", "validation"}
+    with pytest.raises(FileNotFoundError, match="sealed_test"):
+        _load_manifest_for_scope(manifest, validation_only=False)
+
+
+def test_curriculum_mlp_baseline_refuses_the_sealed_test_by_default(tmp_path, monkeypatch):
+    from scripts.run_curriculum_mlp_baseline import main as curriculum_main
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_curriculum_mlp_baseline.py",
+            "--synthetic-manifest",
+            str(tmp_path / "manifest.json"),
+            "--output-dir",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="sealed test"):
+        curriculum_main()
 
 
 def test_validation_refreeze_contract_accepts_a_train_validation_only_corpus(tmp_path):

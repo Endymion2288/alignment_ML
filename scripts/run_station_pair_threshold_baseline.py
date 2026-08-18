@@ -48,6 +48,23 @@ from training.station_pair_thresholds import (
 )
 
 
+def _load_manifest_for_scope(
+    manifest_path: str | Path, *, evaluate_test: bool
+) -> tuple[Path, list[CurriculumSample], Mapping[str, object]]:
+    """Load only the assets permitted by the declared execution scope.
+
+    Without ``--evaluate-test`` the sealed test split's paths and event assets
+    are never resolved by this legacy entry point.
+    """
+    if evaluate_test:
+        return load_synthetic_curriculum_manifest(manifest_path)
+    return load_synthetic_curriculum_manifest(
+        manifest_path,
+        require_all_splits=False,
+        allowed_splits=("train", "validation"),
+    )
+
+
 def _select_magnitude(
     sets: Sequence[object], scores: Sequence[np.ndarray], magnitude: float
 ) -> tuple[list[object], list[np.ndarray]]:
@@ -384,11 +401,16 @@ def main() -> None:
     parser.add_argument(
         "--evaluate-test",
         action="store_true",
-        help="open the sealed test split only after this validation search meets the primary point",
+        help=(
+            "open the sealed test split only after this validation search meets the "
+            "primary point; legacy pre-seal evaluation path, never for model selection"
+        ),
     )
     args = parser.parse_args()
 
-    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
+    manifest_path, samples, manifest = _load_manifest_for_scope(
+        args.synthetic_manifest, evaluate_test=bool(args.evaluate_test)
+    )
     config_path = Path(args.config).expanduser().resolve()
     root, mlp, assignment = _load_config(config_path)
     search_config_raw = root.get("station_pair_threshold_baseline")

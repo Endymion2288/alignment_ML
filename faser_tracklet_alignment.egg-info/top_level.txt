@@ -1,8 +1,0 @@
-alignment
-baselines
-datasets
-evaluation
-geometry
-models
-scripts
-training

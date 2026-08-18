@@ -2,7 +2,7 @@
 
 ## Status and Boundary
 
-V3 is an implemented train/validation-only hypothesis. The expanded physical corpus is complete, but V3 has not yet been trained or assessed on it; this record therefore contains control results where available, not a V3 performance claim.
+V3 was trained and assessed on the completed expanded physical corpus as a train/validation-only hypothesis. The structured loss-augmented objective did not capture at any validation magnitude (`capture_successes=0` for the `v3_structured_route_utility` stream, including the nominal point) and did not beat the frozen pairwise route control; V3 is therefore suspended as a documented negative result. This record preserves the hypothesis, the exact oracle/surrogate machinery, and the validation evidence under `outputs/mc24_v3_expanded_trainval_v3_route_validation_v1/`.
 
 The V1 test sources remain permanently sealed. V3 configuration, training, calibration, threshold selection, and physical-source production explicitly exclude `test`; no V1 test event, artifact, or new test bank is opened or created.
 
