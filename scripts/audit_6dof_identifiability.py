@@ -53,7 +53,6 @@ from scripts.run_refit_multidof_closure import (
 
 SCHEMA_VERSION = "faser-station0-6dof-identifiability-v1"
 RESIDUAL_LABELS = ("rx_mm", "ry_mm", "rtx", "rty")
-ADJACENT_PAIR_LABELS = ("0->1", "1->2", "2->3")
 
 
 def _source_entries(manifest: Mapping[str, object]) -> list[dict[str, object]]:
@@ -263,14 +262,14 @@ def _pair_sensitivity(fit, bank: Mapping[str, object]) -> list[dict[str, object]
     derivative = fit.derivative_native
     sources = np.asarray(bank["source_station_id"])
     targets = np.asarray(bank["target_station_id"])
+    pair_labels = sorted({(int(left), int(right)) for left, right in zip(sources.tolist(), targets.tolist())})
     rows: list[dict[str, object]] = []
-    for label in ADJACENT_PAIR_LABELS:
-        left, right = (int(part) for part in label.split("->"))
+    for left, right in pair_labels:
         mask = (sources == left) & (targets == right)
         if not np.any(mask):
             continue
         sub = derivative[mask]
-        row: dict[str, object] = {"station_pair": label, "pairs": int(mask.sum())}
+        row: dict[str, object] = {"station_pair": f"{left}->{right}", "pairs": int(mask.sum())}
         for p_index, name in enumerate(bank["names"]):
             row[name] = float(np.sqrt(np.mean(np.square(sub[:, :, p_index]))))
         rows.append(row)

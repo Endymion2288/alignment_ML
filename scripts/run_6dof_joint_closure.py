@@ -145,7 +145,7 @@ def main() -> None:
     }
 
     output_dir = Path(args.output_dir).expanduser().resolve()
-    output_dir.mkdir(parents=True, exist_ok=False)
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"joint_closure_{args.closure_target}.json"
     output_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 

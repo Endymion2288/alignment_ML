@@ -114,3 +114,23 @@ physical_refit_capture_scan:
         ift_rx_mrad: -12.0
         ift_ry_mrad: -35.0
         ift_rz_mrad: 10.0
+    # Small-severity points inside the FD probe envelope: the linear closure
+    # validation regime (the alignment iteration operates on residual
+    # misalignments far below the FD step).  Points a/b above sit at
+    # severity 0.5-1.0 and double as a nonlinearity boundary measurement.
+    - name: closure_6dof_c
+      alignment_parameter_values:
+        ift_dx_mm: 0.25
+        ift_dy_mm: -0.20
+        ift_dz_mm: 0.4
+        ift_rx_mrad: 2.0
+        ift_ry_mrad: 5.0
+        ift_rz_mrad: -1.5
+    - name: closure_6dof_d
+      alignment_parameter_values:
+        ift_dx_mm: -0.35
+        ift_dy_mm: 0.30
+        ift_dz_mm: -0.6
+        ift_rx_mrad: -3.0
+        ift_ry_mrad: -7.5
+        ift_rz_mrad: 2.5
