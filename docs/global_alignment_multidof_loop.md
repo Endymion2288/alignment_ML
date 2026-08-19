@@ -116,7 +116,273 @@ not be silently mapped onto a station payload.
 
 ## Current Status
 
-The earlier 10-event joint anchor test had rank three but unstable `dx`, so it
-does not update geometry. The multi-source iteration-0 physical bank has been
-submitted to Condor; conclusions wait for every real refit and mode-0 Acts
-export to pass its completion gate.
+**The loop has closed.** Iteration-0 (anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad)
+recovered the offset to −0.26/−0.22 mm/−0.05 mrad on held-out validation and
+proposed the iteration-1 anchor (−0.14 mm/+0.11 mm/+0.74 mrad). Iteration-1
+passed every frozen held-out tolerance (dx −0.014 mm, dy +0.019 mm, Ry
+−0.0003 mrad; source-to-source spread collapsed 20–40×), and the truth-free
+route-selected update then closed on both source-disjoint splits with the
+frozen V2 backbone: train dx/dy/Ry errors −0.0008/−0.0005 mm/−0.0003 mrad
+(2309 common edges, condition number 80), validation −0.0945/+0.0575 mm/
+−0.0280 mrad (1756 common edges, condition number 85) — all within the frozen
+tolerances (0.1 mm/0.1 mm/1 mrad). This is the first unknown-association,
+source-disjoint, real-payload/refit/Acts, multi-DoF iterative alignment
+closure of the project. The validation dx margin is dominated by one outlier
+source (`mc24_100047_00150_00199`); see
+`workbook/2026-08-18_24_validation独立closure与第一阶段结论.md`.
+
+Two implementation fixes were required and are now covered by regression
+tests: the alignment-iteration materialization namespace is payload-stable
+(`materialize_pooled_curriculum_synthetics.py`), and the update consumes an
+anchor-selected route set re-measured in every payload's candidate graph
+(`--observation-kind anchor_selected_field_edge`) because per-payload route
+selections do not intersect across finite-difference probes.
+
+The association architecture is now frozen. The next phase targets the two
+known foundational bottlenecks: the severely anisotropic mode-0 propagation
+covariance mis-calibration and the 0->1 raw candidate coverage.
+
+That phase has completed its first audit cycle (train-only pull calibration,
+frozen diagonal rescaling + a priori Huber control, gate/coverage rescan at
+nominal and both iteration anchors, and calibrated closure variants on the
+frozen iteration-1 banks). The findings, recorded in
+`workbook/2026-08-18_25_mode0协方差校准与candidate覆盖修复.md`:
+
+- The mode-0 covariance mis-calibration is a core-overestimated,
+  heavy-tailed, non-Gaussian distortion: robust pull widths are 0.30-0.43
+  (x), ~0.003 (y), 0.72-0.88 (tx), ~0.002-0.003 (ty), with |pull| q99 up to
+  4; validation pull widths match train almost exactly, so the distortion is
+  source-independent.
+- Raw candidate coverage is gate-limited, not covariance-limited: the
+  physical events carry at most one tracklet per station, so fake candidates
+  are identically zero at every gate, and raising the chi2 gate from 25 to
+  500 lifts complete truth-chain recall from ~0.40-0.50 to ~0.72-0.86 at no
+  fake cost.
+- Neither train-frozen control is adopted. The diagonal core-width rescaling
+  improves dy everywhere (|error| < 0.01 mm per source) but collapses the
+  dx/Ry solve (validation dx error -1.19 mm): the rescaled y/ty block
+  outweighs x/tx by ~1e5 while constraining only dy, leaving the
+  near-degenerate dx-Ry direction to noise. The Huber control alone also
+  degrades validation (dx error -0.176 mm). The canonical physical
+  candidate/WLS covariance model therefore remains the exporter's original
+  covariance, and the calibration artifacts are kept as documented negative
+  results (`outputs/mc24_multidof_ift_pull_calibration_train_v1/`,
+  `outputs/mc24_multidof_ift_gate_coverage_scan_v1/`).
+
+A follow-up read-only diagnosis separated candidate generation from the
+dx-Ry source dependence (`workbook/2026-08-18_26_离群源影响机制与candidate_gate操作区.md`):
+
+- At the converged iteration-1 anchor the normal matrix is well conditioned
+  (80-86) with nearly axis-aligned eigenmodes; the dx-Ry -0.97 correlation
+  was an iteration-0 large-misalignment phenomenon and is gone.
+- The validation dx error is entirely a single-source effect: removing
+  `mc24_100047_00150_00199` moves the pooled dx delta onto the truth
+  (error -0.0015 mm).  The source is not high-leverage, not heavy-tailed,
+  and its per-edge Jacobian/kinematics are typical.  The cause is one
+  mis-associated 0->1 edge in a multi-track physical event (wrong station-1
+  candidate at chi2 12.8, residuals +/-150 mm at the two payloads), embedded
+  by the overlay into six route copies that multiply its weight; the
+  inflated mode-0 covariance makes the edge statistically unrecognisable to
+  both the candidate gate and the WLS solve.
+- A frozen candidate chi2 gate scan (25/50/100/200/500/ungated, frozen V2
+  checkpoint/calibration/thresholds, train-selected and validation
+  frozen-evaluated) found no usable operating region: the current policy is
+  already ungated with candidate-level complete truth-chain recall ~1.0,
+  tightening the gate collapses track efficiency (0.854 -> 0.003 at gate 25)
+  for a purity gain of only 0.975 -> 1.000, and intermediate gates combine
+  low statistics with concentrated contamination (validation dx error
+  -0.40/-0.19 mm at gates 200/500).  The candidate-generation policy
+  therefore remains ungated with the original covariance; the bottleneck is
+  the propagation/candidate model's chi2 discrimination, not any threshold.
+  Before Rx/Rz/dz or station-level 6-DoF expansion, the route-selected
+  update should deduplicate or reweight the multiple route copies of the
+  same physical edge created by overlay reuse.
+
+### Observation statistics: physical-edge weight normalization (2026-08-18, canonical)
+
+The overlay embeds one real physical edge into several synthetic events, so the
+frozen route selection placed replica observations of the same physical edge
+into the normal equation up to 11 times.  Three pre-defined statistical
+semantics were compared on the frozen iteration-1 train/validation closures
+(`scripts/run_observation_statistics_variants.sh`,
+`alignment/route_selected_update.py::apply_observation_statistics`; grouping
+uses only endpoint provenance — original source file/event UID, source/target
+station and tracklet — never truth):
+
+| semantics | split | observations | unique edges | dx err (mm) | dy err (mm) | Ry err (mrad) |
+|---|---|---|---|---|---|---|
+| replica_weighted (control) | train | 2309 | 623 | -0.0008 | -0.0005 | -0.0003 |
+| physical_edge_deduplicated | train | 623 | 623 | -0.0009 | -0.0003 | -0.0008 |
+| physical_edge_inverse_multiplicity_weighted | train | 2309 | 623 | -0.0009 | -0.0003 | -0.0008 |
+| replica_weighted (control) | validation | 1756 | 467 | -0.0945 | +0.0575 | -0.0280 |
+| physical_edge_deduplicated | validation | 467 | 467 | **-0.0511** | +0.0396 | -0.0159 |
+| physical_edge_inverse_multiplicity_weighted | validation | 1756 | 467 | **-0.0511** | +0.0396 | -0.0159 |
+
+Findings (`outputs/mc24_multidof_ift_iteration01_obsstat_{train,validation}_v1`,
+`..._source_influence_{train,validation}_dedup_v1`):
+
+- Replica residuals are bit-identical across copies (max spread 0.0), so
+  deduplication and inverse-multiplicity weighting are numerically identical,
+  as predicted; either normalizes each physical edge's total weight to one.
+- The known mis-associated edge of `mc24_100047_00150_00199` enters the
+  replica-weighted update 6 times and the deduplicated update exactly once
+  (verified explicitly against the observation keys).
+- Validation dx error halves (-0.0945 -> -0.0511 mm), moving stably away from
+  the 0.1 mm tolerance boundary; dy/Ry errors also shrink.  Train closure is
+  unchanged (~1 um).  Both splits pass the frozen tolerances.
+- The other seven validation sources are not sacrificed: their per-source dx
+  solves move by at most 0.004 mm.  The outlier source's leave-one-source-out
+  influence halves (+0.0929 -> +0.0488 mm); the validation per-source dx
+  spread shrinks 0.1448 -> 0.0855 mm.  Rank stays 3; the condition number
+  rises only mildly (80-86 -> 108-135); |corr(dx,Ry)| stays below 0.3.
+
+**Decision: `physical_edge_deduplicated` is frozen as the canonical
+alignment-observation semantics** (deterministic sorted-first representative;
+`replica_weighted` retained as a strict control via
+`--observation-statistics`).  With the statistical semantics fixed, the next
+independent layer is the mode-0 propagation covariance / chi2 discrimination
+study; only after that layer is understood may Rx/Rz/dz sensitivity and
+station-level 6-DoF expansion begin.
+
+### Mode-0 propagation chi2 discrimination mechanism (2026-08-18, negative result, chi2 layer closed)
+
+A dedicated edge-level study (`scripts/audit_propagation_discrimination.py`,
+`scripts/evaluate_propagation_compatibility.py`,
+`alignment/propagation_compatibility.py`; train-fit, single frozen validation
+transfer; candidate endpoints, V2 scores and the WLS covariance untouched)
+modelled every ungated adjacent-pair candidate — 84,770 train / 67,251
+validation edges at the anchor and reference payloads — by residual, full
+combined covariance, pulls, chi2, track state, station pair and source.
+
+Mechanism of the known mis-associated edge (chi2 = 12.8 at |r_x| = 150 mm):
+
+- The mode-0 combined covariance at 0->1 is enormous (sigma_x ~ 49 mm,
+  sigma_y ~ 493 mm), so the 150 mm residual is only a 3.1-sigma marginal in x.
+- chi2 = 12.8 sits at the **median** of the train truth-edge chi2
+  distribution (quantile 0.507): the truth distribution itself is
+  catastrophically heavy — median 15.6 (vs 3.4 for a calibrated chi2_4),
+  29% of truth edges above chi2 = 100, q99 ~ 1.3e5, max 4.8e7.
+- Fake edges have median chi2 ~ 5e3 but their 1% lower tail (~6-10) overlaps
+  the truth core, while the truth tail extends past the fake upper tail.
+  The two distributions overlap at every quantile.
+
+Train-frozen model comparison (per-station-pair Student-t grid-MLE nu,
+core+tail scaled-Gaussian EM mixture, Huber/Tukey at train chi2 quantiles,
+all with the log|C| term; thresholds frozen at 99.5% train truth retention):
+
+- AUC(chi2) = 0.86-0.92 per pair; Student-t / mixture improve it by at most
+  +0.01; Huber/Tukey are monotone in chi2 and cannot change ranking.
+  Component-pull scores are worse (AUC 0.55-0.59).
+- At the frozen veto, fake rejection is 0.3-6%; the bad edge is vetoed by no
+  model (thresholds ~1e5 because of the truth tail).
+- Dependences are weak and cannot be exploited: per-source truth chi2
+  structure is uniform (the outlier source is typical: median 15.7,
+  P(chi2>100) = 0.196), anchor vs reference payloads are near-identical,
+  only large-|y| edges are heavier-tailed (P(chi2>100) = 0.59 for |y|>100 mm).
+
+**Conclusion (frozen decision tree): no train-frozen likelihood reliably
+separates the truth heavy tail from wrong edges — mode-0 propagation carries
+insufficient discriminating information at the chi2 layer, and chi2-layer
+tuning stops here.**  No compatibility-veto closure variant is warranted: the
+bad edge is at the truth median, so any veto catching it would reject about
+half of all truth edges.  The bottleneck is upstream of statistics: the
+mode-0 propagation/covariance model itself (sigma_y ~ 493 mm, truth chi2 tail
+to 1e7) must be understood before Rx/Rz/dz sensitivity or station-level
+6-DoF expansion.
+
+### Mode-0 propagation root-cause audit (2026-08-18, root cause identified)
+
+Following the chi2-layer closure, a read-only source decomposition of the
+truth-matched propagation uncertainty was performed
+(`scripts/audit_propagation_uncertainty_budget.py`; train and validation
+physical banks at anchor and reference payloads).  The existing bank already
+stores three same-edge q/p controls per truth edge (identical reconstructed
+position/direction unless noted): mode 0 = reconstructed state with the
+segment fit's q/p, mode 1 = reconstructed state with truth q/p and the q/p
+covariance SUPPRESSED, mode 2 = full truth state with truth q/p.
+
+Uncertainty budget (train, iteration-1 anchor, medians; material/process
+noise is DISABLED in the production config, so transport is pure J·C·Jᵀ):
+
+| pair | mode | src σ_y (mm) | prop σ_y (mm) | tgt σ_y (mm) | prop σ_x (mm) | res σ_x (mm) |
+|---|---|---|---|---|---|---|
+| 0->1 | 0 (fixed 100 GeV) | 0.50 | **492** | 0.50 | 32.5 | 16.0 |
+| 0->1 | 1 (truth q/p) | 0.50 | **16.1** | 0.50 | 31.9 | 15.2 |
+| 1->2 | 0 | 0.50 | **228** | 0.50 | 22.9 | 11.9 |
+| 1->2 | 1 | 0.50 | **0.73** | 0.50 | 22.9 | 11.4 |
+| 2->3 | 0 | 0.50 | **225** | 0.50 | 22.9 | 10.1 |
+| 2->3 | 1 | 0.50 | **0.73** | 0.50 | 22.9 | 10.1 |
+
+Root causes, in order of dominance:
+
+1. **Pathological σ_y = transport of the segment fit's dummy q/p variance.**
+   Every tracklet carries q/p = 1e-5/MeV (fixed 100 GeV placeholder from the
+   straight-line segment fit) with variance 5e-6/MeV², i.e. σ(q/p) is 224×
+   the central value — momentum is effectively unconstrained.  Mode 0
+   transports this dummy variance through the magnetic field into (y, ty).
+   The same-edge mode-1 control (truth q/p seed + suppressed q/p covariance)
+   collapses σ_y by 30-300× while the residual is essentially unchanged
+   (16.0 -> 15.2 mm at 0->1): pure covariance inflation, no residual
+   degradation.  This is an implementation issue, not physics.
+2. **σ_x ~ 23-32 mm = legitimate lever-arm transport** of the direction
+   uncertainty (both modes, all pairs); it overestimates the residual by
+   ~2× at 0->1.
+3. **The truth chi2 heavy tail (1e5-1e7) = structural near-singularity of
+   the combined covariance plus a genuine residual-outlier sub-population.**
+   The lever-arm transport makes the position-direction blocks nearly
+   degenerate: median cond(C) = 3.5e10 even for core edges (6.9e11 in the
+   tail), with the near-null direction at 0.73·tx + 0.46·ty.  64% of tail
+   edges are modest residuals amplified by the ill-conditioning; 36% are
+   genuine residual outliers (marginal pull > 5).  The tail is q/p-mode
+   independent (1.5% mode 0 vs 3.5% mode 1 above 1e4; the same edges).
+4. **Material/process noise contributes exactly zero** — the production
+   config leaves InteractionMultiScatering/InteractionEloss at their default
+   False, so no process noise enters the transport.
+5. No unit, frame, or FD-Jacobian anomalies: the native->global and
+   bound->bound transforms use sound steps (1e-4 mm, 1e-6 rad) and core
+   pulls are <= 1.  The residual mode-1 σ_y at 0->1 (16 mm at the anchor vs
+   0.9 mm at the reference) is misalignment-dependent field coupling across
+   the magnet gap; validation reproduces the train numbers (12 mm).
+
+**Fix direction proven by the train-only same-edge control:** suppress the
+dummy q/p variance in fixed-seed (mode-0) covariance transport — the mode-1
+control shows σ_y collapses 30-300× at unchanged residual, and mode-1 pulls
+at 0->1 are nearly calibrated in x/tx (robust pull sigma 1.01/1.07).
+
+### Mode-3 suppression pilot (2026-08-18, verdict: diagnostic only, mode-0 stays canonical)
+
+The proven fix direction was validated in a minimal real production pilot: a
+new independent dumper variant **mode 3** (identical reconstructed
+position/direction and the same fixed q/p seed as mode 0, with
+`suppressQOverPCovariance=true`; modes 0/1/2 unchanged) was run through the
+full payload -> SegmentFitRefit -> NtupleDumper -> Acts propagation chain for
+three train sources x all eight iteration-1 payload points
+(`outputs/mc24_mode3_suppression_pilot_physical_v1/`, 24/24 points, 0
+failures), followed by a pilot overlay (production-identical parameters, same
+synthetic events for both candidate variants), frozen V2 backbone inference,
+and the route-selected dx/dy/Ry closure under physical_edge_deduplicated
+semantics (`scripts/run_mode3_suppression_pilot.sh`).
+
+Pilot gate results (all five criteria must hold for canonical promotion):
+
+| criterion | result | verdict |
+|---|---|---|
+| residuals unchanged | predictions bit-identical to mode 0 (523/523 records) | PASS |
+| q/p-induced covariance inflation removed | σ_y collapse 30-537× (min 29.8×) | PASS |
+| separation or coverage improved | V2 AUC 0.9978 -> 0.9817 (anchor); model-free chi2 AUC 0.955 -> 0.941; coverage identical (0.9913) | **FAIL** |
+| route metrics not degraded | complete-track efficiency 0.88 -> 0.14 (anchor) | **FAIL** |
+| closure within frozen tolerances | both modes capture; mode-3 dx/dy/ry errors <= mode-0 | PASS |
+
+The mode-3 covariance itself is nearly calibrated (0->1 y pull robust sigma
+1.62 at the reference, vs 0.0034 for mode 0): the suppression works exactly
+as designed.  The association collapse is a frozen-stack feature-shift
+effect, not new physics: the V2 checkpoint, calibration, and route thresholds
+were trained on mode-0's over-covered chi2 features, so truth edges with
+honest covariances (chi2 median ~48-92) land in the model's fake-like region
+and die at the 0->1 threshold.  Per the frozen decision rule, **mode 3 is
+retained as a diagnostic variant and mode 0 remains the canonical propagation
+mode**.  Exploiting the calibrated covariance would require retraining the
+association model on mode-3 (or calibrated-covariance) candidate graphs,
+which is explicitly out of scope for this phase.  Until then, no Rx/Rz/dz
+sensitivity or station-level 6-DoF work starts, and no further
+statistical-layer patches are attempted.

@@ -97,12 +97,13 @@ def _candidate_reason(
     record_row: int | None,
     records: PropagationRecords,
     target_z_tolerance_mm: float,
+    q_over_p_mode: int = 0,
 ) -> str:
     """Return the first physical eligibility failure used by candidate construction."""
     if record_row is None:
         return "no_exact_exported_record"
     row = int(record_row)
-    if int(records.q_over_p_mode[row]) != 0:
+    if int(records.q_over_p_mode[row]) != int(q_over_p_mode):
         return "wrong_q_over_p_mode"
     if not bool(records.success[row]):
         return "acts_propagation_failed"
@@ -136,6 +137,7 @@ def audit_sample(
     sample: CurriculumSample,
     target_z_tolerance_mm: float,
     example_limit: int,
+    q_over_p_mode: int = 0,
 ) -> tuple[Counter[str], dict[tuple[int, int], Counter[str]], list[dict[str, object]]]:
     """Classify every unique truth pair in one physical synthetic payload."""
     events = load_events(sample.synthetic_tracklets, require_mc_labels=True)
@@ -175,6 +177,7 @@ def audit_sample(
                         record_row,
                         records,
                         target_z_tolerance_mm,
+                        q_over_p_mode=q_over_p_mode,
                     )
                     totals[reason] += 1
                     by_pair[(source_station, target_station)][reason] += 1
@@ -218,15 +221,28 @@ def main() -> None:
     )
     parser.add_argument("--target-z-tolerance-mm", type=float, default=1.0e-6)
     parser.add_argument("--example-limit", type=int, default=25)
+    parser.add_argument(
+        "--q-over-p-mode",
+        type=int,
+        default=0,
+        choices=(0, 3),
+        help="propagation record variant audited; the manifest contract must match",
+    )
     args = parser.parse_args()
 
     if not np.isfinite(args.target_z_tolerance_mm) or args.target_z_tolerance_mm < 0.0:
         raise ValueError("target-z tolerance must be finite and non-negative")
     if args.example_limit < 0:
         raise ValueError("example limit must be non-negative")
-    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
-    if int(manifest.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("coverage audit is restricted to physical mode-0 propagation")
+    manifest_path, samples, manifest = load_synthetic_curriculum_manifest(
+        args.synthetic_manifest,
+        require_all_splits=False,
+        allowed_splits=(args.split,),
+    )
+    if int(manifest.get("q_over_p_mode", -1)) != int(args.q_over_p_mode):
+        raise ValueError(
+            f"coverage audit requires a physical mode-{args.q_over_p_mode} propagation manifest"
+        )
     selected = [sample for sample in samples if sample.split == args.split]
     if not selected:
         raise ValueError(f"manifest has no {args.split} samples")
@@ -248,6 +264,7 @@ def main() -> None:
             sample,
             target_z_tolerance_mm=float(args.target_z_tolerance_mm),
             example_limit=args.example_limit,
+            q_over_p_mode=int(args.q_over_p_mode),
         )
         aggregate.update(totals)
         by_magnitude[float(sample.magnitude_mm)].update(totals)
@@ -281,7 +298,7 @@ def main() -> None:
         "schema_version": SCHEMA_VERSION,
         "synthetic_manifest": str(manifest_path),
         "split": args.split,
-        "q_over_p_mode": 0,
+        "q_over_p_mode": int(args.q_over_p_mode),
         "physical_geometry_repropagation": True,
         "target_z_tolerance_mm": float(args.target_z_tolerance_mm),
         "overall": _coverage_payload(aggregate),
@@ -311,7 +328,7 @@ def main() -> None:
             "split": args.split,
             "test_opened": args.split == "test",
             "physical_geometry_repropagation": True,
-            "q_over_p_mode": 0,
+            "q_over_p_mode": int(args.q_over_p_mode),
         },
     )
     print(json.dumps({"output_dir": str(output_root), "overall": report["overall"]}, indent=2))

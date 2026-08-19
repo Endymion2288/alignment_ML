@@ -1,0 +1,11 @@
+# Mode-3 matched-retraining variant of the V2 BCE/focal-loss control.  The
+# architecture, curriculum stage budget, optimizer, loss weights, calibration,
+# and route solver are inherited unchanged from the mode-0 control; only the
+# declared propagation record variant changes to the fixed-q/p seed
+# covariance-suppressed mode.  No mode-0 checkpoint, calibration, threshold,
+# or unmatched penalty is inherited.
+base_config: geometry_aware_transformer_v2_expanded_bce_control.yaml
+
+route_aware_transformer_v2:
+  input_contract:
+    q_over_p_mode: 3

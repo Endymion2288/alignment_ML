@@ -124,8 +124,8 @@ def build_field_candidates(
     """Build all valid field-aware candidates for one ordered station pair."""
     if source_station >= target_station:
         raise ValueError("field-aware baseline accepts only ordered forward station pairs")
-    if q_over_p_mode != 0:
-        raise ValueError("V1 association baseline is restricted to q_over_p_mode=0")
+    if q_over_p_mode not in (0, 1, 2, 3):
+        raise ValueError("field-aware candidates require a known q_over_p_mode record variant")
     if chi2_gate is not None and (not np.isfinite(chi2_gate) or chi2_gate <= 0.0):
         raise ValueError("chi2_gate must be positive when supplied")
     if not np.isfinite(target_z_tolerance_mm) or target_z_tolerance_mm < 0.0:

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FASER ML Alignment — Status Report (EN)</title>
+<style>
+  @page { size: 338.667mm 190.5mm; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans", "DejaVu Sans", "Droid Sans Fallback", sans-serif;
+         color: #16233b; }
+  .slide { width: 1280px; height: 720px; page-break-after: always; position: relative;
+           background: #ffffff; overflow: hidden; }
+  .slide:last-child { page-break-after: avoid; }
+
+  .header { padding: 26px 48px 0 48px; }
+  .header h1 { font-size: 27px; margin: 0 0 4px 0; color: #0b3a63; letter-spacing: 0.2px; }
+  .header .sub { font-size: 13.5px; color: #66788f; margin-bottom: 8px; }
+  .rule { height: 3px; background: linear-gradient(90deg, #0b5fa5 0 34%, #e8eef5 34% 100%);
+          margin: 0 48px; }
+  .content { padding: 20px 48px 0 48px; font-size: 15.5px; line-height: 1.42; }
+  .footer { position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            font-size: 11px; color: #8090a5; padding: 8px 48px; }
+  .footer .pg { float: right; }
+
+  .cols { display: flex; gap: 26px; }
+  .col { flex: 1; min-width: 0; }
+  img.fig { display: block; margin: 6px auto; }
+  .figcap { font-size: 11.5px; color: #66788f; text-align: center; margin-top: 2px; }
+
+  h3.block { font-size: 16px; color: #0b5fa5; margin: 10px 0 6px 0; }
+  ul { margin: 4px 0 8px 0; padding-left: 22px; }
+  li { margin: 4.5px 0; }
+  b.k { color: #0b3a63; }
+  .neg { color: #b02a1e; font-weight: 600; }
+  .pos { color: #1a7a3c; font-weight: 600; }
+
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 10px;
+          border-radius: 10px; vertical-align: middle; }
+  .chip.pass { background: #e3f3e9; color: #15723a; border: 1px solid #9ed2b2; }
+  .chip.fail { background: #fbe6e3; color: #b02a1e; border: 1px solid #eab0a8; }
+  .chip.info { background: #e7eff8; color: #0b4f86; border: 1px solid #aac8e4; }
+  .chip.warn { background: #fdf2e0; color: #8a5a12; border: 1px solid #ecc98f; }
+
+  table.t { border-collapse: collapse; width: 100%; font-size: 12.8px; }
+  table.t th { background: #0b3a63; color: #fff; padding: 5px 8px; text-align: left;
+               font-weight: 600; }
+  table.t td { padding: 4.5px 8px; border-bottom: 1px solid #e2e8f0; }
+  table.t tr:nth-child(even) td { background: #f4f7fb; }
+  table.t td.num, table.t th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .box { border: 1px solid #cdd9e6; border-radius: 8px; padding: 10px 14px;
+         background: #f7fafd; margin: 6px 0; }
+  .flow { display: flex; align-items: stretch; gap: 6px; margin: 10px 0; }
+  .flow .step { flex: 1; background: #eef4fa; border: 1px solid #b9cfe4; border-radius: 7px;
+                padding: 8px 6px; text-align: center; font-size: 12px; line-height: 1.3;
+                display: flex; align-items: center; justify-content: center; }
+  .flow .arr { align-self: center; color: #0b5fa5; font-size: 15px; font-weight: 700; }
+
+  .title-slide { background: linear-gradient(135deg, #081c33 0%, #0b3a63 55%, #12558e 100%);
+                 color: #fff; }
+  .title-slide .inner { padding: 120px 90px; }
+  .title-slide h1 { font-size: 44px; margin: 0 0 18px 0; line-height: 1.18; }
+  .title-slide h2 { font-size: 21px; font-weight: 400; color: #bcd4ec; margin: 0 0 40px 0; }
+  .title-slide .meta { font-size: 16px; color: #dce8f5; line-height: 1.7; }
+  .title-slide .band { height: 6px; width: 220px; background: #e69f00; margin-bottom: 34px; }
+
+  .kpi { display: flex; gap: 14px; margin: 8px 0; }
+  .kpi .card { flex: 1; border-radius: 9px; background: #f2f6fb; border: 1px solid #d4e0ec;
+               padding: 10px 12px; text-align: center; }
+  .kpi .v { font-size: 23px; font-weight: 700; color: #0b3a63; }
+  .kpi .l { font-size: 11.5px; color: #5c6f88; margin-top: 2px; line-height: 1.25; }
+  .note { font-size: 12px; color: #66788f; }
+  .src { font-size: 10.5px; color: #93a3b8; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 1. TITLE ============================ -->
+<section class="slide title-slide">
+  <div class="inner">
+    <div class="band"></div>
+    <h1>Machine-Learning-Guided Tracklet Association<br>and Global Alignment for the FASER Spectrometer</h1>
+    <h2>Status report: physical refit chain, geometry-aware Transformers, and the multi-DoF alignment loop</h2>
+    <div class="meta">
+      X.&nbsp;Cheng &nbsp;•&nbsp; FASER Alignment Group Meeting<br>
+      18 August 2026 &nbsp;•&nbsp; all results reproducible from <i>alignment_ML</i> artifacts
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2. OUTLINE ============================ -->
+<section class="slide">
+  <div class="header"><h1>Outline</h1><div class="sub">What this talk covers</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block">1 &nbsp;Motivation</h3>
+        <ul><li>Why global alignment, and why association comes first</li></ul>
+        <h3 class="block">2 &nbsp;Dataset</h3>
+        <ul><li>Real physical misalignment banks on MC24, source-disjoint train/validation, sealed test policy</li></ul>
+        <h3 class="block">3 &nbsp;Models</h3>
+        <ul><li>Pairwise MLP + route solver; geometry-aware Transformer V1/V2; V3 structured margin (negative)</li></ul>
+      </div>
+      <div class="col">
+        <h3 class="block">4 &nbsp;Results</h3>
+        <ul>
+          <li>Association capture range on translations and rotations</li>
+          <li>Single-parameter physical closure: dx and R<sub>y</sub></li>
+          <li>Multi-DoF (dx, dy, R<sub>y</sub>) iteration-0 closure — decision gate</li>
+        </ul>
+        <h3 class="block">5 &nbsp;TODO / next steps</h3>
+        <ul><li>Iteration-1 production (running), truth-free update, coverage, global fitter, more DoF</li></ul>
+      </div>
+    </div>
+    <div class="box" style="margin-top:14px">
+      <b class="k">Reading guide.</b> Every number on these slides is read back from versioned artifacts in
+      <span style="font-family:'DejaVu Sans Mono'">outputs/</span>; figure captions name the source file.
+      The permanently sealed test bank is never opened — all model results shown are validation-only
+      unless explicitly labelled “historical sealed test (recorded)”.
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">2 / 17</span></div>
+</section>
+
+<!-- ============================ 3. MOTIVATION ============================ -->
+<section class="slide">
+  <div class="header"><h1>Motivation</h1><div class="sub">Why this project exists</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.12">
+        <h3 class="block">Physics case</h3>
+        <ul>
+          <li>The FASER spectrometer (IFT + three SCT stations in dipole fields) measures ~100&nbsp;GeV–TeV muon tracks; station-level misalignment directly biases momentum and decay-vertex reconstruction.</li>
+          <li>Alignment needs tracks that <b class="k">cross all four stations</b>: a local <i>tracklet</i> per station must first be <b class="k">associated</b> into a global route before any global fit can run.</li>
+          <li>At millimetre-scale misalignment the association itself fails first — you cannot align with tracks you never built.</li>
+        </ul>
+        <h3 class="block">Why machine learning</h3>
+        <ul>
+          <li>Association is a discrete pattern-recognition problem on a physical candidate graph; learned geometric models may widen the <b class="k">capture range</b> beyond χ²-only matching.</li>
+          <li>An ML backbone plus an iterative <i>associate → fit → align → refit</i> loop targets global alignment <b class="k">without truth association</b>.</li>
+        </ul>
+      </div>
+      <div class="col" style="flex:1">
+        <img class="fig" src="figures/detector_schematic.png" style="width:560px">
+        <div class="figcap">Spectrometer layout and the three active alignment degrees of freedom of the IFT (station 0).</div>
+        <div class="box" style="margin-top:10px; font-size:13.5px">
+          <b class="k">This project’s claim to evidence:</b> an end-to-end <b>real</b> Calypso/Acts physical chain
+          (no coordinate-shift surrogates), strict source-disjoint train/validation governance, and a sealed
+          test bank with frozen, hash-pinned contracts.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">3 / 17</span></div>
+</section>
+
+<!-- ============================ 4. PIPELINE ============================ -->
+<section class="slide">
+  <div class="header"><h1>Approach: Real Physical Chain + Iterative Loop</h1><div class="sub">Every misalignment point is an independent re-reconstruction, not a coordinate shift</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <h3 class="block">Per-point physical chain (identical for nominal, anchor, and every finite-difference probe)</h3>
+    <div class="flow">
+      <div class="step">/Tracker/Align<br>SQLite/POOL payload</div><div class="arr">→</div>
+      <div class="step">SCT_Cluster<br>Container</div><div class="arr">→</div>
+      <div class="step">SegmentFitRefit<br>SegmentsRefit</div><div class="arr">→</div>
+      <div class="step">NtupleDumper<br>tracklets ROOT</div><div class="arr">→</div>
+      <div class="step">FaserActsExtrapolation<br>Tool (mode 0)</div><div class="arr">→</div>
+      <div class="step">candidate graph +<br>residuals / χ²</div>
+    </div>
+    <div class="cols" style="margin-top:6px">
+      <div class="col">
+        <h3 class="block">Alignment update (current iteration)</h3>
+        <ul>
+          <li>Truth-fixed multi-source <b class="k">finite-difference (FD) Jacobian</b> from ±probe refits; weighted least-squares local step; train fits, <b class="k">validation is held out</b>.</li>
+          <li>Payload semantics verified against Calypso source: per-station [dx, dy, dz, Rx, Ry, Rz], global T·Rz·Ry·Rx; both segment refit and Acts surfaces follow the payload.</li>
+          <li>Local segment q/p is <span class="neg">not</span> a usable measurement → propagation always mode 0 (enforced at ~25 checkpoints).</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block">Statistical governance</h3>
+        <ul>
+          <li>Splits are <b class="k">original-xAOD-file disjoint</b>: 10 train / 8 validation sources; sealed multi-direction test (2 sources, 19 events) frozen 2026-08-12, hash-pinned, read only by two sanctioned historical scans.</li>
+          <li>Model selection, calibration, thresholds: <b class="k">validation-only</b>. 85 contract JSONs audited: no test access outside the frozen scans.</li>
+          <li>Full test suite: <span class="pos">163 passed</span>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">4 / 17</span></div>
+</section>
+
+<!-- ============================ 5. DATASET ============================ -->
+<section class="slide">
+  <div class="header"><h1>Dataset</h1><div class="sub">MC24 100 GeV FASERν muons — IFT+1+2+3 control samples, all produced through the real chain</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th>Corpus (outputs/)</th><th>Sources</th><th class="num">Events</th><th>Condition axis</th><th>Points / source</th><th>Status</th></tr>
+      <tr><td>Expanded dx/dy physical <span class="note">mc24_v3_expanded_trainval_physical_v1</span></td><td>10 train + 8 val</td><td class="num">994 / 796</td><td>dx, dy ∈ {0, 0.1, 1, 5, 10, 50} mm</td><td>6</td><td><span class="chip pass">complete 108/108</span></td></tr>
+      <tr><td>IFT R<sub>y</sub> physical <span class="note">mc24_ift_ry_expanded_trainval_physical_v1</span></td><td>10 train + 8 val</td><td class="num">994 / 796</td><td>R<sub>y</sub> ∈ {0, ±10, ±25, ±40, ±60} mrad + 4 joint</td><td>13</td><td><span class="chip pass">complete 234/234</span></td></tr>
+      <tr><td>Multi-DoF iteration-0 anchor bank <span class="note">mc24_multidof_ift_iteration00_anchor_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>anchor (+2.0 mm, −1.5 mm, +35 mrad) + FD probes</td><td>8</td><td><span class="chip pass">complete 144/144</span></td></tr>
+      <tr><td>Multi-DoF joint curriculum bank <span class="note">mc24_multidof_ift_joint_curriculum_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>random joint (dx, dy, R<sub>y</sub>)</td><td>13</td><td><span class="chip pass">complete 234/234</span></td></tr>
+      <tr><td>Multi-DoF <b>iteration-1</b> bank <span class="note">mc24_multidof_ift_iteration01_anchor_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>anchor (−0.14 mm, +0.11 mm, +0.74 mrad)</td><td>8</td><td><span class="chip warn">in production — cluster 996698</span></td></tr>
+      <tr><td>Historical sealed multi-direction test <span class="note">(100116/100117)</span></td><td>2 test</td><td class="num">19</td><td>dx/dy × {0, 0.1, 1, 5, 10, 50} mm</td><td>19</td><td><span class="chip info">sealed, untouched</span></td></tr>
+    </table>
+    <div class="cols" style="margin-top:10px">
+      <div class="col">
+        <ul>
+          <li><b class="k">Tracklet contract</b> <span style="font-family:'DejaVu Sans Mono'; font-size:12px">faser-tracklets-v1</span>: station ID, global (x, y, z, t<sub>x</sub>, t<sub>y</sub>), full covariance of [x, y, t<sub>x</sub>, t<sub>y</sub>], fit quality, hit pattern, MC truth labels.</li>
+          <li>Split unit is the original xAOD file; train/validation UID intersection = 0; test never resolved.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>Six sources hold 98–99 events instead of 100 (input-xAOD property, uniform across points — not job loss).</li>
+          <li>All corpora: q/p mode 0, physical geometry re-propagation, no coordinate surrogates anywhere.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">5 / 17</span></div>
+</section>
+
+<!-- ============================ 6. MODELS ============================ -->
+<section class="slide">
+  <div class="header"><h1>Models</h1><div class="sub">Association models on the existing physical candidate graph — the graph itself is never modified</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th style="width:17%">Model</th><th style="width:37%">Architecture</th><th style="width:26%">Training</th><th style="width:20%">Status</th></tr>
+      <tr><td><b class="k">Pairwise MLP + route</b></td><td>Edge MLP 12→64→64→1 on residual_v1 features; adjacent unit-capacity route set-packing solver (MILP + DP fast path) with dustbins</td><td>Physical curriculum 0/0.1 → 5 → 50 mm; validation-only Platt calibration + thresholds</td><td><span class="chip pass">canonical baseline</span></td></tr>
+      <tr><td><b class="k">V1 geometry-aware Transformer</b></td><td>Tracklet encoder (state, covariance diag, χ²/ndf, hits, layer occupancy, station embedding) → 4 sparse blocks, 8 heads, width 128, FFN 128→256→128; attention only on existing physical edges: QK/√d + MLP(g<sub>ij</sub>) − λχ²<sub>ij</sub>/2τ, g = [r, pulls, log1p χ², logdet S, Δz] + pair/direction embeddings; local edge residual head</td><td>Weighted BCE, event-graph-uniform sampling, hard-negative ×2; curriculum 8/10/12 epochs on top of local 25/30/35</td><td><span class="chip info">canonical; no capture-range expansion</span></td></tr>
+      <tr><td><b class="k">V2 route-aware</b></td><td>V1 backbone frozen + route query per existing complete chain IFT→S1→S2→S3 (4 node states + 3 edge vectors + pair embeddings + 3 backbone logits); solver-consistent residual utility L = L<sub>edge</sub> + w·(L<sub>route</sub> − L<sub>edge</sub>)</td><td>Edge focal BCE + route-consistency focal BCE + endpoint log-sum-exp competition + fake-endpoint softplus; route bank 800,228 train / 148,551 val routes, truth-blind</td><td><span class="chip pass">frozen association backbone of the loop</span></td></tr>
+      <tr><td><b class="k">V3 structured margin</b></td><td>Loss-augmented structured global-assignment objective</td><td>Exact-margin and soft variants on expanded corpus</td><td><span class="chip fail">negative result — suspended</span></td></tr>
+    </table>
+    <ul style="margin-top:8px">
+      <li>V1 mechanism diagnosis (1,440 val events, 175k directed message edges): global messages barely change edge ranking (score MAE 0.0135, rank corr 0.9994; edge AP Δ ≤ 0.003) while node states over-smooth (mean within-station cosine 0.319 → 0.549) — the <b class="k">local edge decoder dominates</b>.</li>
+      <li>V2 direct route-probability replacement is solver-inconsistent (no complete route ever selected); the residual form fixed it. Route query itself has validation AP 0.4095 / AUC 0.9449; calibration ECE 0.0177 → 0.00312.</li>
+    </ul>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">6 / 17</span></div>
+</section>
+
+<!-- ============================ 7. RESULT A: translations ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result A — Association on Large Translations Fails First</h1><div class="sub">Expanded dx/dy corpus, validation-only frozen controls</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <img class="fig" src="figures/translation_controls.png" style="width:1010px">
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li>Raw candidate graph keeps <b class="k">100% truth-chain recall at every magnitude</b> — the failure is downstream, in association.</li>
+          <li>V2 BCE route query passes the gate at 0–1 mm (nominal 0.916 / 0.967 / 0.044); <span class="neg">every model fails at ≥ 5 mm</span> (V2 5 mm: eff 0.756, purity 0.946, fake 0.072).</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>MLP baseline fails the fake gate even at nominal (0.063).</li>
+          <li>V3 structured margin: capture = 0 at all six magnitudes → <span class="neg">confirmed dead end</span>, suspended.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">outputs/mc24_v3_expanded_trainval_validation_control_plots_v3/route_validation_control_summary.csv</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">7 / 17</span></div>
+</section>
+
+<!-- ============================ 8. RESULT A2: capture scan ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result A′ — Physical Refit Capture Boundary (Truth-Fixed)</h1><div class="sub">25-point scan: 9 magnitudes × 3 directions, full re-reconstruction per point</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.35">
+        <img class="fig" src="figures/capture_scan.png" style="width:660px">
+        <div class="src">outputs/mc24_muon_fasernu_physical_capture_scan_v1/capture_scan_summary.json</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li>With truth-fixed pairs, a one-shot linear update on the real refit chain captures <b class="k">all 0.1 mm trials (3/3)</b> and <span class="neg">fails all ≥ 1 mm trials (0/3)</span> under the strict 0.01 mm criterion; ≥ 500 mm loses fit rank entirely.</li>
+          <li>Sanity anchor: station-3 +1 mm physical closure recovered to max error <b class="k">4.9 × 10<sup>−13</sup> mm</b> over 27 truth-matched pairs — the chain itself is exact; capture is limited by linearization + association range.</li>
+          <li class="note">Configuration-specific control result (χ² gate, seed windows), not a universal detector tolerance.</li>
+        </ul>
+        <div class="box" style="font-size:13px">
+          The 0.1–1 mm association boundary above motivates iterating around a
+          <b class="k">moving anchor</b> rather than demanding one giant linear step.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">8 / 17</span></div>
+</section>
+
+<!-- ============================ 9. RESULT B: Ry controls ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result B — Rotations Are Not the Association Bottleneck</h1><div class="sub">IFT R<sub>y</sub> corpus, validation-only frozen controls (796 events, 8 held-out sources)</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <img class="fig" src="figures/ry_controls.png" style="width:930px">
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li>All frozen models <b class="k">pass the gate out to |R<sub>y</sub>| = 60 mrad</b> (capture 5/5); V1 full-context best (eff 0.965 nominal / 0.963 at 60 mrad). Physics check: ±60 mrad → Δx = ∓111.5 mm, Δt<sub>x</sub> = ±0.060.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>V2 same-checkpoint edge-only control fails the fake gate (0.063) — the route query is <b class="k">load-bearing</b> for V2.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">outputs/ift_ry_validation_control_assessment_v2/ift_ry_validation_route_controls.csv</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">9 / 17</span></div>
+</section>
+
+<!-- ============================ 10. RESULT C: Ry closure ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result C — IFT R<sub>y</sub> Recovered to &lt; 1 mrad at ±60 mrad</h1><div class="sub">Local physical iteration with real /Tracker/Align rotation payloads</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.15">
+        <img class="fig" src="figures/ry_closure.png" style="width:610px">
+        <div class="src">outputs/mc24_ift_ry_refinement_smoke_v1/local_step_to_p60/closure.json, …/local_step_to_m60/closure.json</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li><span class="neg">One-shot linearization from nominal fails</span> at ±60 mrad (errors 5.78 / 5.19 mrad) — large-rotation response is non-linear.</li>
+          <li><span class="pos">Local iteration closes</span>: anchor ∓50 mrad, probes ∓45/∓55 mrad, held-out ±60 mrad recovered as <b class="k">+60.069 / −60.412 mrad</b> (rank 1, condition 1; stations 1–3 at identity to 10<sup>−15</sup>).</li>
+          <li>No truth leakage: derivatives use probe refits only; the held-out point never enters the fit.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="box" style="font-size:13.5px; margin-top:4px">
+      Together with Result B: the rotational leg of the chain is <b class="k">closed</b> — identified, recoverable,
+      and not association-limited at 60 mrad.
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">10 / 17</span></div>
+</section>
+
+<!-- ============================ 11. RESULT D: multi-DoF closure ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result D — Multi-DoF Iteration-0 Closure: the Decision Gate</h1><div class="sub">18 sources × 8 real refit points; train determines the update, validation is held out</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.45">
+        <img class="fig" src="figures/multidof_closure.png" style="width:700px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_anchor_trainval_closure_v1/multisource_local_step.json</div>
+      </div>
+      <div class="col">
+        <img class="fig" src="figures/chi2_reduction.png" style="width:430px">
+        <div class="src">same artifact — response χ² application blocks</div>
+      </div>
+    </div>
+    <ul style="margin-top:2px">
+      <li><b class="k">Verdict: <span class="neg">capture_success = false</span></b> at frozen tolerances — dx/dy carry 0.11–0.25 mm source-dependent bias (~6σ); <span class="pos">R<sub>y</sub> passes in both splits</span>; full rank 3, pooled condition 1881.</li>
+      <li>Yet the update is <b class="k">physically right</b>: held-out response χ² drops 99.6%, residuals shrink 10–15×. The earlier 10-event “dx collapse” (6.7 mm error, sign flip) is now shown to be <b class="k">statistics, not structure</b> — 100× data brought dx error to 0.14 mm.</li>
+    </ul>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">11 / 17</span></div>
+</section>
+
+<!-- ============================ 12. RESULT D2: diagnosis ============================ -->
+<section class="slide">
+  <div class="header"><h1>Result D′ — Where the Remaining Bias Lives</h1><div class="sub">Failure mode changed from statistical collapse to source-dependent systematics</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.5">
+        <img class="fig" src="figures/per_source_recovery.png" style="width:620px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_anchor_trainval_closure_v1/source_fit_diagnostics.csv (18/18 ok)</div>
+      </div>
+      <div class="col">
+        <img class="fig" src="figures/param_correlation.png" style="width:330px">
+        <div class="src">same closure artifact — parameter_correlation</div>
+        <ul style="font-size:14px">
+          <li>Per-source scatter is <b class="k">5–6× the per-source statistical σ</b> (dx std 0.52/0.54 mm vs σ ≈ 0.08–0.10) — a systematic, not noise.</li>
+          <li>Strong <b class="k">dx–R<sub>y</sub> correlation 0.850</b>: non-linear response at the 35 mrad anchor leaks into dx; dx–dy, dy–R<sub>y</sub> ≈ −0.06.</li>
+          <li>Per-source bias correlates only weakly with kinematics (max |Pearson| ≈ 0.45) → not a simple phase-space reweighting effect.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">12 / 17</span></div>
+</section>
+
+<!-- ============================ 13. candidate coverage ============================ -->
+<section class="slide">
+  <div class="header"><h1>Cross-Cutting Bottleneck — Candidate Coverage at the IFT→S1 Edge</h1><div class="sub">First-failure decomposition of complete four-station truth chains (χ² &lt; 25 candidate gate)</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.4">
+        <img class="fig" src="figures/coverage_decomposition.png" style="width:660px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_coverage_decomposition_v1/chain_first_failure_by_point.csv</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li>Dominant loss: <b class="k">0→1 χ²-gate rejection</b>; propagation failures are rare (16–20 chains).</li>
+          <li>Retention at anchor: 44% (train) / 30% (validation) vs 50% / 33% at nominal — gates tuned on nominal geometry cut into misaligned candidates.</li>
+          <li>Raw <i>ungated</i> graph recall on the R<sub>y</sub> corpus is ≈ 0.95 → coverage, not association, sets the ceiling for truth-free alignment updates.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">Note: truth-fixed closure above is immune to this; it bounds any future unknown-association update.</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">13 / 17</span></div>
+</section>
+
+<!-- ============================ 14. status / timeline ============================ -->
+<section class="slide">
+  <div class="header"><h1>Project Status at a Glance</h1><div class="sub">Eleven working days from environment audit to a running multi-DoF iteration</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th style="width:15%">Date (2026)</th><th style="width:56%">Milestone</th><th style="width:29%">Evidence</th></tr>
+      <tr><td>Aug 8–9</td><td>Environment + data audit; tracklet export contract; geometry-only χ² baseline; MC24 field-aware propagation validated</td><td>docs: data_audit, baseline_validation, field_aware_propagation</td></tr>
+      <tr><td>Aug 9–11</td><td><b class="k">Real payload refit chain</b> (station-3 +1 mm closure to 4.9×10<sup>−13</sup> mm); 25-point physical capture scan; curriculum MLP baseline</td><td>outputs/mc24_muon_fasernu_*capture*</td></tr>
+      <tr><td>Aug 10–12</td><td>Pairwise MLP + global route assignment; historical sealed test frozen; V1 trained + sealed scan (negative); V1 mechanism diagnosis; V2 route-aware validation (w = 0)</td><td>docs: geometry_aware_transformer_v1/v2</td></tr>
+      <tr><td>Aug 13</td><td>V3 structured global assignment trained on expanded corpus (994/796) — <span class="neg">negative, suspended</span></td><td>docs: structured_assignment_v3</td></tr>
+      <tr><td>Aug 14</td><td>IFT R<sub>y</sub> physical rotation: ±60 mrad closed to &lt; 1 mrad by local iteration; all association controls pass → rotation leg done</td><td>docs: ift_ry_physical_rotation</td></tr>
+      <tr><td>Aug 15–18</td><td>Multi-DoF (dx, dy, R<sub>y</sub>) loop built; 10-event pilot unstable; 144-point iteration-0 bank complete; <b class="k">closure gate run</b> (this report); project audit + 163 tests green</td><td>docs: global_alignment_multidof_loop, project_audit</td></tr>
+      <tr><td><b>Aug 18</b></td><td><b class="k">Iteration-1 bank in Condor production</b> (cluster 996698, 18 jobs × 8 points × 100 events), anchor at the iteration-0 proposal</td><td>outputs/mc24_multidof_ift_iteration01_*</td></tr>
+    </table>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">14 / 17</span></div>
+</section>
+
+<!-- ============================ 15. TODO ============================ -->
+<section class="slide">
+  <div class="header"><h1>TODO — Next Steps in Dependency Order</h1><div class="sub">From the project audit’s phased plan; no new ML architecture unless a frozen gate fails with truth chains retained</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block">Immediate (this week)</h3>
+        <ul>
+          <li><b class="k">1.</b> Finish iteration-1 production (running), assemble manifest, rerun aggregated closure at the new anchor.</li>
+          <li><b class="k">2.</b> If capture passes at frozen tolerances → first <b class="k">truth-free</b> route-selected update with the frozen V2 backbone (<span style="font-family:'DejaVu Sans Mono';font-size:12px">--payload-id</span> inference → route-selected WLS → verified <span style="font-family:'DejaVu Sans Mono';font-size:12px">--update-json</span> payload) — the first real iteration of the loop.</li>
+          <li><b class="k">3.</b> If the same dx/dy bias persists at the small anchor → attribution studies: per-source Jacobians, FD-step toy scan, R<sub>y</sub>-nonlinearity decomposition.</li>
+        </ul>
+        <h3 class="block">Short term</h3>
+        <ul>
+          <li><b class="k">4.</b> Candidate coverage: understand/relax the 0→1 χ²-gate loss (anchor retention 44%/30%).</li>
+          <li><b class="k">5.</b> Multi-DoF joint-curriculum closure on random joint misalignments (bank complete, manifest refreshed 234/234).</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block">Medium term</h3>
+        <ul>
+          <li><b class="k">6.</b> Field-aware global track fit: needs a Calypso transport-Jacobian export or a validated common-state Acts re-propagation API (interface currently absent — today’s update is route-consistency + WLS).</li>
+          <li><b class="k">7.</b> Admit R<sub>x</sub>, R<sub>z</sub>, dz one at a time, each with FD rank/condition/correlation + held-out closure evidence.</li>
+          <li><b class="k">8.</b> Station → layer → module hierarchy once the Calypso conditions mapping exists.</li>
+        </ul>
+        <h3 class="block">Long term</h3>
+        <ul>
+          <li><b class="k">9.</b> Real-data strategy: 2022 IFT re-export failed its provenance check — unresolved.</li>
+          <li><b class="k">10.</b> After methodology freeze: build a new source-disjoint multi-DoF test bank, evaluate once. The historical sealed test stays untouched.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">15 / 17</span></div>
+</section>
+
+<!-- ============================ 16. summary ============================ -->
+<section class="slide">
+  <div class="header"><h1>Summary</h1><div class="sub">What is established, what is not, and the decision in flight</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block" style="color:#1a7a3c">Established</h3>
+        <ul>
+          <li>End-to-end <b class="k">real</b> misalignment chain (payload → refit → Acts) — exact to 10<sup>−13</sup> mm at truth-fixed closure.</li>
+          <li>On translations ≥ 5 mm: <b class="k">association fails first</b> while candidate truth recall stays 1.0; no Transformer capture-range expansion shown (honest negative).</li>
+          <li>IFT R<sub>y</sub>: recoverable to &lt; 1 mrad at ±60 mrad; rotation is not the association bottleneck.</li>
+          <li>Multi-DoF iteration-0: full-rank, validated linear response (held-out χ² −99.6%); residual dx/dy bias is source-dependent systematics (5–6× stat σ), with dx–R<sub>y</sub> correlation 0.85.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block" style="color:#b02a1e">Not yet established</h3>
+        <ul>
+          <li>Multi-DoF joint recovery at frozen tolerances — <b class="k">iteration-1 closure decides</b> (in production now).</li>
+          <li>Truth-free (unknown-association) alignment update; iterative loop convergence.</li>
+          <li>Raw candidate coverage sufficiency (0→1 losses); 6-DoF, layer/module alignment; anything on real data.</li>
+        </ul>
+        <div class="box" style="margin-top:10px; font-size:13.5px">
+          <b class="k">Ask of the group:</b> feedback on the iteration protocol (anchor radius, FD steps,
+          tolerances) and on the priority of the 0→1 coverage fix vs. the global-fitter interface.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">16 / 17</span></div>
+</section>
+
+<!-- ============================ 17. backup ============================ -->
+<section class="slide">
+  <div class="header"><h1>Backup — Historical Sealed Test &amp; Documented Negative Results</h1><div class="sub">Recorded once, frozen, never re-used for selection</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.05">
+        <img class="fig" src="figures/sealed_test_history.png" style="width:520px">
+        <div class="src">outputs/mc24_muon_2dfluka_multidirection_test_route_level_v1/magnitude_summary.csv (pooled) + V1 sealed scan document</div>
+        <div class="note" style="margin-top:4px">Single frozen 19-event sample — must not be extrapolated; test was never used for model/threshold/calibration selection.</div>
+      </div>
+      <div class="col" style="flex:1.25">
+        <table class="t">
+          <tr><th style="width:44%">Negative / limiting result</th><th>Consequence</th></tr>
+          <tr><td>V3 structured margin fails the gate at every magnitude (fake 0.25–0.32 at nominal)</td><td>line suspended; new hypothesis required</td></tr>
+          <tr><td>Full-event Transformer context does not widen dx/dy capture range; no-context ablation better at 10 mm</td><td>mechanism diagnosis before any larger model</td></tr>
+          <tr><td>One-shot large-range linearization fails for R<sub>y</sub> at ±60 mrad (5–6 mrad)</td><td>local iteration adopted as the protocol</td></tr>
+          <tr><td>Multi-DoF joint closure statistically unstable at 10 events (dx sign flips)</td><td>100 events/source iteration banks</td></tr>
+          <tr><td>Direct route-probability replacement solver-inconsistent (no complete route selected)</td><td>residual utility L = L<sub>edge</sub> + wΔL</td></tr>
+          <tr><td>Local segment q/p unusable as a V1 measurement</td><td>mode-0 propagation enforced everywhere</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML-guided global alignment<span class="pg">17 / 17</span></div>
+</section>
+
+</body>
+</html>

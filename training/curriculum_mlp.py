@@ -48,6 +48,7 @@ def build_candidate_sets(
     target_z_tolerance_mm: float = 1.0e-6,
     feature_set: str = "residual_v1",
     max_events_per_sample: int | None = None,
+    q_over_p_mode: int = 0,
 ) -> list[CandidateSet]:
     """Load only same-payload synthetic/Acts pairs and build physical candidates."""
     pairs = tuple((int(source), int(target)) for source, target in station_pairs)
@@ -74,7 +75,7 @@ def build_candidate_sets(
                         source_station=source_station,
                         target_station=target_station,
                         chi2_gate=chi2_gate,
-                        q_over_p_mode=0,
+                        q_over_p_mode=q_over_p_mode,
                         target_z_tolerance_mm=target_z_tolerance_mm,
                     )
                 )

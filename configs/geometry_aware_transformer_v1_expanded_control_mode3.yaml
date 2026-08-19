@@ -1,0 +1,14 @@
+# Mode-3 matched-retraining variant of the expanded-corpus V1 control.  Every
+# architecture, curriculum, optimizer, calibration, and route-selection value
+# is inherited unchanged from the mode-0 control; only the propagation record
+# variant declared by the physical contract changes (fixed-q/p seed with
+# suppressed q/p covariance transport).  No checkpoint, calibration, or
+# threshold is inherited from any mode-0 artifact.
+base_config: geometry_aware_transformer_v1_expanded_control.yaml
+
+physical_curriculum_mlp:
+  refit:
+    q_over_p_mode: 3
+
+geometry_aware_transformer_v1:
+  q_over_p_mode: 3

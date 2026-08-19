@@ -33,6 +33,8 @@ from alignment.physical_jacobian import (
 )
 from alignment.route_selected_update import (
     align_route_selected_observations,
+    apply_observation_statistics,
+    read_anchor_selected_field_edge_observations,
     read_route_selected_field_edge_observations,
     read_route_selected_observations,
 )
@@ -138,6 +140,7 @@ def _validate_frozen_output(
     expected_point: str,
     movable: Sequence[int],
     observation_kind: str,
+    q_over_p_mode: int = 0,
 ):
     summary_path = path / "association_summary.json"
     observation_file = {
@@ -152,8 +155,12 @@ def _validate_frozen_output(
     summary = _read_json(summary_path)
     if summary.get("test_opened") is not False or summary.get("architecture_or_threshold_tuning") is not False:
         raise ValueError("route-selected update requires a frozen association output sealed from test/tuning")
-    if summary.get("physical_geometry_repropagation") is not True or int(summary.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("route-selected update requires mode-0 physical association output")
+    if summary.get("physical_geometry_repropagation") is not True or int(
+        summary.get("q_over_p_mode", -1)
+    ) != int(q_over_p_mode):
+        raise ValueError(
+            f"route-selected update requires mode-{q_over_p_mode} physical association output"
+        )
     # This scan's synthetic materialization has exactly one payload per
     # backbone run.  Check the table directly so a point cannot accidentally
     # be paired with association results from another real conditions payload.
@@ -170,6 +177,56 @@ def _validate_frozen_output(
         else read_route_selected_observations
     )
     return summary, reader(observation_path, movable_station_ids=movable)
+
+
+def _load_anchor_selected_payload_bank(
+    path: Path,
+    *,
+    expected_point: str,
+    movable: Sequence[int],
+    anchor_table: Path,
+    covariance_calibration: Any = None,
+    q_over_p_mode: int = 0,
+):
+    """Load one payload's candidate graph and re-measure the anchor's route set in it."""
+    config_path = path / "resolved_config.json"
+    synthetic_path = path / "synthetic_tracklets.root"
+    candidates_path = path / "field_candidates.root"
+    if not config_path.is_file() or not synthetic_path.is_file() or not candidates_path.is_file():
+        raise FileNotFoundError(f"materialized payload sample is incomplete: {path}")
+    config = _read_json(config_path)
+    if str(config.get("payload_id")) != expected_point:
+        raise ValueError(
+            f"payload sample {path} has payload_id '{config.get('payload_id')}', expected '{expected_point}'"
+        )
+    if config.get("physical_geometry_repropagation") is not True or int(
+        config.get("q_over_p_mode", -1)
+    ) != int(q_over_p_mode):
+        raise ValueError(
+            f"anchor-selected update requires a mode-{q_over_p_mode} physical payload sample"
+        )
+    bank, audit = read_anchor_selected_field_edge_observations(
+        anchor_table,
+        synthetic_path,
+        candidates_path,
+        movable_station_ids=movable,
+        covariance_calibration=covariance_calibration,
+        q_over_p_mode=q_over_p_mode,
+    )
+    summary = {
+        "payload_sample": str(path),
+        "payload_id": expected_point,
+        "observation_kind": "anchor_selected_field_edge",
+        "anchor_edge_audit": audit,
+        "covariance_calibration": (
+            None if covariance_calibration is None else dict(covariance_calibration.to_json()["provenance"])
+        ),
+        "test_opened": False,
+        "architecture_or_threshold_tuning": False,
+        "physical_geometry_repropagation": True,
+        "q_over_p_mode": int(q_over_p_mode),
+    }
+    return summary, bank
 
 
 def _probe_for_parameter(points: Mapping[str, Mapping[str, object]], name: str, sign: str, anchor: str) -> str:
@@ -207,18 +264,71 @@ def main() -> None:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument(
         "--observation-kind",
-        choices=("field_edge", "leave_one_out"),
+        choices=("field_edge", "leave_one_out", "anchor_selected_field_edge"),
         default="field_edge",
         help=(
-            "Use exact selected mode-0 ACTS edges (default) or the legacy straight-line leave-one-out "
-            "diagnostic table."
+            "Use exact selected mode-0 ACTS edges (default), the legacy straight-line leave-one-out "
+            "diagnostic table, or anchor-selected edges recomputed in every payload's candidate graph. "
+            "The anchor-selected mode keeps the anchor's truth-free route set fixed and looks the same "
+            "origins up in each payload; target/probe arguments then point at the materialized per-payload "
+            "sample directories (synthetic_tracklets.root + field_candidates.root) instead of per-payload "
+            "backbone outputs."
         ),
     )
     parser.add_argument("--damping", type=float, default=1.0)
+    parser.add_argument(
+        "--q-over-p-mode",
+        type=int,
+        default=0,
+        choices=(0, 3),
+        help=(
+            "Propagation record variant of every association input. Mode 0 is the canonical "
+            "production baseline; mode 3 is the fixed-q/p-seed covariance-suppression "
+            "diagnostic variant. All inputs must carry the same mode."
+        ),
+    )
     parser.add_argument("--prior-sigma", action="append", default=None, metavar="PARAMETER:VALUE")
     parser.add_argument("--capture-tolerance", action="append", default=None, metavar="PARAMETER:VALUE")
     parser.add_argument("--rcond", type=float, default=1.0e-10)
     parser.add_argument("--require-full-rank", action="store_true")
+    parser.add_argument(
+        "--covariance-calibration",
+        default=None,
+        help=(
+            "frozen train-only diagonal covariance calibration JSON applied to the "
+            "propagated covariances of every payload before candidate lookup; only "
+            "valid with --observation-kind anchor_selected_field_edge"
+        ),
+    )
+    parser.add_argument(
+        "--huber-k",
+        type=float,
+        default=None,
+        help=(
+            "a priori fixed Huber threshold on the anchor edge Mahalanobis chi2; "
+            "edges above k^2 are down-weighted as w=k/sqrt(chi2) in the WLS solve"
+        ),
+    )
+    parser.add_argument(
+        "--anchor-payload-sample",
+        default=None,
+        help=(
+            "materialized anchor payload sample; with anchor_selected_field_edge the "
+            "anchor bank is then also re-measured from the candidate graph (required "
+            "for a covariance calibration to reach the WLS weight, which is the "
+            "anchor covariance) instead of read from the frozen backbone CSV"
+        ),
+    )
+    parser.add_argument(
+        "--observation-statistics",
+        choices=("replica_weighted", "physical_edge_deduplicated", "physical_edge_inverse_multiplicity_weighted"),
+        default="replica_weighted",
+        help=(
+            "statistical semantics for overlay-reused physical edges; "
+            "replica_weighted is the legacy control, the other two normalize each "
+            "physical edge's total weight to one and should be numerically close"
+        ),
+    )
     args = parser.parse_args()
     if not math.isfinite(args.damping) or not 0.0 < args.damping <= 1.0:
         parser.error("--damping must lie in (0, 1]")
@@ -257,31 +367,86 @@ def main() -> None:
         Path(args.anchor_association_output).expanduser().resolve(),
         expected_point=str(args.anchor_point),
         movable=movable,
-        observation_kind=args.observation_kind,
+        observation_kind="field_edge" if args.observation_kind == "anchor_selected_field_edge" else args.observation_kind,
+        q_over_p_mode=int(args.q_over_p_mode),
     )
-    target_summary, target_bank = _validate_frozen_output(
-        Path(args.target_association_output).expanduser().resolve(),
-        expected_point=str(args.target_point),
-        movable=movable,
-        observation_kind=args.observation_kind,
-    )
-    positive_summaries = {}
-    negative_summaries = {}
-    positive_banks = {}
-    negative_banks = {}
-    for name in names:
-        positive_summaries[name], positive_banks[name] = _validate_frozen_output(
-            positive_paths[name],
-            expected_point=positive_points[name],
+    if args.observation_kind == "anchor_selected_field_edge":
+        anchor_table = (
+            Path(args.anchor_association_output).expanduser().resolve()
+            / "selected_route_field_edge_residuals.csv"
+        )
+        covariance_calibration = None
+        if args.covariance_calibration is not None:
+            from alignment.covariance_calibration import load_covariance_calibration
+
+            covariance_calibration = load_covariance_calibration(args.covariance_calibration)
+    elif args.covariance_calibration is not None:
+        raise ValueError(
+            "--covariance-calibration is only supported with "
+            "--observation-kind anchor_selected_field_edge"
+        )
+
+    if args.observation_kind == "anchor_selected_field_edge":
+
+        def _payload_bank(path: Path, expected_point: str):
+            return _load_anchor_selected_payload_bank(
+                path,
+                expected_point=expected_point,
+                movable=movable,
+                anchor_table=anchor_table,
+                covariance_calibration=covariance_calibration,
+                q_over_p_mode=int(args.q_over_p_mode),
+            )
+
+        if args.anchor_payload_sample is not None:
+            # The WLS weight is the anchor covariance; re-measuring the anchor
+            # bank from its own candidate graph is what lets a frozen covariance
+            # calibration reach the solve.  The route set stays exactly the
+            # frozen backbone's anchor selection.
+            _anchor_sample_summary, anchor_bank = _payload_bank(
+                Path(args.anchor_payload_sample).expanduser().resolve(), str(args.anchor_point)
+            )
+        target_summary, target_bank = _payload_bank(
+            Path(args.target_association_output).expanduser().resolve(), str(args.target_point)
+        )
+        positive_summaries = {}
+        negative_summaries = {}
+        positive_banks = {}
+        negative_banks = {}
+        for name in names:
+            positive_summaries[name], positive_banks[name] = _payload_bank(
+                positive_paths[name], positive_points[name]
+            )
+            negative_summaries[name], negative_banks[name] = _payload_bank(
+                negative_paths[name], negative_points[name]
+            )
+    else:
+        target_summary, target_bank = _validate_frozen_output(
+            Path(args.target_association_output).expanduser().resolve(),
+            expected_point=str(args.target_point),
             movable=movable,
             observation_kind=args.observation_kind,
+            q_over_p_mode=int(args.q_over_p_mode),
         )
-        negative_summaries[name], negative_banks[name] = _validate_frozen_output(
-            negative_paths[name],
-            expected_point=negative_points[name],
-            movable=movable,
-            observation_kind=args.observation_kind,
-        )
+        positive_summaries = {}
+        negative_summaries = {}
+        positive_banks = {}
+        negative_banks = {}
+        for name in names:
+            positive_summaries[name], positive_banks[name] = _validate_frozen_output(
+                positive_paths[name],
+                expected_point=positive_points[name],
+                movable=movable,
+                observation_kind=args.observation_kind,
+                q_over_p_mode=int(args.q_over_p_mode),
+            )
+            negative_summaries[name], negative_banks[name] = _validate_frozen_output(
+                negative_paths[name],
+                expected_point=negative_points[name],
+                movable=movable,
+                observation_kind=args.observation_kind,
+                q_over_p_mode=int(args.q_over_p_mode),
+            )
     # The order is fixed: anchor, p/m for each parameter, then target.  The
     # same provenance intersection is used for every derivative and response.
     banks = [anchor_bank]
@@ -289,8 +454,36 @@ def main() -> None:
         banks.extend((positive_banks[name], negative_banks[name]))
     banks.append(target_bank)
     keys, residuals, covariances, overlap = align_route_selected_observations(banks)
+    physical_edge_keys = [anchor_bank[key].physical_edge_key for key in keys]
+    keys, residuals, covariances, observation_statistics_audit = apply_observation_statistics(
+        keys, residuals, covariances, physical_edge_keys, str(args.observation_statistics)
+    )
     anchor_residual = residuals[0]
     anchor_covariance = covariances[0]
+    huber_summary = None
+    if args.huber_k is not None:
+        huber_k = float(args.huber_k)
+        if not np.isfinite(huber_k) or huber_k <= 0.0:
+            raise ValueError("--huber-k must be positive")
+        # One-step M-estimation: down-weight anchor edges whose Mahalanobis
+        # chi2 exceeds k^2 by inflating their WLS covariance as C/w.  The
+        # threshold k is fixed a priori, never tuned on the split under study.
+        try:
+            inverse = np.linalg.inv(anchor_covariance)
+        except np.linalg.LinAlgError:
+            inverse = np.asarray(
+                [np.linalg.pinv(block) for block in anchor_covariance], dtype=np.float64
+            )
+        chi2 = np.einsum("ni,nij,nj->n", anchor_residual, inverse, anchor_residual)
+        weights = np.minimum(1.0, huber_k / np.sqrt(np.maximum(chi2, 1.0e-300)))
+        anchor_covariance = anchor_covariance / weights[:, None, None]
+        huber_summary = {
+            "k": huber_k,
+            "downweighted_edges": int(np.sum(weights < 1.0)),
+            "total_edges": int(weights.size),
+            "min_weight": float(np.min(weights)),
+            "median_weight": float(np.median(weights)),
+        }
     positive_residual = np.asarray([residuals[1 + 2 * index] for index in range(len(names))])
     negative_residual = np.asarray([residuals[2 + 2 * index] for index in range(len(names))])
     target_residual = residuals[-1]
@@ -417,10 +610,24 @@ def main() -> None:
         "probe_points": {name: {"positive": positive_points[name], "negative": negative_points[name]} for name in names},
         "damping": float(args.damping),
         "observation_kind": str(args.observation_kind),
+        "covariance_calibration": (
+            None
+            if args.covariance_calibration is None
+            else str(Path(args.covariance_calibration).expanduser().resolve())
+        ),
+        "anchor_bank_remeasured_from_candidate_graph": bool(args.anchor_payload_sample),
+        "observation_statistics": observation_statistics_audit,
+        "huber_weighting": huber_summary,
         "observation_contract": (
             "Exact selected mode-0 ACTS edge residual/covariance from the physical candidate graph."
             if args.observation_kind == "field_edge"
-            else "Legacy straight-line leave-one-out residual used only as an explicit diagnostic comparison."
+            else (
+                "Anchor-selected truth-free route set held fixed; exact mode-0 ACTS edge "
+                "residual/covariance recomputed from every payload's physical candidate graph "
+                "by original tracklet provenance."
+                if args.observation_kind == "anchor_selected_field_edge"
+                else "Legacy straight-line leave-one-out residual used only as an explicit diagnostic comparison."
+            )
         ),
         "update_semantics": (
             "A local physical Newton/Gauss-Newton step in payload coordinates from the anchor residual toward "

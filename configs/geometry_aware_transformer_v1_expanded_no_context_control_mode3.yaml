@@ -1,0 +1,14 @@
+# Mode-3 matched-retraining variant of the expanded-corpus no-context control.
+# Mirrors the mode-0 standalone no-context control exactly (including its
+# predeclared chi2 hyperparameter candidate) with only the propagation record
+# variant changed to the fixed-q/p seed covariance-suppressed mode.
+base_config: geometry_aware_transformer_v1_expanded_control_mode3.yaml
+
+geometry_aware_transformer_v1:
+  ablations:
+    geometry_aware_no_multistation_context:
+      inherit_chi2_hyperparameters_from: null
+      chi2_hyperparameter_candidates:
+        - label: lambda_1_tau_2000k_predeclared
+          chi2_lambda: 1.0
+          chi2_tau: 2000000.0

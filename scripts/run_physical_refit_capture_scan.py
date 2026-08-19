@@ -638,8 +638,14 @@ def _run_shell(
 def _calypso_command(command: str) -> str:
     # The driver is often launched from LCG_110_cuda for its YAML/plotting
     # dependencies.  Do not let that Python 3.13 stack leak into Athena's
-    # Python 3.9/LCG_104d process.
-    clean_environment = "unset PYTHONPATH LD_LIBRARY_PATH ROOTSYS ROOT_INCLUDE_PATH PYTHONHOME"
+    # Python 3.9/LCG_104d process.  Stale Athena setup markers inherited from a
+    # polluted submit/login shell (e.g. via Condor `getenv = True`) make the
+    # Athena/AthenaExternals setup scripts return early without exporting their
+    # PYTHONPATH, so clear them together with the Python paths.
+    clean_environment = (
+        "unset PYTHONPATH LD_LIBRARY_PATH ROOTSYS ROOT_INCLUDE_PATH PYTHONHOME"
+        " Athena_SET_UP AthenaExternals_SET_UP"
+    )
     return f"{clean_environment}\nsource {_quote(SETUP_SCRIPT)} calypso\n{command}"
 
 

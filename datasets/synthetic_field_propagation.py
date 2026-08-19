@@ -150,8 +150,8 @@ def write_synthetic_field_candidate_root(
     exporter convention change fail closed rather than silently approximating
     a propagation to a different target plane.
     """
-    if q_over_p_mode != 0:
-        raise ValueError("synthetic physical candidate export is restricted to q_over_p_mode=0")
+    if q_over_p_mode not in (0, 1, 2, 3):
+        raise ValueError("synthetic physical candidate export requires a known q_over_p_mode")
     if not np.isfinite(target_z_tolerance_mm) or target_z_tolerance_mm < 0.0:
         raise ValueError("target_z_tolerance_mm must be finite and non-negative")
     synthetic_path = Path(synthetic_tracklets).expanduser().resolve()

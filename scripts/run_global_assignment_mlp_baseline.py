@@ -722,6 +722,16 @@ def main() -> None:
             "comparisons; its station-pair and feature schema are verified"
         ),
     )
+    parser.add_argument(
+        "--q-over-p-mode",
+        type=int,
+        default=0,
+        choices=(0, 3),
+        help=(
+            "propagation record variant used to build the physical candidate graph; "
+            "the synthetic manifest must certify the same mode"
+        ),
+    )
     args = parser.parse_args()
 
     config_path = Path(args.config).expanduser().resolve()
@@ -737,8 +747,10 @@ def main() -> None:
     manifest_path, samples, manifest = _load_manifest_for_scope(
         args.synthetic_manifest, validation_only=not test_permitted
     )
-    if int(manifest.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("global-assignment baseline supports only physical mode-0 propagation")
+    if int(manifest.get("q_over_p_mode", -1)) != int(args.q_over_p_mode):
+        raise ValueError(
+            f"synthetic manifest q_over_p_mode does not match the requested mode {args.q_over_p_mode}"
+        )
     condition_axis = _validate_condition_contract(root, samples)
     output_root = Path(args.output_dir).expanduser().resolve()
     if output_root.exists() and any(output_root.iterdir()):
@@ -765,7 +777,7 @@ def main() -> None:
             "station_pairs": [list(pair) for pair in station_pairs],
             "candidate_chi2_gates": candidate_gates,
             "calibration_scope": calibration_scope,
-            "q_over_p_mode": 0,
+            "q_over_p_mode": int(args.q_over_p_mode),
             "condition_axis": condition_axis,
             "physical_geometry_repropagation": True,
             "model_family": "pairwise_mlp_plus_global_assignment_only",
@@ -782,10 +794,12 @@ def main() -> None:
     )
 
     train_sets = build_candidate_sets(
-        train_samples, station_pairs, chi2_gate=None, feature_set=feature_set
+        train_samples, station_pairs, chi2_gate=None, feature_set=feature_set,
+        q_over_p_mode=int(args.q_over_p_mode),
     )
     validation_sets = build_candidate_sets(
-        validation_samples, station_pairs, chi2_gate=None, feature_set=feature_set
+        validation_samples, station_pairs, chi2_gate=None, feature_set=feature_set,
+        q_over_p_mode=int(args.q_over_p_mode),
     )
     model_topology = str(mlp.get("model_topology", "shared"))
     if model_topology not in {"shared", "station_pair_ensemble"}:
@@ -1231,7 +1245,8 @@ def main() -> None:
     pair_rows: list[dict[str, object]] = []
     if test_permitted and has_validation_operating_point:
         test_sets = build_candidate_sets(
-            test_samples, station_pairs, chi2_gate=None, feature_set=feature_set
+            test_samples, station_pairs, chi2_gate=None, feature_set=feature_set,
+            q_over_p_mode=int(args.q_over_p_mode),
         )
         test_raw_scores = (
             score_candidate_sets(model, artifact, test_sets)
@@ -1310,7 +1325,7 @@ def main() -> None:
             "method": "curriculum_pairwise_mlp_plus_global_assignment",
             "transformer_started": False,
             "physical_geometry_repropagation": True,
-            "q_over_p_mode": 0,
+            "q_over_p_mode": int(args.q_over_p_mode),
             "condition_axis": condition_axis,
             "source_split_audit": split_audit,
             "candidate_chi2_gates": candidate_gates,

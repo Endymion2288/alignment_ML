@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>FASER ML 对准 — 进展汇报（中文版）</title>
+<style>
+  @page { size: 338.667mm 190.5mm; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans", "DejaVu Sans", "Droid Sans Fallback", sans-serif;
+         color: #16233b; }
+  .slide { width: 1280px; height: 720px; page-break-after: always; position: relative;
+           background: #ffffff; overflow: hidden; }
+  .slide:last-child { page-break-after: avoid; }
+
+  .header { padding: 26px 48px 0 48px; }
+  .header h1 { font-size: 27px; margin: 0 0 4px 0; color: #0b3a63; letter-spacing: 0.2px; }
+  .header .sub { font-size: 13.5px; color: #66788f; margin-bottom: 8px; }
+  .rule { height: 3px; background: linear-gradient(90deg, #0b5fa5 0 34%, #e8eef5 34% 100%);
+          margin: 0 48px; }
+  .content { padding: 20px 48px 0 48px; font-size: 15.5px; line-height: 1.42; }
+  .footer { position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            font-size: 11px; color: #8090a5; padding: 8px 48px; }
+  .footer .pg { float: right; }
+
+  .cols { display: flex; gap: 26px; }
+  .col { flex: 1; min-width: 0; }
+  img.fig { display: block; margin: 6px auto; }
+  .figcap { font-size: 11.5px; color: #66788f; text-align: center; margin-top: 2px; }
+
+  h3.block { font-size: 16px; color: #0b5fa5; margin: 10px 0 6px 0; }
+  ul { margin: 4px 0 8px 0; padding-left: 22px; }
+  li { margin: 4.5px 0; }
+  b.k { color: #0b3a63; }
+  .neg { color: #b02a1e; font-weight: 600; }
+  .pos { color: #1a7a3c; font-weight: 600; }
+
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 10px;
+          border-radius: 10px; vertical-align: middle; }
+  .chip.pass { background: #e3f3e9; color: #15723a; border: 1px solid #9ed2b2; }
+  .chip.fail { background: #fbe6e3; color: #b02a1e; border: 1px solid #eab0a8; }
+  .chip.info { background: #e7eff8; color: #0b4f86; border: 1px solid #aac8e4; }
+  .chip.warn { background: #fdf2e0; color: #8a5a12; border: 1px solid #ecc98f; }
+
+  table.t { border-collapse: collapse; width: 100%; font-size: 12.8px; }
+  table.t th { background: #0b3a63; color: #fff; padding: 5px 8px; text-align: left;
+               font-weight: 600; }
+  table.t td { padding: 4.5px 8px; border-bottom: 1px solid #e2e8f0; }
+  table.t tr:nth-child(even) td { background: #f4f7fb; }
+  table.t td.num, table.t th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .box { border: 1px solid #cdd9e6; border-radius: 8px; padding: 10px 14px;
+         background: #f7fafd; margin: 6px 0; }
+  .flow { display: flex; align-items: stretch; gap: 6px; margin: 10px 0; }
+  .flow .step { flex: 1; background: #eef4fa; border: 1px solid #b9cfe4; border-radius: 7px;
+                padding: 8px 6px; text-align: center; font-size: 12px; line-height: 1.3;
+                display: flex; align-items: center; justify-content: center; }
+  .flow .arr { align-self: center; color: #0b5fa5; font-size: 15px; font-weight: 700; }
+
+  .title-slide { background: linear-gradient(135deg, #081c33 0%, #0b3a63 55%, #12558e 100%);
+                 color: #fff; }
+  .title-slide .inner { padding: 120px 90px; }
+  .title-slide h1 { font-size: 42px; margin: 0 0 18px 0; line-height: 1.22; }
+  .title-slide h2 { font-size: 20px; font-weight: 400; color: #bcd4ec; margin: 0 0 40px 0; }
+  .title-slide .meta { font-size: 16px; color: #dce8f5; line-height: 1.7; }
+  .title-slide .band { height: 6px; width: 220px; background: #e69f00; margin-bottom: 34px; }
+
+  .note { font-size: 12px; color: #66788f; }
+  .src { font-size: 10.5px; color: #93a3b8; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ============================ 1. 标题 ============================ -->
+<section class="slide title-slide">
+  <div class="inner">
+    <div class="band"></div>
+    <h1>面向 FASER 谱仪的机器学习径迹关联<br>与全局对准（Global Alignment）</h1>
+    <h2>进展汇报：真实物理 refit 链路、几何感知 Transformer、多自由度对准迭代闭环</h2>
+    <div class="meta">
+      X.&nbsp;Cheng &nbsp;•&nbsp; FASER Alignment Group 组会<br>
+      2026 年 8 月 18 日 &nbsp;•&nbsp; 全部结果可由 <i>alignment_ML</i> 仓库 artifacts 复现
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2. 大纲 ============================ -->
+<section class="slide">
+  <div class="header"><h1>大纲</h1><div class="sub">本次汇报内容</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block">1 &nbsp;物理动机（Motivation）</h3>
+        <ul><li>为什么需要全局对准；为什么关联（association）是前提</li></ul>
+        <h3 class="block">2 &nbsp;数据集（Dataset）</h3>
+        <ul><li>基于 MC24 的真实物理错位库；source 级隔离的 train/validation；test 封存政策</li></ul>
+        <h3 class="block">3 &nbsp;模型细节（Models）</h3>
+        <ul><li>pairwise MLP + route 求解器；几何感知 Transformer V1/V2；V3 结构化 margin（负结果）</li></ul>
+      </div>
+      <div class="col">
+        <h3 class="block">4 &nbsp;结果（Results）</h3>
+        <ul>
+          <li>平移与转动下的关联 capture range</li>
+          <li>单参数物理 closure：dx 与 R<sub>y</sub></li>
+          <li>多自由度（dx, dy, R<sub>y</sub>）iteration-0 聚合 closure —— 决策门</li>
+        </ul>
+        <h3 class="block">5 &nbsp;TODO / 下一步</h3>
+        <ul><li>iteration-1 生产（进行中）、免 truth 更新、候选覆盖率、全局拟合接口、更多自由度</li></ul>
+      </div>
+    </div>
+    <div class="box" style="margin-top:14px">
+      <b class="k">阅读说明。</b>本 slides 中每个数字都直接读取自 <span style="font-family:'DejaVu Sans Mono'">outputs/</span>
+      下的版本化 artifacts，图注标明了来源文件。封存的 test 数据库从未被打开——除明确标注
+      “历史封存 test（记录值）”外，所有模型结果均为 validation-only。
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">2 / 17</span></div>
+</section>
+
+<!-- ============================ 3. 动机 ============================ -->
+<section class="slide">
+  <div class="header"><h1>物理动机</h1><div class="sub">为什么做这个项目</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.12">
+        <h3 class="block">物理需求</h3>
+        <ul>
+          <li>FASER 谱仪（IFT + 三个 SCT 径迹站，站间偶极磁场）测量 ~100&nbsp;GeV–TeV 缪子；站级错位直接偏移动量测量与衰变顶点重建。</li>
+          <li>对准需要<b class="k">穿过全部四个站</b>的径迹：每个站的局部 <i>tracklet</i> 必须先被<b class="k">关联</b>成全局 route，全局拟合才能运行。</li>
+          <li>在毫米级错位下，<b class="k">关联本身先失败</b>——没有正确拼出的径迹，就无从谈起对准。</li>
+        </ul>
+        <h3 class="block">为什么用机器学习</h3>
+        <ul>
+          <li>关联是物理候选图上的离散模式识别问题；几何学习模型有望把 <b class="k">capture range</b> 扩展到纯 χ² 匹配之外。</li>
+          <li>ML 关联主干 + 迭代式 <i>关联 → 拟合 → 对准 → 重新 refit</i> 闭环，目标是<b class="k">不依赖 truth 关联</b>的全局对准。</li>
+        </ul>
+      </div>
+      <div class="col" style="flex:1">
+        <img class="fig" src="figures/detector_schematic.png" style="width:560px">
+        <div class="figcap">谱仪布局与 IFT（0 号站）当前激活的三个对准自由度。</div>
+        <div class="box" style="margin-top:10px; font-size:13.5px">
+          <b class="k">本项目的证据标准：</b>端到端<b>真实</b> Calypso/Acts 物理链（无坐标平移替代物）、
+          严格 source 级隔离的 train/validation 治理、封存 test 库使用冻结且带 SHA-256 哈希钉住的合同。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">3 / 17</span></div>
+</section>
+
+<!-- ============================ 4. 方法链路 ============================ -->
+<section class="slide">
+  <div class="header"><h1>方法：真实物理链 + 迭代闭环</h1><div class="sub">每个错位点都是独立重重建，不是坐标平移</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <h3 class="block">单点物理链（nominal、anchor 与每个有限差分 probe 完全一致）</h3>
+    <div class="flow">
+      <div class="step">/Tracker/Align<br>SQLite/POOL payload</div><div class="arr">→</div>
+      <div class="step">SCT_Cluster<br>Container</div><div class="arr">→</div>
+      <div class="step">SegmentFitRefit<br>SegmentsRefit</div><div class="arr">→</div>
+      <div class="step">NtupleDumper<br>tracklets ROOT</div><div class="arr">→</div>
+      <div class="step">FaserActsExtrapolation<br>Tool (mode 0)</div><div class="arr">→</div>
+      <div class="step">候选图 +<br>residual / χ²</div>
+    </div>
+    <div class="cols" style="margin-top:6px">
+      <div class="col">
+        <h3 class="block">对准更新（当前迭代）</h3>
+        <ul>
+          <li>基于 ±probe refit 的 truth-fixed 多源<b class="k">有限差分（FD）Jacobian</b>；加权最小二乘局部步；train 决定更新，<b class="k">validation 独立 held-out 验证</b>。</li>
+          <li>Payload 语义已对 Calypso 源码核实：每站 [dx, dy, dz, Rx, Ry, Rz]，全局 T·Rz·Ry·Rx；segment refit 与 Acts surface 都跟随 payload。</li>
+          <li>局部 segment q/p <span class="neg">不能</span>用作测量 → 传播一律 mode 0（约 25 处检查点强制）。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block">统计治理</h3>
+        <ul>
+          <li>划分单位为<b class="k">原始 xAOD 文件</b>：10 train / 8 validation source；封存多方向 test（2 source，19 事件）于 2026-08-12 冻结、哈希钉住，仅两个获准的历史扫描可读。</li>
+          <li>模型选择、刻度、阈值全部 <b class="k">validation-only</b>；85 份合同 JSON 审计确认无越权 test 访问。</li>
+          <li>全量测试：<span class="pos">163 passed</span>。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">4 / 17</span></div>
+</section>
+
+<!-- ============================ 5. 数据集 ============================ -->
+<section class="slide">
+  <div class="header"><h1>数据集</h1><div class="sub">MC24 100 GeV FASERν 缪子 —— IFT+1+2+3 控制样本，全部经真实物理链生产</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th>数据库（outputs/）</th><th>Sources</th><th class="num">事件数</th><th>条件轴</th><th>点数 / source</th><th>状态</th></tr>
+      <tr><td>扩展 dx/dy 物理库 <span class="note">mc24_v3_expanded_trainval_physical_v1</span></td><td>10 train + 8 val</td><td class="num">994 / 796</td><td>dx, dy ∈ {0, 0.1, 1, 5, 10, 50} mm</td><td>6</td><td><span class="chip pass">完整 108/108</span></td></tr>
+      <tr><td>IFT R<sub>y</sub> 物理库 <span class="note">mc24_ift_ry_expanded_trainval_physical_v1</span></td><td>10 train + 8 val</td><td class="num">994 / 796</td><td>R<sub>y</sub> ∈ {0, ±10, ±25, ±40, ±60} mrad + 4 个联合点</td><td>13</td><td><span class="chip pass">完整 234/234</span></td></tr>
+      <tr><td>多自由度 iteration-0 anchor 库 <span class="note">mc24_multidof_ift_iteration00_anchor_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>anchor (+2.0 mm, −1.5 mm, +35 mrad) + FD probes</td><td>8</td><td><span class="chip pass">完整 144/144</span></td></tr>
+      <tr><td>多自由度 joint curriculum 库 <span class="note">mc24_multidof_ift_joint_curriculum_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>随机联合 (dx, dy, R<sub>y</sub>)</td><td>13</td><td><span class="chip pass">完整 234/234</span></td></tr>
+      <tr><td>多自由度 <b>iteration-1</b> 库 <span class="note">mc24_multidof_ift_iteration01_anchor_*</span></td><td>10 train + 8 val</td><td class="num">100 / source</td><td>anchor (−0.14 mm, +0.11 mm, +0.74 mrad)</td><td>8</td><td><span class="chip warn">生产中 — cluster 996698</span></td></tr>
+      <tr><td>历史封存多方向 test <span class="note">(100116/100117)</span></td><td>2 test</td><td class="num">19</td><td>dx/dy × {0, 0.1, 1, 5, 10, 50} mm</td><td>19</td><td><span class="chip info">封存，未触碰</span></td></tr>
+    </table>
+    <div class="cols" style="margin-top:10px">
+      <div class="col">
+        <ul>
+          <li><b class="k">Tracklet 合同</b> <span style="font-family:'DejaVu Sans Mono'; font-size:12px">faser-tracklets-v1</span>：站号、全局 (x, y, z, t<sub>x</sub>, t<sub>y</sub>)、[x, y, t<sub>x</sub>, t<sub>y</sub>] 全协方差、拟合质量、hit pattern、MC truth 标签。</li>
+          <li>划分单位为原始 xAOD 文件；train/validation UID 交集为 0；test 路径从不解析。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>6 个 source 为 98–99 事件而非 100（输入 xAOD 自身属性，对所有点一致——不是作业丢失）。</li>
+          <li>全部语料：q/p mode 0、物理几何重传播、无任何坐标替代物。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">5 / 17</span></div>
+</section>
+
+<!-- ============================ 6. 模型 ============================ -->
+<section class="slide">
+  <div class="header"><h1>模型细节</h1><div class="sub">关联模型作用于既有物理候选图——图本身从不被修改</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th style="width:17%">模型</th><th style="width:37%">架构</th><th style="width:26%">训练</th><th style="width:20%">状态</th></tr>
+      <tr><td><b class="k">Pairwise MLP + route</b></td><td>边 MLP 12→64→64→1，residual_v1 特征；相邻站 unit-capacity route set-packing 求解器（MILP + DP 快速路径），带 dustbin</td><td>物理 curriculum 0/0.1 → 5 → 50 mm；validation-only Platt 刻度与阈值</td><td><span class="chip pass">canonical 基线</span></td></tr>
+      <tr><td><b class="k">V1 几何感知 Transformer</b></td><td>Tracklet 编码器（state、协方差对角、χ²/ndf、hit 数、layer 占用位、站 embedding）→ 4 个稀疏 block、8 头、宽度 128、FFN 128→256→128；注意力仅在既有物理边上：QK/√d + MLP(g<sub>ij</sub>) − λχ²<sub>ij</sub>/2τ，g = [r, pulls, log1p χ², logdet S, Δz] + 站对/方向 embedding；局部边残差头</td><td>加权 BCE、事件图均匀采样、hard-negative ×2；curriculum 8/10/12 epoch（局部阶段 25/30/35）</td><td><span class="chip info">canonical；未见 capture range 扩展</span></td></tr>
+      <tr><td><b class="k">V2 route-aware</b></td><td>V1 backbone 冻结 + 对每条既有完整链 IFT→S1→S2→S3 构造 route query（4 节点态 + 3 边特征 + 站对 embedding + 3 个 backbone logit）；与求解器一致的残差效用 L = L<sub>edge</sub> + w·(L<sub>route</sub> − L<sub>edge</sub>)</td><td>边 focal BCE + route 一致性 focal BCE + 端点 log-sum-exp 竞争 + fake-endpoint softplus；route 库 800,228 train / 148,551 val 条，truth-blind</td><td><span class="chip pass">闭环所用冻结关联主干</span></td></tr>
+      <tr><td><b class="k">V3 结构化 margin</b></td><td>loss-augmented 结构化全局指派目标</td><td>exact-margin 与 soft 两个变体，扩展语料</td><td><span class="chip fail">负结果 —— 已暂停</span></td></tr>
+    </table>
+    <ul style="margin-top:8px">
+      <li>V1 机理诊断（1,440 val 事件，175k 条有向消息边）：全局消息几乎不改变边排序（分数 MAE 0.0135，rank corr 0.9994；边 AP 变化 ≤ 0.003），而节点态出现过平滑（站内平均 cosine 0.319 → 0.549）——<b class="k">局部边解码器占主导</b>。</li>
+      <li>V2 直接 route 概率替换与求解器不一致（从未选中任何完整 route）；残差形式修复了这一点。route query 本身 validation AP 0.4095 / AUC 0.9449；刻度后 ECE 0.0177 → 0.00312。</li>
+    </ul>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">6 / 17</span></div>
+</section>
+
+<!-- ============================ 7. 结果 A：平移 ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 A —— 大平移下关联先失败</h1><div class="sub">扩展 dx/dy 语料，validation-only 冻结控制</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <img class="fig" src="figures/translation_controls.png" style="width:1010px">
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li>原始候选图在<b class="k">所有幅度下保持 100% truth 链 recall</b>——失败发生在下游关联环节。</li>
+          <li>V2 BCE route query 在 0–1 mm 通过门槛（nominal 0.916 / 0.967 / 0.044）；<span class="neg">≥ 5 mm 所有模型全部失败</span>（V2 5 mm：效率 0.756，纯度 0.946，fake 0.072）。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>MLP 基线在 nominal 即未过 fake 门槛（0.063）。</li>
+          <li>V3 结构化 margin：六个幅度 capture 全为 0 → <span class="neg">确认死路</span>，已暂停。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">outputs/mc24_v3_expanded_trainval_validation_control_plots_v3/route_validation_control_summary.csv</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">7 / 17</span></div>
+</section>
+
+<!-- ============================ 8. 结果 A′：capture 扫描 ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 A′ —— 物理 refit 捕获边界（truth-fixed）</h1><div class="sub">25 点扫描：9 个幅度 × 3 个方向，每点完整重重建</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.35">
+        <img class="fig" src="figures/capture_scan.png" style="width:660px">
+        <div class="src">outputs/mc24_muon_fasernu_physical_capture_scan_v1/capture_scan_summary.json</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li>truth-fixed 下，真实 refit 链上的单步线性更新<b class="k">捕获全部 0.1 mm 试验（3/3）</b>，在严格 0.01 mm 判据下<span class="neg">≥ 1 mm 全部失败（0/3）</span>；≥ 500 mm 时拟合秩直接坍缩。</li>
+          <li> sanity 锚点：station-3 +1 mm 物理 closure 恢复误差最大 <b class="k">4.9 × 10<sup>−13</sup> mm</b>（27 对 truth-matched）——链路本身精确；capture 受限于线性化与关联范围。</li>
+          <li class="note">该结果依赖具体配置（χ² 门、seed 窗口），不是普适的探测器容差。</li>
+        </ul>
+        <div class="box" style="font-size:13px">
+          上述 0.1–1 mm 关联边界说明：应当围绕<b class="k">移动 anchor</b> 迭代，
+          而不是指望一次巨大的线性步。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">8 / 17</span></div>
+</section>
+
+<!-- ============================ 9. 结果 B：Ry 控制 ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 B —— 转动不是关联瓶颈</h1><div class="sub">IFT R<sub>y</sub> 语料，validation-only 冻结控制（796 事件，8 个 held-out source）</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <img class="fig" src="figures/ry_controls.png" style="width:930px">
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li>所有冻结模型<b class="k">在 |R<sub>y</sub>| = 60 mrad 以内全部通过主门槛</b>（capture 5/5）；V1 full-context 最优（效率 nominal 0.965 / 60 mrad 0.963）。物理校验：±60 mrad → Δx = ∓111.5 mm，Δt<sub>x</sub> = ±0.060。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>V2 同 checkpoint edge-only 控制未过 fake 门槛（0.063）——route query 对 V2 是<b class="k">承重的</b>。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">outputs/ift_ry_validation_control_assessment_v2/ift_ry_validation_route_controls.csv</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">9 / 17</span></div>
+</section>
+
+<!-- ============================ 10. 结果 C：Ry closure ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 C —— ±60 mrad 下 IFT R<sub>y</sub> 恢复到 &lt; 1 mrad</h1><div class="sub">真实 /Tracker/Align 转动 payload 的局部物理迭代</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.15">
+        <img class="fig" src="figures/ry_closure.png" style="width:610px">
+        <div class="src">outputs/mc24_ift_ry_refinement_smoke_v1/local_step_to_p60/closure.json, …/local_step_to_m60/closure.json</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li><span class="neg">从 nominal 一次性线性化失败</span>（±60 mrad 误差 5.78 / 5.19 mrad）——大转动响应是非线性的。</li>
+          <li><span class="pos">局部迭代闭合</span>：anchor ∓50 mrad、probe ∓45/∓55 mrad，held-out ±60 mrad 恢复为 <b class="k">+60.069 / −60.412 mrad</b>（rank 1、条件数 1；S1–S3 固定到 10<sup>−15</sup>）。</li>
+          <li>无 truth 泄漏：导数只用 probe refit；held-out 点从不进入拟合。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="box" style="font-size:13.5px; margin-top:4px">
+      结合结果 B：链路的转动支路已<b class="k">闭合</b>——可辨识、可恢复，且在 60 mrad 尺度不受关联限制。
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">10 / 17</span></div>
+</section>
+
+<!-- ============================ 11. 结果 D：多自由度 closure ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 D —— 多自由度 iteration-0 closure：决策门</h1><div class="sub">18 source × 8 个真实 refit 点；train 决定更新，validation 独立 held-out</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.45">
+        <img class="fig" src="figures/multidof_closure.png" style="width:700px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_anchor_trainval_closure_v1/multisource_local_step.json</div>
+      </div>
+      <div class="col">
+        <img class="fig" src="figures/chi2_reduction.png" style="width:430px">
+        <div class="src">同一 artifact —— response χ² application 块</div>
+      </div>
+    </div>
+    <ul style="margin-top:2px">
+      <li><b class="k">判定：<span class="neg">capture_success = false</span></b>（冻结容差下）——dx/dy 存在 0.11–0.25 mm 源依赖偏差（~6σ）；<span class="pos">R<sub>y</sub> 在两个 split 均通过</span>；满秩 rank 3，pooled 条件数 1881。</li>
+      <li>但更新在<b class="k">物理上是对的</b>：held-out response χ² 下降 99.6%，残差缩小 10–15 倍。先前 10 事件的 dx“崩塌”（误差 6.7 mm、符号翻转）现被证明是<b class="k">统计涨落而非结构性失败</b>——100 倍统计量后 dx 误差降至 0.14 mm。</li>
+    </ul>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">11 / 17</span></div>
+</section>
+
+<!-- ============================ 12. 结果 D′：诊断 ============================ -->
+<section class="slide">
+  <div class="header"><h1>结果 D′ —— 剩余偏差的来源</h1><div class="sub">失败模式已从统计崩塌转为源依赖系统差</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.5">
+        <img class="fig" src="figures/per_source_recovery.png" style="width:620px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_anchor_trainval_closure_v1/source_fit_diagnostics.csv（18/18 ok）</div>
+      </div>
+      <div class="col">
+        <img class="fig" src="figures/param_correlation.png" style="width:330px">
+        <div class="src">同一 closure artifact —— parameter_correlation</div>
+        <ul style="font-size:14px">
+          <li>逐源散布是逐源统计 σ 的 <b class="k">5–6 倍</b>（dx std 0.52/0.54 mm vs σ ≈ 0.08–0.10）——是系统差而非噪声。</li>
+          <li>强 <b class="k">dx–R<sub>y</sub> 相关 0.850</b>：35 mrad anchor 处的非线性响应泄漏进 dx；dx–dy、dy–R<sub>y</sub> ≈ −0.06。</li>
+          <li>逐源偏差与运动学仅有弱相关（|Pearson| 最大 ≈ 0.45）→ 不是简单的相空间权重效应。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">12 / 17</span></div>
+</section>
+
+<!-- ============================ 13. 候选覆盖率 ============================ -->
+<section class="slide">
+  <div class="header"><h1>跨环节瓶颈 —— IFT→S1 边上的候选覆盖率</h1><div class="sub">完整四站 truth 链的首个失败环节分解（候选 χ² &lt; 25 门）</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.4">
+        <img class="fig" src="figures/coverage_decomposition.png" style="width:660px">
+        <div class="src">outputs/mc24_multidof_ift_iteration00_coverage_decomposition_v1/chain_first_failure_by_point.csv</div>
+      </div>
+      <div class="col">
+        <ul>
+          <li>主导损失：<b class="k">0→1 χ² 门拒绝</b>；传播失败很少（16–20 条链）。</li>
+          <li>anchor 点保留率 44%（train）/ 30%（validation），nominal 为 50% / 33%——在 nominal 几何上调出的门会切掉错位后的候选。</li>
+          <li>R<sub>y</sub> 语料上<i>未加门</i>的原始图 recall ≈ 0.95 → 对免 truth 对准更新而言，覆盖率（而非关联）才是上限。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="src">注：上述 truth-fixed closure 不受此影响；该覆盖率约束的是未来的 unknown-association 更新。</div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">13 / 17</span></div>
+</section>
+
+<!-- ============================ 14. 状态时间线 ============================ -->
+<section class="slide">
+  <div class="header"><h1>项目状态一览</h1><div class="sub">十一个工作日：从环境审计到运行中的多自由度迭代</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <table class="t">
+      <tr><th style="width:15%">日期（2026）</th><th style="width:56%">里程碑</th><th style="width:29%">证据</th></tr>
+      <tr><td>8 月 8–9 日</td><td>环境 + 数据审计；tracklet 导出合同；纯几何 χ² 基线；MC24 带场传播验证</td><td>docs: data_audit, baseline_validation, field_aware_propagation</td></tr>
+      <tr><td>8 月 9–11 日</td><td><b class="k">真实 payload refit 链</b>（station-3 +1 mm closure 达 4.9×10<sup>−13</sup> mm）；25 点物理 capture 扫描；curriculum MLP 基线</td><td>outputs/mc24_muon_fasernu_*capture*</td></tr>
+      <tr><td>8 月 10–12 日</td><td>Pairwise MLP + 全局 route 指派；历史 test 封存；V1 训练 + 封存扫描（负结果）；V1 机理诊断；V2 route-aware 验证（w = 0）</td><td>docs: geometry_aware_transformer_v1/v2</td></tr>
+      <tr><td>8 月 13 日</td><td>V3 结构化全局指派在扩展语料（994/796）上完成训练验证 —— <span class="neg">负结果，暂停</span></td><td>docs: structured_assignment_v3</td></tr>
+      <tr><td>8 月 14 日</td><td>IFT R<sub>y</sub> 真实转动：±60 mrad 局部迭代恢复到 &lt; 1 mrad；全部关联控制通过 → 转动支路完成</td><td>docs: ift_ry_physical_rotation</td></tr>
+      <tr><td>8 月 15–18 日</td><td>多自由度（dx, dy, R<sub>y</sub>）闭环搭建；10 事件试点不稳定；144 点 iteration-0 库完成；<b class="k">closure 决策门已运行</b>（本次汇报）；项目审查 + 163 测试全绿</td><td>docs: global_alignment_multidof_loop, project_audit</td></tr>
+      <tr><td><b>8 月 18 日</b></td><td><b class="k">iteration-1 库 Condor 生产中</b>（cluster 996698，18 作业 × 8 点 × 100 事件），anchor 取 iteration-0 的提议值</td><td>outputs/mc24_multidof_ift_iteration01_*</td></tr>
+    </table>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">14 / 17</span></div>
+</section>
+
+<!-- ============================ 15. TODO ============================ -->
+<section class="slide">
+  <div class="header"><h1>TODO —— 按依赖顺序的下一步</h1><div class="sub">来自项目审查的分阶段计划；除非冻结门槛在 truth 链保留下失败，否则不新增 ML 架构</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block">近期（本周）</h3>
+        <ul>
+          <li><b class="k">1.</b> 完成 iteration-1 生产（进行中），组装 manifest，在新 anchor 重跑聚合 closure。</li>
+          <li><b class="k">2.</b> 若冻结容差下 capture 通过 → 用冻结 V2 主干执行首个<b class="k">免 truth</b> 的 route-selected 更新（<span style="font-family:'DejaVu Sans Mono';font-size:12px">--payload-id</span> 推理 → route-selected WLS → 带验证的 <span style="font-family:'DejaVu Sans Mono';font-size:12px">--update-json</span> payload）——闭环的第一次真实迭代。</li>
+          <li><b class="k">3.</b> 若小 anchor 处 dx/dy 偏差依旧 → 归因研究：逐源 Jacobian 对比、FD 步长 toy 扫描、R<sub>y</sub> 非线性分解。</li>
+        </ul>
+        <h3 class="block">短期</h3>
+        <ul>
+          <li><b class="k">4.</b> 候选覆盖率：理解/放宽 0→1 χ² 门损失（anchor 保留率 44%/30%）。</li>
+          <li><b class="k">5.</b> 随机联合错位的多自由度 curriculum closure（库已完成，manifest 已刷新 234/234）。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block">中期</h3>
+        <ul>
+          <li><b class="k">6.</b> 带场全局径迹拟合：需要 Calypso 导出 transport Jacobian，或经验证的 common-state Acts 重传播 API（当前接口缺失——目前的更新是 route 一致性 + WLS）。</li>
+          <li><b class="k">7.</b> 逐项准入 R<sub>x</sub>、R<sub>z</sub>、dz，每项都需 FD 秩/条件数/相关性 + held-out closure 证据。</li>
+          <li><b class="k">8.</b> 站 → 层 → 模块层级，待 Calypso 条件映射建立后开展。</li>
+        </ul>
+        <h3 class="block">长期</h3>
+        <ul>
+          <li><b class="k">9.</b> 真实数据策略：2022 IFT 重导出未通过来源校验——尚未解决。</li>
+          <li><b class="k">10.</b> 方法论冻结后：新建 source 级隔离的多自由度 test 库，仅评估一次；历史封存 test 保持不动。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">15 / 17</span></div>
+</section>
+
+<!-- ============================ 16. 总结 ============================ -->
+<section class="slide">
+  <div class="header"><h1>总结</h1><div class="sub">已确立的结论、尚未确立的目标、以及正在进行的关键判定</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col">
+        <h3 class="block" style="color:#1a7a3c">已确立</h3>
+        <ul>
+          <li>端到端<b class="k">真实</b>错位链（payload → refit → Acts）——truth-fixed closure 精确到 10<sup>−13</sup> mm。</li>
+          <li>平移 ≥ 5 mm 时<b class="k">关联先失败</b>，而候选 truth 链 recall 保持 1.0；Transformer 未展示 capture range 扩展（如实记录的负结果）。</li>
+          <li>IFT R<sub>y</sub>：±60 mrad 可恢复到 &lt; 1 mrad；转动不是关联瓶颈。</li>
+          <li>多自由度 iteration-0：满秩、线性响应经 held-out 验证（χ² −99.6%）；残余 dx/dy 偏差为源依赖系统差（5–6× 统计 σ），dx–R<sub>y</sub> 相关 0.85。</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 class="block" style="color:#b02a1e">尚未确立</h3>
+        <ul>
+          <li>冻结容差下的多自由度联合恢复——<b class="k">由 iteration-1 closure 判定</b>（生产中）。</li>
+          <li>免 truth（unknown-association）对准更新；迭代闭环收敛性。</li>
+          <li>原始候选覆盖率充足性（0→1 损失）；6 自由度、层/模块级对准；真实数据。</li>
+        </ul>
+        <div class="box" style="margin-top:10px; font-size:13.5px">
+          <b class="k">希望听取组内意见：</b>迭代协议的参数选择（anchor 半径、FD 步长、容差），
+          以及 0→1 覆盖率修复与全局拟合器接口的优先级排序。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">16 / 17</span></div>
+</section>
+
+<!-- ============================ 17. 备份 ============================ -->
+<section class="slide">
+  <div class="header"><h1>备份 —— 历史封存 test 与已记录的负结果</h1><div class="sub">只记录一次，冻结后从不重新用于任何选择</div></div>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols">
+      <div class="col" style="flex:1.05">
+        <img class="fig" src="figures/sealed_test_history.png" style="width:520px">
+        <div class="src">outputs/mc24_muon_2dfluka_multidirection_test_route_level_v1/magnitude_summary.csv（pooled）+ V1 封存扫描文档</div>
+        <div class="note" style="margin-top:4px">单一冻结的 19 事件样本——不可外推；test 从未用于模型/阈值/刻度选择。</div>
+      </div>
+      <div class="col" style="flex:1.25">
+        <table class="t">
+          <tr><th style="width:44%">负结果 / 限制性结论</th><th>后果</th></tr>
+          <tr><td>V3 结构化 margin 在所有幅度未过门槛（nominal fake 0.25–0.32）</td><td>路线暂停；需要新假设才可重启</td></tr>
+          <tr><td>全事件 Transformer 上下文未扩展 dx/dy capture range；10 mm 处 no-context 消融反而更好</td><td>先做机理诊断，再谈更大模型</td></tr>
+          <tr><td>R<sub>y</sub> 在 ±60 mrad 一次性大范围线性化失败（5–6 mrad）</td><td>局部迭代成为标准协议</td></tr>
+          <tr><td>10 事件多自由度联合 closure 统计不稳定（dx 符号翻转）</td><td>改为 100 事件/source 的迭代库</td></tr>
+          <tr><td>直接 route 概率替换与求解器不一致（从未选中完整 route）</td><td>残差效用 L = L<sub>edge</sub> + wΔL</td></tr>
+          <tr><td>局部 segment q/p 不能用作 V1 测量</td><td>全局强制 mode-0 传播</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="footer">FASER Alignment Group — ML 全局对准<span class="pg">17 / 17</span></div>
+</section>
+
+</body>
+</html>

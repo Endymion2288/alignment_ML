@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import dataclasses
 import hashlib
 import json
 import math
@@ -208,8 +209,8 @@ def _assert_sealed_contract(contract: Mapping[str, object], *, label: str) -> No
         raise ValueError(f"{label} is not sealed from test data")
     if "test" not in {str(value) for value in contract.get("forbidden_splits", ())}:
         raise ValueError(f"{label} does not explicitly forbid test")
-    if contract.get("physical_geometry_repropagation") is not True or int(contract.get("q_over_p_mode", -1)) != 0:
-        raise ValueError(f"{label} lacks the physical mode-0 candidate contract")
+    if contract.get("physical_geometry_repropagation") is not True or int(contract.get("q_over_p_mode", -1)) not in (0, 3):
+        raise ValueError(f"{label} lacks a physical mode-0/mode-3 candidate contract")
 
 
 def _route_config(operating: Mapping[str, object], maximum_hypotheses: int) -> RouteAssignmentConfig:
@@ -291,6 +292,7 @@ def _load_v1(root: Path, ablation: str, device: str):
             "checkpoint": str(checkpoint),
             "checkpoint_sha256": _sha256(checkpoint),
             "frozen_condition_axis": contract.get("condition_axis"),
+            "frozen_q_over_p_mode": int(contract.get("q_over_p_mode", -1)),
             "thresholds": operating.get("thresholds"),
             "unmatched_penalty": operating.get("unmatched_penalty"),
         },
@@ -315,6 +317,7 @@ def _load_v2(root: Path, device: str):
             "checkpoint": str(checkpoint),
             "checkpoint_sha256": _sha256(checkpoint),
             "frozen_condition_axis": contract.get("condition_axis"),
+            "frozen_q_over_p_mode": int(contract.get("q_over_p_mode", -1)),
             "thresholds": operating.get("thresholds"),
             "unmatched_penalty": operating.get("unmatched_penalty"),
         },
@@ -342,6 +345,18 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--calibration-bins", type=int, default=15)
     parser.add_argument(
+        "--q-over-p-mode",
+        type=int,
+        default=0,
+        choices=(0, 3),
+        help=(
+            "Propagation record variant used to build the physical candidate graph. "
+            "Mode 0 is the canonical production baseline; mode 3 is the fixed-q/p-seed "
+            "covariance-suppression diagnostic variant. The frozen checkpoint, "
+            "calibration, route thresholds, and solver are identical either way."
+        ),
+    )
+    parser.add_argument(
         "--max-samples",
         type=int,
         default=None,
@@ -351,12 +366,45 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--unmatched-penalty-override",
+        type=float,
+        default=None,
+        help=(
+            "Validation-only operating-point scan: replace the frozen route unmatched "
+            "penalty for this inference run. The frozen checkpoint, feature "
+            "standardizers, calibration, candidate graph, and route solver are "
+            "unchanged; the override is recorded in the output metadata."
+        ),
+    )
+    parser.add_argument(
+        "--threshold-scale-override",
+        type=float,
+        default=None,
+        help=(
+            "Validation-only operating-point scan: multiply every frozen per-pair "
+            "score threshold by this factor for this inference run, preserving the "
+            "frozen per-pair proportions. Recorded in the output metadata."
+        ),
+    )
+    parser.add_argument(
         "--max-events-per-sample",
         type=int,
         default=None,
         help=(
             "Bound a deterministic smoke to the first physical synthetic events in each selected payload. "
             "It is forbidden for final evaluation but useful for pipeline-contract checks."
+        ),
+    )
+    parser.add_argument(
+        "--candidate-chi2-gate",
+        type=float,
+        default=None,
+        help=(
+            "Prune the physical candidate graph at this Mahalanobis chi2 before "
+            "frozen scoring.  This is a candidate-generation policy knob only: the "
+            "frozen checkpoint, calibration, route thresholds, unmatched penalty, "
+            "and route solver are unchanged.  Default None reproduces the frozen "
+            "ungated candidate graph."
         ),
     )
     args = parser.parse_args()
@@ -392,16 +440,44 @@ def main() -> None:
         samples = samples[: args.max_samples]
         if not samples:  # pragma: no cover - checked positive and manifest non-empty
             raise ValueError("--max-samples excludes every requested physical payload")
-    if manifest.get("physical_geometry_repropagation") is not True or int(manifest.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("synthetic manifest lacks a physical mode-0 candidate contract")
+    if manifest.get("physical_geometry_repropagation") is not True or int(
+        manifest.get("q_over_p_mode", -1)
+    ) != int(args.q_over_p_mode):
+        raise ValueError(
+            f"synthetic manifest lacks a physical mode-{args.q_over_p_mode} candidate contract"
+        )
     root = Path(args.frozen_output).expanduser().resolve()
     frozen = _load_v1(root, args.v1_ablation, args.device) if args.backbone == "v1" else _load_v2(root, args.device)
+    if args.unmatched_penalty_override is not None or args.threshold_scale_override is not None:
+        route = frozen["route"]
+        penalty = route.unmatched_penalty if args.unmatched_penalty_override is None else float(args.unmatched_penalty_override)
+        scale = 1.0 if args.threshold_scale_override is None else float(args.threshold_scale_override)
+        if not np.isfinite(penalty):
+            raise ValueError("unmatched penalty override must be finite")
+        if not np.isfinite(scale) or scale <= 0.0:
+            raise ValueError("threshold scale override must be positive and finite")
+        thresholds = {
+            pair: min(1.0, max(0.0, float(value) * scale))
+            for pair, value in route.score_threshold_by_pair.items()
+        }
+        frozen["route"] = dataclasses.replace(
+            route,
+            score_threshold_by_pair=thresholds,
+            unmatched_penalty=penalty,
+        )
+        frozen["metadata"]["operating_point_override"] = {
+            "unmatched_penalty": penalty,
+            "threshold_scale": scale,
+            "thresholds": {f"{source}->{target}": value for (source, target), value in thresholds.items()},
+            "selection_split": "validation_only",
+        }
     candidate_sets = build_candidate_sets(
         samples,
         ALL_STATION_PAIRS,
-        chi2_gate=None,
+        chi2_gate=args.candidate_chi2_gate,
         feature_set="residual_v1",
         max_events_per_sample=args.max_events_per_sample,
+        q_over_p_mode=int(args.q_over_p_mode),
     )
     artifact = frozen["artifact"]
     bundle = build_transformer_graph_bundle(candidate_sets, context_mode=artifact.context_mode)
@@ -596,9 +672,12 @@ def main() -> None:
         "inference_event_limit_per_payload": args.max_events_per_sample,
         "synthetic_condition_axis": uniform_condition_axis(samples),
         "physical_geometry_repropagation": True,
-        "q_over_p_mode": 0,
+        "q_over_p_mode": int(args.q_over_p_mode),
         "test_opened": False,
         "architecture_or_threshold_tuning": False,
+        "candidate_chi2_gate": (
+            None if args.candidate_chi2_gate is None else float(args.candidate_chi2_gate)
+        ),
         "frozen_backbone": frozen["metadata"],
         "route_solver": {
             "method": "adjacent_contiguous_unit_capacity_set_packing",
@@ -619,8 +698,9 @@ def main() -> None:
             ),
             "field_aware_edge_observations": len(field_edge_rows),
             "field_aware_edge_observation_contract": (
-                "Each selected adjacent route edge retains the exact mode-0 ACTS residual, pull, and combined "
-                "covariance from the existing physical candidate graph. This is the alignment-update observation."
+                f"Each selected adjacent route edge retains the exact mode-{int(args.q_over_p_mode)} ACTS "
+                "residual, pull, and combined covariance from the existing physical candidate graph. "
+                "This is the alignment-update observation."
             ),
         },
         "field_aware_route_consistency": field_aware_route_summary(all_field_routes),

@@ -311,7 +311,10 @@ def _selection_payload(result: object) -> dict[str, object]:
 
 
 def _validate_input_contract(
-    contract: Mapping[str, Any], manifest: Mapping[str, Any], samples: Sequence[CurriculumSample]
+    contract: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    samples: Sequence[CurriculumSample],
+    q_over_p_mode: int = 0,
 ) -> None:
     if tuple(contract.get("allowed_splits", ())) != ("train", "validation"):
         raise ValueError("V2 training must allow exactly source-disjoint train and validation splits")
@@ -319,8 +322,8 @@ def _validate_input_contract(
         raise ValueError("V2 training must explicitly forbid the test split")
     if contract.get("physical_geometry_repropagation") is not True:
         raise ValueError("V2 requires physical geometry repropagation")
-    if int(contract.get("q_over_p_mode", -1)) != 0 or contract.get("candidate_chi2_gate") is not None:
-        raise ValueError("V2 requires the ungated physical mode-0 candidate graph")
+    if int(contract.get("q_over_p_mode", -1)) != q_over_p_mode or contract.get("candidate_chi2_gate") is not None:
+        raise ValueError(f"V2 requires the ungated physical mode-{q_over_p_mode} candidate graph")
     if str(contract.get("feature_set")) != "residual_v1" or str(contract.get("context_mode")) != "full_event":
         raise ValueError("V2 requires the existing residual_v1 full-event graph contract")
     if tuple(int(value) for value in contract.get("station_path", ())) != (0, 1, 2, 3):
@@ -331,8 +334,8 @@ def _validate_input_contract(
     if not isinstance(declared_magnitudes, (list, tuple)) or not declared_magnitudes:
         raise ValueError("V2 configuration must declare its physical condition magnitudes")
     expected_magnitudes = tuple(sorted(float(value) for value in declared_magnitudes))
-    if manifest.get("physical_geometry_repropagation") is not True or int(manifest.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("V2 manifest does not certify physical mode-0 repropagation")
+    if manifest.get("physical_geometry_repropagation") is not True or int(manifest.get("q_over_p_mode", -1)) != q_over_p_mode:
+        raise ValueError(f"V2 manifest does not certify physical mode-{q_over_p_mode} repropagation")
     if {sample.split for sample in samples} != {"train", "validation"}:
         raise ValueError("V2 loader did not return exactly train and validation samples")
     if uniform_condition_axis(samples) != expected_axis:
@@ -350,6 +353,16 @@ def main() -> None:
     parser.add_argument("--synthetic-manifest", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
+    parser.add_argument(
+        "--q-over-p-mode",
+        type=int,
+        default=0,
+        choices=(0, 3),
+        help=(
+            "propagation record variant used to build the physical candidate graph; "
+            "the configuration input contract and synthetic manifest must declare the same mode"
+        ),
+    )
     args = parser.parse_args()
 
     config_path = Path(args.config).expanduser().resolve()
@@ -387,15 +400,17 @@ def main() -> None:
         require_all_splits=False,
         allowed_splits=("train", "validation"),
     )
-    _validate_input_contract(contract, manifest, samples)
+    _validate_input_contract(contract, manifest, samples, q_over_p_mode=int(args.q_over_p_mode))
     source_audit = source_disjoint_audit(samples)
     train_samples = [sample for sample in samples if sample.split == "train"]
     validation_samples = [sample for sample in samples if sample.split == "validation"]
     train_sets = build_candidate_sets(
-        train_samples, ALL_STATION_PAIRS, chi2_gate=None, feature_set="residual_v1"
+        train_samples, ALL_STATION_PAIRS, chi2_gate=None, feature_set="residual_v1",
+        q_over_p_mode=int(args.q_over_p_mode),
     )
     validation_sets = build_candidate_sets(
-        validation_samples, ALL_STATION_PAIRS, chi2_gate=None, feature_set="residual_v1"
+        validation_samples, ALL_STATION_PAIRS, chi2_gate=None, feature_set="residual_v1",
+        q_over_p_mode=int(args.q_over_p_mode),
     )
     train_bundle = build_transformer_graph_bundle(train_sets, context_mode="full_event")
     validation_bundle = build_transformer_graph_bundle(validation_sets, context_mode="full_event")
@@ -517,10 +532,10 @@ def main() -> None:
             "test_events_loaded": False,
             "test_artifacts_opened": False,
             "physical_geometry_repropagation": True,
-            "q_over_p_mode": 0,
+            "q_over_p_mode": int(args.q_over_p_mode),
             "condition_axis": uniform_condition_axis(samples),
             "candidate_chi2_gate": None,
-            "candidate_graph": "existing_mode0_acts_physical_candidates_all_six_station_pairs",
+            "candidate_graph": f"existing_mode{int(args.q_over_p_mode)}_acts_physical_candidates_all_six_station_pairs",
             "route_candidates": "complete_chains_of_existing_adjacent_physical_edges_only",
             "route_assignment_backend": "adjacent_contiguous_unit_capacity_set_packing",
             "source_audit": source_audit,

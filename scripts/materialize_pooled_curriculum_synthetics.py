@@ -178,6 +178,29 @@ def _stable_seed(
     return int((base + zlib.crc32(identity.encode("utf-8"))) % (2**31 - 1))
 
 
+def _namespace_base(group_index: int, source_index: int, overlay_seed_scope: str) -> int:
+    """Per-sample provenance namespace base.
+
+    Under ``alignment_iteration_shared_across_payloads`` the namespace must be
+    stable across every payload of the iteration: the route-selected update
+    intersects selected-route provenance (namespaced run/event ids) between
+    anchor, reference, and probe payloads, so only the source index may
+    disambiguate the namespace, never the payload group.
+    """
+    group_term = (
+        0 if overlay_seed_scope == "alignment_iteration_shared_across_payloads" else group_index
+    )
+    return 9_000_000_000 + group_term * 10_000 + source_index * 100
+
+
+def _synthetic_run_id(base: int, group_index: int, overlay_seed_scope: str) -> int:
+    """Synthetic run identifier; payload-stable for alignment iterations."""
+    group_term = (
+        0 if overlay_seed_scope == "alignment_iteration_shared_across_payloads" else group_index
+    )
+    return int(base) + group_term
+
+
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -295,6 +318,16 @@ def main() -> None:
         default=None,
         help="Materialize only this split; repeat only for an explicitly selected subset",
     )
+    parser.add_argument(
+        "--legacy-seed-identity",
+        action="store_true",
+        help=(
+            "Derive overlay seeds with the pre-condition-axis identity "
+            "(pooled/{split}/magnitude/{magnitude}).  Required to reproduce "
+            "overlays materialized before the condition axis entered the seed "
+            "identity; only valid for the translation_xy_mm magnitude scope."
+        ),
+    )
     args = parser.parse_args()
     physical_path = Path(args.physical_manifest).expanduser().resolve()
     physical = _load_json(physical_path)
@@ -363,7 +396,7 @@ def main() -> None:
                 raise FileNotFoundError(f"pooled physical asset is missing for {source_id}/{payload_id}")
             events = load_events(tracklets_path, require_mc_labels=True)
             records = load_propagation_records(propagations_path)
-            namespace_base = 9_000_000_000 + group_index * 10_000 + source_index * 100
+            namespace_base = _namespace_base(group_index, source_index, overlay_seed_scope)
             namespaced_events, namespaced_records, namespace_map = namespace_physical_source(
                 events, records, namespace_base
             )
@@ -409,15 +442,31 @@ def main() -> None:
             write_pooled_propagations_root(merged_records, pooled_propagations, descriptor)
         _write_json(descriptor_path, descriptor)
         event_count = int(synthetic["events_per_payload"]) * len(source_ids)
-        run_id = int(synthetic["synthetic_run_id_base"]) + group_index
-        overlay_seed = _stable_seed(
-            int(synthetic["seed"]),
-            split,
-            payload_id,
-            str(condition["condition_axis"]),
-            float(condition["condition_magnitude"]),
-            overlay_seed_scope,
+        run_id = _synthetic_run_id(
+            int(synthetic["synthetic_run_id_base"]), group_index, overlay_seed_scope
         )
+        if args.legacy_seed_identity:
+            if overlay_seed_scope != "magnitude_shared_across_direction_trials":
+                raise ValueError(
+                    "--legacy-seed-identity is only defined for the "
+                    "magnitude_shared_across_direction_trials overlay scope"
+                )
+            overlay_seed = _stable_seed(
+                int(synthetic["seed"]),
+                split,
+                payload_id,
+                float(condition["condition_magnitude"]),
+                overlay_seed_scope,
+            )
+        else:
+            overlay_seed = _stable_seed(
+                int(synthetic["seed"]),
+                split,
+                payload_id,
+                str(condition["condition_axis"]),
+                float(condition["condition_magnitude"]),
+                overlay_seed_scope,
+            )
         if not (args.resume and synthetic_tracklets.is_file()):
             overlay = write_synthetic_multitrack_root(
                 all_events,
