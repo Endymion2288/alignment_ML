@@ -18,7 +18,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import yaml
 
@@ -479,6 +479,408 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
     }
 
 
+def _parse_layer_transform_map(
+    raw_layers: object,
+    *,
+    point_name: str,
+    station: int,
+    required_layers: tuple[int, ...],
+) -> dict[str, list[float]]:
+    if not isinstance(raw_layers, Mapping):
+        raise ValueError(f"rigid point '{point_name}' station {station} layer_transforms must be a mapping")
+    parsed: dict[str, list[float]] = {}
+    seen: set[int] = set()
+    for raw_layer, raw_transform in raw_layers.items():
+        try:
+            layer = int(raw_layer)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"rigid point '{point_name}' has an invalid layer key") from error
+        if layer not in required_layers or layer in seen:
+            raise ValueError(f"rigid point '{point_name}' has duplicate/unsupported layer {layer}")
+        seen.add(layer)
+        parsed[str(layer)] = list(
+            _station_transform(raw_transform, label=f"rigid point '{point_name}' station {station} layer {layer}")
+        )
+    if seen != set(required_layers):
+        raise ValueError(
+            f"rigid point '{point_name}' station {station} must declare layers {list(required_layers)}"
+        )
+    return parsed
+
+
+def _hierarchy_parameter_value(
+    spec: Mapping[str, Any],
+    station_transforms: Mapping[str, Sequence[float]],
+    layer_transforms: Mapping[str, Mapping[str, Sequence[float]]],
+) -> float:
+    index = int(spec["transform_index"])
+    scale = float(spec["payload_scale"])
+    if str(spec["scope"]) == "station":
+        return float(station_transforms[str(int(spec["station_id"]))][index] * scale)
+    return float(
+        layer_transforms[str(int(spec["station_id"]))][str(int(spec["layer_id"]))][index] * scale
+    )
+
+
+def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a joint station-common / IFT-layer-internal physical FD plan.
+
+    Station 5-DoF remains the common-mode rigid transform.  IFT planes 0--2
+    carry internal corrections.  Layer conditions are written as Calypso L2
+    keys and are never silently copied into a station payload slot.  Station
+    and layer ``dz`` stay identically zero.
+    """
+    from alignment.layer_hierarchy import FREE_COMPONENTS, IFT_LAYER_IDS, IFT_STATION_ID
+
+    stations = tuple(sorted({int(station) for station in config["station_ids"]}))
+    if stations != (0, 1, 2, 3):
+        raise ValueError("IFT layer hierarchy scans require station_ids [0, 1, 2, 3]")
+    raw_reference = config.get("reference_station_ids")
+    raw_movable = config.get("movable_station_ids")
+    if not isinstance(raw_reference, (list, tuple)) or not isinstance(raw_movable, (list, tuple)):
+        raise ValueError("IFT layer hierarchy scans require reference and movable station sets")
+    reference_stations = tuple(sorted({int(station) for station in raw_reference}))
+    movable_stations = tuple(sorted({int(station) for station in raw_movable}))
+    if reference_stations != (1, 2, 3) or movable_stations != (0,):
+        raise ValueError("IFT layer hierarchy scans must fix stations 1--3 and move only IFT station 0")
+    raw_layers = config.get("movable_layer_ids", list(IFT_LAYER_IDS))
+    if not isinstance(raw_layers, (list, tuple)):
+        raise ValueError("IFT layer hierarchy scans require movable_layer_ids")
+    movable_layers = tuple(sorted({int(layer) for layer in raw_layers}))
+    if movable_layers != IFT_LAYER_IDS:
+        raise ValueError("IFT layer hierarchy scans require movable_layer_ids [0, 1, 2]")
+    if int(config.get("q_over_p_mode", -1)) != 0:
+        raise ValueError("IFT layer hierarchy scans require q_over_p_mode: 0")
+    axis = str(config.get("condition_axis", "ift_station_layer_hierarchy"))
+    if not axis:
+        raise ValueError("IFT layer hierarchy scans require a non-empty condition_axis")
+
+    raw_specs = config.get("alignment_parameter_specs")
+    if not isinstance(raw_specs, list) or not raw_specs:
+        raise ValueError("IFT layer hierarchy scans require alignment_parameter_specs")
+    specs: list[dict[str, Any]] = []
+    names: set[str] = set()
+    station_slots: set[str] = set()
+    layer_slots: set[tuple[int, str]] = set()
+    for raw_spec in raw_specs:
+        if not isinstance(raw_spec, Mapping):
+            raise ValueError("every alignment_parameter_specs entry must be a mapping")
+        name = _safe_identifier(raw_spec.get("name", ""), label="alignment parameter name")
+        if name in names:
+            raise ValueError(f"duplicate alignment parameter name '{name}'")
+        names.add(name)
+        scope = str(raw_spec.get("scope", ""))
+        if scope not in {"station", "layer"}:
+            raise ValueError(f"alignment parameter '{name}' must declare scope station or layer")
+        try:
+            station = int(raw_spec["station_id"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"alignment parameter '{name}' requires station_id") from error
+        if station != IFT_STATION_ID:
+            raise ValueError(f"alignment parameter '{name}' must belong to IFT station {IFT_STATION_ID}")
+        component = str(raw_spec.get("component", ""))
+        if component not in FREE_COMPONENTS:
+            raise ValueError(
+                f"alignment parameter '{name}' has unsupported component '{component}'; "
+                "layer hierarchy does not admit dz"
+            )
+        if component not in _ALIGNMENT_COMPONENTS:
+            raise ValueError(f"alignment parameter '{name}' has unsupported component '{component}'")
+        if (station, component) in station_slots and scope == "station":
+            raise ValueError(f"station {station} component '{component}' is declared more than once")
+        index, unit, payload_scale = _ALIGNMENT_COMPONENTS[component]
+        supplied_unit = raw_spec.get("unit", unit)
+        if str(supplied_unit) != unit:
+            raise ValueError(f"alignment parameter '{name}' unit must be '{unit}' for component '{component}'")
+        try:
+            step = float(raw_spec["finite_difference_step"])
+            severity_scale = float(raw_spec["severity_scale"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"alignment parameter '{name}' requires finite_difference_step and severity_scale"
+            ) from error
+        if not math.isfinite(step) or step <= 0.0 or not math.isfinite(severity_scale) or severity_scale <= 0.0:
+            raise ValueError(f"alignment parameter '{name}' has non-positive/non-finite step or severity scale")
+        spec: dict[str, Any] = {
+            "name": name,
+            "scope": scope,
+            "station_id": station,
+            "component": component,
+            "unit": unit,
+            "transform_index": index,
+            "payload_scale": payload_scale,
+            "finite_difference_step": step,
+            "severity_scale": severity_scale,
+        }
+        if scope == "station":
+            if "layer_id" in raw_spec:
+                raise ValueError(f"station parameter '{name}' must not declare layer_id")
+            station_slots.add(component)
+        else:
+            try:
+                layer = int(raw_spec["layer_id"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"layer parameter '{name}' requires layer_id") from error
+            if layer not in movable_layers:
+                raise ValueError(f"layer parameter '{name}' has unsupported layer_id {layer}")
+            if (layer, component) in layer_slots:
+                raise ValueError(f"layer {layer} component '{component}' is declared more than once")
+            layer_slots.add((layer, component))
+            spec["layer_id"] = layer
+        specs.append(spec)
+    missing_station = [component for component in FREE_COMPONENTS if component not in station_slots]
+    if missing_station:
+        raise ValueError("IFT layer hierarchy is missing station common-mode: " + ", ".join(missing_station))
+    missing_layers = [
+        f"layer {layer} {component}"
+        for component in FREE_COMPONENTS
+        for layer in movable_layers
+        if (layer, component) not in layer_slots
+    ]
+    if missing_layers:
+        raise ValueError("IFT layer hierarchy is missing " + ", ".join(missing_layers))
+
+    supplied_points = config.get("rigid_points")
+    if not isinstance(supplied_points, list) or not supplied_points:
+        raise ValueError("IFT layer hierarchy scans require a non-empty rigid_points list")
+    points: list[dict[str, Any]] = []
+    point_names: set[str] = set()
+    nominal_count = 0
+    finite_difference: dict[str, set[str]] = {str(spec["name"]): set() for spec in specs}
+    for point_index, raw_point in enumerate(supplied_points):
+        if not isinstance(raw_point, Mapping):
+            raise ValueError("every hierarchy point must be a mapping")
+        name = _safe_identifier(raw_point.get("name", ""), label="hierarchy point name")
+        if name in point_names:
+            raise ValueError(f"duplicate hierarchy point name '{name}'")
+        point_names.add(name)
+        raw_transforms = raw_point.get("station_transforms")
+        if not isinstance(raw_transforms, Mapping):
+            raise ValueError(f"hierarchy point '{name}' requires station_transforms")
+        transforms: dict[str, list[float]] = {}
+        parsed_stations: set[int] = set()
+        for raw_station, raw_transform in raw_transforms.items():
+            try:
+                station = int(raw_station)
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"hierarchy point '{name}' has an invalid station key") from error
+            if station not in stations or station in parsed_stations:
+                raise ValueError(f"hierarchy point '{name}' has duplicate/unsupported station {station}")
+            parsed_stations.add(station)
+            transforms[str(station)] = list(
+                _station_transform(raw_transform, label=f"hierarchy point '{name}' station {station}")
+            )
+        if parsed_stations != set(stations):
+            raise ValueError(f"hierarchy point '{name}' must explicitly specify every station transform")
+        for station in reference_stations:
+            if not np_allclose_zero(transforms[str(station)]):
+                raise ValueError(f"hierarchy point '{name}' moves reference station {station}")
+        raw_layer_block = raw_point.get("layer_transforms")
+        if not isinstance(raw_layer_block, Mapping):
+            raise ValueError(f"hierarchy point '{name}' requires layer_transforms")
+        raw_ift_layers = raw_layer_block.get(IFT_STATION_ID, raw_layer_block.get(str(IFT_STATION_ID)))
+        extra_stations = [
+            key
+            for key in raw_layer_block
+            if int(key) != IFT_STATION_ID
+        ]
+        if extra_stations or raw_ift_layers is None:
+            raise ValueError(f"hierarchy point '{name}' requires layer_transforms only for IFT station 0")
+        layer_transforms = {
+            str(IFT_STATION_ID): _parse_layer_transform_map(
+                raw_ift_layers,
+                point_name=name,
+                station=IFT_STATION_ID,
+                required_layers=movable_layers,
+            )
+        }
+        derived_values = {
+            str(spec["name"]): _hierarchy_parameter_value(spec, transforms, layer_transforms) for spec in specs
+        }
+        permitted_station = {
+            int(spec["transform_index"]) for spec in specs if spec["scope"] == "station"
+        }
+        for index, value in enumerate(transforms[str(IFT_STATION_ID)]):
+            if index not in permitted_station and not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15):
+                raise ValueError(
+                    f"hierarchy point '{name}' changes IFT station component index {index} "
+                    "without an enabled station alignment parameter"
+                )
+        permitted_layer = {
+            (int(spec["layer_id"]), int(spec["transform_index"]))
+            for spec in specs
+            if spec["scope"] == "layer"
+        }
+        for layer, values in layer_transforms[str(IFT_STATION_ID)].items():
+            for index, value in enumerate(values):
+                if (int(layer), index) not in permitted_layer and not math.isclose(
+                    value, 0.0, rel_tol=0.0, abs_tol=1.0e-15
+                ):
+                    raise ValueError(
+                        f"hierarchy point '{name}' changes IFT layer {layer} component index {index} "
+                        "without an enabled layer alignment parameter"
+                    )
+        raw_values = raw_point.get("alignment_parameter_values")
+        if raw_values is not None:
+            if not isinstance(raw_values, Mapping) or set(str(key) for key in raw_values) != set(derived_values):
+                raise ValueError(
+                    f"hierarchy point '{name}' alignment_parameter_values must specify exactly {sorted(derived_values)}"
+                )
+            for parameter, expected in derived_values.items():
+                try:
+                    observed = float(raw_values[parameter])
+                except (TypeError, ValueError, KeyError) as error:
+                    raise ValueError(f"hierarchy point '{name}' has invalid value for '{parameter}'") from error
+                if not math.isfinite(observed) or not math.isclose(observed, expected, rel_tol=0.0, abs_tol=1.0e-12):
+                    raise ValueError(
+                        f"hierarchy point '{name}' parameter '{parameter}' disagrees with payload transforms"
+                    )
+        normalized = [derived_values[str(spec["name"])] / float(spec["severity_scale"]) for spec in specs]
+        severity = float(math.sqrt(sum(value * value for value in normalized)))
+        role = str(raw_point.get("point_role", "curriculum"))
+        is_zero = all(math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15) for value in derived_values.values())
+        if role == "nominal":
+            if not is_zero:
+                raise ValueError(f"nominal hierarchy point '{name}' must be the all-zero payload")
+            nominal_count += 1
+        elif is_zero:
+            raise ValueError(f"non-nominal hierarchy point '{name}' must contain a non-zero enabled parameter")
+        finite_difference_for = raw_point.get("finite_difference_for")
+        probe_sign = raw_point.get("probe_sign")
+        finite_difference_anchor = raw_point.get("finite_difference_anchor")
+        if finite_difference_for is not None or probe_sign is not None:
+            parameter = str(finite_difference_for)
+            if parameter not in derived_values or str(probe_sign) not in {"positive", "negative"}:
+                raise ValueError(f"hierarchy point '{name}' has an invalid finite-difference tag")
+            sign = str(probe_sign)
+            if role not in {"finite_difference_positive", "finite_difference_negative"} or not role.endswith(sign):
+                raise ValueError(f"hierarchy point '{name}' finite-difference point_role/sign disagree")
+            if finite_difference_anchor is None:
+                for other, value in derived_values.items():
+                    if other != parameter and not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15):
+                        raise ValueError(f"finite-difference point '{name}' must vary only '{parameter}'")
+                if (sign == "positive" and derived_values[parameter] <= 0.0) or (
+                    sign == "negative" and derived_values[parameter] >= 0.0
+                ):
+                    raise ValueError(f"finite-difference point '{name}' does not bracket zero for '{parameter}'")
+            else:
+                anchor_name = _safe_identifier(
+                    finite_difference_anchor, label=f"hierarchy point '{name}' finite-difference anchor"
+                )
+                if anchor_name == name:
+                    raise ValueError(f"finite-difference point '{name}' cannot anchor itself")
+                finite_difference_anchor = anchor_name
+            finite_difference[parameter].add(sign)
+        else:
+            if finite_difference_anchor is not None:
+                raise ValueError(f"hierarchy point '{name}' has a finite-difference anchor without probe tags")
+            if role.startswith("finite_difference_"):
+                raise ValueError(f"hierarchy point '{name}' has a finite-difference role without tags")
+        try:
+            condition_value = float(raw_point.get("condition_value", severity))
+            condition_magnitude = float(raw_point.get("condition_magnitude", severity))
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"hierarchy point '{name}' has invalid condition metadata") from error
+        if (
+            not math.isfinite(condition_value)
+            or not math.isfinite(condition_magnitude)
+            or condition_magnitude < 0.0
+        ):
+            raise ValueError(f"hierarchy point '{name}' has non-finite/negative condition metadata")
+        points.append(
+            {
+                "index": point_index,
+                "name": name,
+                "relative_point_dir": str(Path("points") / name),
+                "direction_trial": str(raw_point.get("direction_trial", name)),
+                "point_role": role,
+                "finite_difference_for": None if finite_difference_for is None else str(finite_difference_for),
+                "probe_sign": None if probe_sign is None else str(probe_sign),
+                "finite_difference_anchor": (
+                    None if finite_difference_anchor is None else str(finite_difference_anchor)
+                ),
+                "condition_axis": axis,
+                "condition_value": condition_value,
+                "condition_magnitude": condition_magnitude,
+                "alignment_parameter_values": derived_values,
+                "injected_station_transforms": transforms,
+                "injected_layer_transforms": layer_transforms,
+            }
+        )
+    if nominal_count != 1:
+        if bool(config.get("held_out_only", False)) and nominal_count == 0:
+            pass
+        else:
+            raise ValueError("IFT layer hierarchy scan must contain exactly one nominal all-zero payload")
+    missing_probes = [name for name, signs in finite_difference.items() if signs != {"positive", "negative"}]
+    if missing_probes and not bool(config.get("held_out_only", False)):
+        raise ValueError(
+            "IFT layer hierarchy scan requires positive/negative physical probes for: "
+            + ", ".join(sorted(missing_probes))
+        )
+    if bool(config.get("held_out_only", False)):
+        if not any(str(point.get("point_role")) == "held_out_closure" for point in points):
+            raise ValueError("held_out_only hierarchy scans require at least one held_out_closure point")
+        if any(point.get("finite_difference_for") is not None for point in points):
+            raise ValueError("held_out_only hierarchy scans must not reproduce finite-difference probes")
+    points_by_name = {str(point["name"]): point for point in points}
+    for parameter in finite_difference:
+        probes = [point for point in points if point["finite_difference_for"] == parameter]
+        anchored = [point for point in probes if point["finite_difference_anchor"] is not None]
+        if not anchored:
+            continue
+        if len(anchored) != 2 or {str(point["probe_sign"]) for point in anchored} != {"positive", "negative"}:
+            raise ValueError(
+                f"iteration-centred finite differences for '{parameter}' require exactly one positive and one negative probe"
+            )
+        anchor_names = {str(point["finite_difference_anchor"]) for point in anchored}
+        if len(anchor_names) != 1:
+            raise ValueError(f"iteration-centred finite differences for '{parameter}' use inconsistent anchors")
+        anchor_name = next(iter(anchor_names))
+        anchor = points_by_name.get(anchor_name)
+        if anchor is None:
+            raise ValueError(
+                f"iteration-centred finite-difference anchor '{anchor_name}' for '{parameter}' is absent"
+            )
+        anchor_values = anchor["alignment_parameter_values"]
+        if not isinstance(anchor_values, Mapping):
+            raise RuntimeError("invalid constructed hierarchy anchor values")
+        for point in anchored:
+            values = point["alignment_parameter_values"]
+            if not isinstance(values, Mapping):
+                raise RuntimeError("invalid constructed hierarchy finite-difference values")
+            for other in finite_difference:
+                if other == parameter:
+                    continue
+                if not math.isclose(
+                    float(values[other]), float(anchor_values[other]), rel_tol=0.0, abs_tol=1.0e-12
+                ):
+                    raise ValueError(
+                        f"finite-difference point '{point['name']}' changes '{other}' relative to anchor '{anchor_name}'"
+                    )
+            delta = float(values[parameter]) - float(anchor_values[parameter])
+            if (point["probe_sign"] == "positive" and delta <= 0.0) or (
+                point["probe_sign"] == "negative" and delta >= 0.0
+            ):
+                raise ValueError(
+                    f"finite-difference point '{point['name']}' does not bracket anchor '{anchor_name}' for '{parameter}'"
+                )
+    return {
+        "method": "physical_refit_ift_layer_hierarchy_scan",
+        "scan_mode": "ift_layer_hierarchy",
+        "station_ids": list(stations),
+        "reference_station_ids": list(reference_stations),
+        "movable_station_ids": list(movable_stations),
+        "movable_layer_ids": list(movable_layers),
+        "layer_station_id": IFT_STATION_ID,
+        "condition_axis": axis,
+        "q_over_p_mode": 0,
+        "alignment_parameter_specs": specs,
+        "held_out_only": bool(config.get("held_out_only", False)),
+        "points": points,
+    }
+
+
 def _build_ift_ry_rotation_plan(config: Mapping[str, Any]) -> dict[str, Any]:
     """Build an explicit physical IFT ``R_y`` bank without a coordinate surrogate.
 
@@ -606,6 +1008,8 @@ def _build_plan(config: Mapping[str, Any]) -> dict[str, Any]:
         return _build_ift_ry_rotation_plan(config)
     if mode == "station_rigid_multidof":
         return _build_station_rigid_multidof_plan(config)
+    if mode == "ift_layer_hierarchy":
+        return _build_ift_layer_hierarchy_plan(config)
     raise ValueError(f"unsupported physical refit scan_mode '{mode}'")
 
 
@@ -695,6 +1099,32 @@ def _discard_incomplete_refit(path: Path) -> None:
         path.unlink()
 
 
+def _baseline_refit_dir(
+    plan: Mapping[str, Any],
+    scan_root: Path,
+    *,
+    run_alignment_closure: bool,
+) -> Path:
+    """Locate the zero-magnitude baseline, or skip it for held-out-only scans.
+
+    Legacy xy/rigid closures compare every displaced point to a nominal refit
+    that lives in the same scan.  A held-out-only hierarchy scan has no
+    all-zero payload by construction: the Jacobian nominal already exists in
+    a frozen FD bank, and this scan only produces new observed points.
+    """
+    if plan["scan_mode"] == "translation_xy":
+        zeros = [point for point in plan["points"] if float(point["magnitude_mm"]) == 0.0]
+    else:
+        zeros = [point for point in plan["points"] if float(point["condition_magnitude"]) == 0.0]
+    if len(zeros) > 1:
+        raise ValueError("scan plan has more than one zero-magnitude baseline point")
+    if len(zeros) == 1:
+        return scan_root / str(zeros[0]["relative_point_dir"]) / "refit"
+    if bool(plan.get("held_out_only", False)) and not run_alignment_closure:
+        return scan_root / "_unused_held_out_only_baseline" / "refit"
+    raise ValueError("scan plan lacks a zero-magnitude baseline point")
+
+
 def _run_point(
     point: Mapping[str, Any],
     config: Mapping[str, Any],
@@ -729,6 +1159,25 @@ def _run_point(
                     + ":".join(f"{float(component):.17g}" for component in values)
                     for station, values in sorted(transforms.items(), key=lambda item: int(item[0]))
                 )
+                layer_block = point.get("injected_layer_transforms")
+                if layer_block is not None:
+                    if not isinstance(layer_block, Mapping):
+                        raise ValueError("rigid scan point has invalid injected_layer_transforms")
+                    layer_arguments = []
+                    for raw_station, raw_layers in sorted(layer_block.items(), key=lambda item: int(item[0])):
+                        if not isinstance(raw_layers, Mapping):
+                            raise ValueError("rigid scan point has invalid injected_layer_transforms")
+                        for raw_layer, values in sorted(raw_layers.items(), key=lambda item: int(item[0])):
+                            layer_arguments.append(
+                                "--layer-transform "
+                                + str(int(raw_station))
+                                + ":"
+                                + str(int(raw_layer))
+                                + ":"
+                                + ":".join(f"{float(component):.17g}" for component in values)
+                            )
+                    if layer_arguments:
+                        arguments = arguments + " " + " ".join(layer_arguments)
             else:
                 offsets = point["injected_offsets_xy_mm"]
                 arguments = " ".join(
@@ -886,7 +1335,7 @@ def main() -> None:
     if not Path(str(config["input_xaod"])).expanduser().is_file():
         raise FileNotFoundError(f"input xAOD is unavailable: {config['input_xaod']}")
     plan = _build_plan(config)
-    rigid_scan = plan["scan_mode"] in {"ift_ry_rotation", "station_rigid_multidof"}
+    rigid_scan = plan["scan_mode"] in {"ift_ry_rotation", "station_rigid_multidof", "ift_layer_hierarchy"}
     if rigid_scan and "run_alignment_closure" not in config:
         # The legacy closure is xy-only.  Make every rigid physical driver
         # safe by default until its dedicated finite-difference closure is
@@ -924,11 +1373,11 @@ def main() -> None:
         ),
         encoding="utf-8",
     )
-    if plan["scan_mode"] == "translation_xy":
-        zero_point = next(point for point in plan["points"] if float(point["magnitude_mm"]) == 0.0)
-    else:
-        zero_point = next(point for point in plan["points"] if float(point["condition_magnitude"]) == 0.0)
-    baseline_refit = scan_root / str(zero_point["relative_point_dir"]) / "refit"
+    baseline_refit = _baseline_refit_dir(
+        plan,
+        scan_root,
+        run_alignment_closure=bool(config.get("run_alignment_closure", True)),
+    )
     points = plan["points"]
     if args.point_name:
         requested = set(str(value) for value in args.point_name)

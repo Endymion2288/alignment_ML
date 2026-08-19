@@ -27,8 +27,17 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from alignment.capture_criteria import attach_capture_and_prior, load_capture_criteria
+from alignment.layer_hierarchy import (
+    IFT_LAYER_IDS,
+    expand_gauged_parameters,
+    reduce_gauge,
+    spec_scope,
+    split_common_and_internal,
+)
 from alignment.physical_jacobian import (
+    parameter_values_from_payload,
     parameter_values_from_station_transforms,
+    payload_transforms_with_parameter_values,
     solve_physical_finite_difference,
     station_transforms_with_parameter_values,
 )
@@ -262,9 +271,135 @@ def _role_counts(bank) -> dict[str, int]:
     return result
 
 
+def _select_parameter_specs(
+    specs: Sequence[Mapping[str, object]],
+    only_parameters: Sequence[str] | None,
+) -> list[dict[str, object]]:
+    if only_parameters is None:
+        return [dict(spec) for spec in specs]
+    requested = tuple(str(name) for name in only_parameters)
+    names = [str(spec["name"]) for spec in specs]
+    unknown = set(requested) - set(names)
+    if len(set(requested)) != len(requested):
+        raise ValueError("duplicated --only-parameters")
+    if unknown:
+        raise ValueError("unknown --only-parameters: " + ", ".join(sorted(unknown)))
+    by_name = {str(spec["name"]): dict(spec) for spec in specs}
+    return [by_name[name] for name in requested]
+
+
+def _point_parameter_values(
+    specs: Sequence[Mapping[str, object]],
+    point: Mapping[str, object],
+) -> dict[str, float]:
+    stations = point.get("injected_station_transforms")
+    if not isinstance(stations, Mapping):
+        raise ValueError(f"physical point '{point.get('name')}' lacks injected_station_transforms")
+    if any(spec_scope(spec) == "layer" for spec in specs):
+        layers = point.get("injected_layer_transforms")
+        if not isinstance(layers, Mapping):
+            raise ValueError(f"physical point '{point.get('name')}' lacks injected_layer_transforms")
+        return parameter_values_from_payload(specs, stations, layers)
+    return parameter_values_from_station_transforms(specs, stations)
+
+
+def _gauged_finite_difference_fit(
+    *,
+    anchor_residual,
+    positive_residual,
+    negative_residual,
+    target_residual,
+    covariance,
+    names: Sequence[str],
+    positive_values: Sequence[float],
+    negative_values: Sequence[float],
+    scales,
+    prior,
+    rcond: float,
+    reduction,
+):
+    unconstrained = solve_physical_finite_difference(
+        anchor_residual,
+        positive_residual,
+        negative_residual,
+        target_residual,
+        covariance,
+        parameter_names=tuple(names),
+        positive_values=positive_values,
+        negative_values=negative_values,
+        parameter_scales=scales,
+        prior_sigma_native=prior,
+        rcond=rcond,
+    )
+    derivative = unconstrained.derivative_native @ reduction.column_transform
+    step = 1.0
+    reduced_positive = anchor_residual[None, :, :] + step * np.moveaxis(derivative, 2, 0)
+    reduced_negative = anchor_residual[None, :, :] - step * np.moveaxis(derivative, 2, 0)
+    reduced_scales = np.asarray(
+        [float(scales[index]) for index in reduction.keep_indices],
+        dtype=np.float64,
+    )
+    reduced_prior = None
+    if prior is not None:
+        reduced_prior = np.asarray(
+            [float(prior[index]) for index in reduction.keep_indices],
+            dtype=np.float64,
+        )
+    gauged = solve_physical_finite_difference(
+        anchor_residual,
+        reduced_positive,
+        reduced_negative,
+        target_residual,
+        covariance,
+        parameter_names=reduction.names,
+        positive_values=np.full(len(reduction.names), step),
+        negative_values=np.full(len(reduction.names), -step),
+        parameter_scales=reduced_scales,
+        prior_sigma_native=reduced_prior,
+        rcond=rcond,
+    )
+    return unconstrained, gauged
+
+
+def _rms(values: np.ndarray) -> float:
+    array = np.asarray(values, dtype=np.float64)
+    if array.size == 0:
+        return float("nan")
+    return float(np.sqrt(np.mean(np.square(array))))
+
+
+def _dx_internals(values: Mapping[str, float], specs: Sequence[Mapping[str, object]]) -> dict[str, object]:
+    split = split_common_and_internal(values, specs)
+    internals = {
+        f"layer_{layer}": float(split["layer_internal"][f"layer_{layer}"]["dx_mm"]) for layer in IFT_LAYER_IDS
+    }
+    return {
+        "layer_internal_dx_mm": internals,
+        "outer_relative_layer0_minus_layer2_mm": float(internals["layer_0"] - internals["layer_2"]),
+        "station_common": {key: float(value) for key, value in split["station_common"].items()},
+        "layer_weighted_mean": {key: float(value) for key, value in split["layer_weighted_mean"].items()},
+    }
+
+
+def _six_vectors_close(left: Mapping[str, object], right: Mapping[str, object], *, atol: float = 1.0e-12) -> bool:
+    if set(left) != set(right):
+        return False
+    for key in left:
+        a = np.asarray(left[key], dtype=np.float64)
+        b = np.asarray(right[key], dtype=np.float64)
+        if a.shape != (6,) or b.shape != (6,) or not np.allclose(a, b, rtol=0.0, atol=atol):
+            return False
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scan-root", required=True)
+    parser.add_argument(
+        "--target-scan-root",
+        default=None,
+        help="Optional second physical scan that contains only the held-out target point.",
+    )
     parser.add_argument("--anchor-point", required=True)
     parser.add_argument("--anchor-association-output", required=True)
     parser.add_argument("--target-point", required=True)
@@ -272,6 +407,23 @@ def main() -> None:
     parser.add_argument("--positive-association-output", action="append", default=None, metavar="PARAMETER:PATH")
     parser.add_argument("--negative-association-output", action="append", default=None, metavar="PARAMETER:PATH")
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument(
+        "--only-parameters",
+        nargs="+",
+        default=None,
+        help="Restrict the update to these named parameters (required for layer-internal hierarchy scans).",
+    )
+    parser.add_argument(
+        "--gauge",
+        choices=("sum_to_zero", "reference_layer"),
+        default=None,
+        help="Explicit IFT layer gauge. Required when floating layer internals; omitted for station-only updates.",
+    )
+    parser.add_argument(
+        "--allow-nominal-anchor",
+        action="store_true",
+        help="Permit a nominal/reference payload as the FD anchor for an MC held-out closure.",
+    )
     parser.add_argument(
         "--observation-kind",
         choices=("field_edge", "leave_one_out", "anchor_selected_field_edge"),
@@ -357,20 +509,45 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=True)
     scan_root = Path(args.scan_root).expanduser().resolve()
     plan = _read_json(scan_root / "scan_plan.json")
-    if plan.get("scan_mode") != "station_rigid_multidof" or int(plan.get("q_over_p_mode", -1)) != 0:
-        raise ValueError("route-selected update requires a mode-0 station_rigid_multidof physical scan")
-    specs = _specs(plan)
+    scan_mode = str(plan.get("scan_mode", ""))
+    if int(plan.get("q_over_p_mode", -1)) != 0:
+        raise ValueError("route-selected update requires a mode-0 physical scan")
+    if scan_mode not in {"station_rigid_multidof", "ift_layer_hierarchy"}:
+        raise ValueError("route-selected update requires a station_rigid_multidof or ift_layer_hierarchy scan")
+    if scan_mode == "ift_layer_hierarchy" and not args.only_parameters:
+        raise ValueError("layer-internal route-selected updates require --only-parameters")
+    if scan_mode == "station_rigid_multidof" and args.gauge is not None:
+        raise ValueError("station-only route-selected updates do not take --gauge")
+    specs = _select_parameter_specs(_specs(plan), args.only_parameters)
+    if any(spec_scope(spec) == "layer" and str(spec["component"]) in {"dy_mm", "rz_mrad"} for spec in specs):
+        raise ValueError("layer dy/rz stay frozen; omit them from --only-parameters")
+    has_layer = any(spec_scope(spec) == "layer" for spec in specs)
+    if has_layer and args.gauge is None:
+        raise ValueError("layer-internal route-selected updates require --gauge")
+    if args.gauge is not None and not has_layer:
+        raise ValueError("--gauge is only valid when floating IFT layer internals")
     names = [str(spec["name"]) for spec in specs]
     scales = np.asarray([float(spec["severity_scale"]) for spec in specs], dtype=np.float64)
     movable = [int(value) for value in plan.get("movable_station_ids", ())]
     if not movable:
         raise ValueError("physical scan has no movable station")
     points = _points(plan)
+    if args.target_scan_root is not None:
+        target_plan = _read_json(Path(args.target_scan_root).expanduser().resolve() / "scan_plan.json")
+        if int(target_plan.get("q_over_p_mode", -1)) != 0:
+            raise ValueError("target scan is not mode-0")
+        if str(target_plan.get("scan_mode", "")) not in {"station_rigid_multidof", "ift_layer_hierarchy"}:
+            raise ValueError("target scan is not a physical hierarchy or station-rigid scan")
+        points.update(_points(target_plan))
     anchor_point = points.get(str(args.anchor_point))
     target_point = points.get(str(args.target_point))
     if anchor_point is None or target_point is None:
         raise ValueError("anchor-point and target-point must be present in the frozen scan plan")
-    if anchor_point.get("point_role") == "nominal":
+    if (
+        anchor_point.get("point_role") == "nominal"
+        and not args.allow_nominal_anchor
+        and target_point.get("point_role") != "held_out_closure"
+    ):
         raise ValueError("anchor-point must be a non-reference physical payload")
     positive_paths = _parameter_paths(args.positive_association_output, names, label="--positive-association-output")
     negative_paths = _parameter_paths(args.negative_association_output, names, label="--negative-association-output")
@@ -504,57 +681,102 @@ def main() -> None:
     positive_residual = np.asarray([residuals[1 + 2 * index] for index in range(len(names))])
     negative_residual = np.asarray([residuals[2 + 2 * index] for index in range(len(names))])
     target_residual = residuals[-1]
-    anchor_values = parameter_values_from_station_transforms(
-        specs, anchor_point["injected_station_transforms"]  # type: ignore[arg-type]
-    )
-    target_values = parameter_values_from_station_transforms(
-        specs, target_point["injected_station_transforms"]  # type: ignore[arg-type]
-    )
+    anchor_values = _point_parameter_values(specs, anchor_point)
+    target_values = _point_parameter_values(specs, target_point)
     positive_values = [
-        parameter_values_from_station_transforms(specs, points[positive_points[name]]["injected_station_transforms"])[name]
-        for name in names
+        _point_parameter_values(specs, points[positive_points[name]])[name] for name in names
     ]
     negative_values = [
-        parameter_values_from_station_transforms(specs, points[negative_points[name]]["injected_station_transforms"])[name]
-        for name in names
+        _point_parameter_values(specs, points[negative_points[name]])[name] for name in names
     ]
     prior = _name_values(args.prior_sigma, names, label="--prior-sigma", require_all=False)
     tolerance = _name_values(args.capture_tolerance, names, label="--capture-tolerance")
     criteria = None if args.capture_criteria is None else load_capture_criteria(Path(args.capture_criteria).expanduser().resolve())
-    fit = solve_physical_finite_difference(
-        anchor_residual,
-        positive_residual,
-        negative_residual,
-        target_residual,
-        anchor_covariance,
-        parameter_names=names,
-        positive_values=positive_values,
-        negative_values=negative_values,
-        parameter_scales=scales,
-        prior_sigma_native=prior,
-        rcond=float(args.rcond),
-    )
+    unconstrained_fit = None
+    reduction = None
+    if args.gauge is None:
+        fit = solve_physical_finite_difference(
+            anchor_residual,
+            positive_residual,
+            negative_residual,
+            target_residual,
+            anchor_covariance,
+            parameter_names=names,
+            positive_values=positive_values,
+            negative_values=negative_values,
+            parameter_scales=scales,
+            prior_sigma_native=prior,
+            rcond=float(args.rcond),
+        )
+        recovered_delta = fit.recovered_parameters
+        covariance_native = fit.covariance_native
+        correlation_native = fit.correlation_native
+        derivative_native = fit.derivative_native
+    else:
+        reduction = reduce_gauge(specs, choice=str(args.gauge))
+        unconstrained_fit, fit = _gauged_finite_difference_fit(
+            anchor_residual=anchor_residual,
+            positive_residual=positive_residual,
+            negative_residual=negative_residual,
+            target_residual=target_residual,
+            covariance=anchor_covariance,
+            names=names,
+            positive_values=positive_values,
+            negative_values=negative_values,
+            scales=scales,
+            prior=prior,
+            rcond=float(args.rcond),
+            reduction=reduction,
+        )
+        recovered_reduced = {
+            name: float(fit.recovered_parameters[index]) for index, name in enumerate(fit.parameter_names)
+        }
+        recovered_full = expand_gauged_parameters(recovered_reduced, reduction, specs)
+        recovered_delta = np.asarray([recovered_full[name] for name in names], dtype=np.float64)
+        covariance_native = reduction.column_transform @ fit.covariance_native @ reduction.column_transform.T
+        covariance_native = 0.5 * (covariance_native + covariance_native.T)
+        std = np.sqrt(np.clip(np.diag(covariance_native), 0.0, None))
+        correlation_native = np.full(covariance_native.shape, np.nan, dtype=np.float64)
+        valid = std > 0.0
+        if np.any(valid):
+            correlation_native[np.ix_(valid, valid)] = covariance_native[np.ix_(valid, valid)] / np.outer(
+                std[valid], std[valid]
+            )
+        derivative_native = unconstrained_fit.derivative_native
     if args.require_full_rank and not fit.full_rank:
         raise RuntimeError("route-selected physical update normal matrix is rank deficient")
     current = np.asarray([anchor_values[name] for name in names], dtype=np.float64)
     target = np.asarray([target_values[name] for name in names], dtype=np.float64)
     expected_delta = target - current
-    recovered_delta = fit.recovered_parameters
     proposed = current + float(args.damping) * recovered_delta
     proposal_values = {name: float(proposed[index]) for index, name in enumerate(names)}
     anchor_transforms = anchor_point.get("injected_station_transforms")
     if not isinstance(anchor_transforms, Mapping):
         raise ValueError("anchor point lacks injected_station_transforms")
-    proposed_transforms = station_transforms_with_parameter_values(specs, anchor_transforms, proposal_values)
+    proposed_layer_transforms = None
+    if has_layer:
+        anchor_layers = anchor_point.get("injected_layer_transforms")
+        if not isinstance(anchor_layers, Mapping):
+            raise ValueError("anchor point lacks injected_layer_transforms")
+        proposed_transforms, proposed_layer_transforms = payload_transforms_with_parameter_values(
+            specs, anchor_transforms, anchor_layers, proposal_values
+        )
+    else:
+        proposed_transforms = station_transforms_with_parameter_values(specs, anchor_transforms, proposal_values)
     delta_error = recovered_delta - expected_delta
     parameter_rows: list[dict[str, object]] = []
+    observability = (
+        unconstrained_fit.parameter_observability_fraction if unconstrained_fit is not None else fit.parameter_observability_fraction
+    )
     for index, (name, spec) in enumerate(zip(names, specs)):
-        variance = float(fit.covariance_native[index, index])
+        variance = float(covariance_native[index, index])
         sigma = math.sqrt(variance) if math.isfinite(variance) and variance >= 0.0 else None
         parameter_rows.append(
             {
                 "name": name,
                 "station_id": int(spec["station_id"]),
+                "layer_id": None if "layer_id" not in spec else int(spec["layer_id"]),
+                "scope": spec_scope(spec),
                 "component": str(spec["component"]),
                 "unit": str(spec["unit"]),
                 "anchor_value": float(current[index]),
@@ -564,7 +786,7 @@ def main() -> None:
                 "local_delta_error": float(delta_error[index]),
                 "proposed_next_value": float(proposed[index]),
                 "recovered_sigma": sigma,
-                "observability_fraction": float(fit.parameter_observability_fraction[index]),
+                "observability_fraction": float(observability[index]),
                 "capture_tolerance": None if tolerance is None else float(tolerance[index]),
                 "capture_success": (
                     None if tolerance is None else bool(abs(delta_error[index]) <= tolerance[index])
@@ -578,8 +800,10 @@ def main() -> None:
         errors=[float(value) for value in delta_error],
         fit_sigmas=sigmas,
         criteria=criteria,
-        normal_matrix_native=fit.normal_matrix_native,
-        covariance_native=fit.covariance_native,
+        normal_matrix_native=(
+            unconstrained_fit.normal_matrix_native if unconstrained_fit is not None else fit.normal_matrix_native
+        ),
+        covariance_native=covariance_native,
         prior_sigma_native=prior,
     )
     observation_rows: list[dict[str, object]] = []
@@ -606,7 +830,9 @@ def main() -> None:
             entry[f"response_{label}"] = float(fit.response[row_index, residual_index])
             entry[f"post_update_response_{label}"] = float(fit.residual_response[row_index, residual_index])
             for parameter_index, name in enumerate(names):
-                entry[f"derivative_{name}_{label}"] = float(fit.derivative_native[row_index, residual_index, parameter_index])
+                entry[f"derivative_{name}_{label}"] = float(
+                    derivative_native[row_index, residual_index, parameter_index]
+                )
         observation_rows.append(entry)
     _write_csv(output / "route_selected_update_observations.csv", observation_rows)
     np.savez_compressed(
@@ -616,17 +842,63 @@ def main() -> None:
         anchor_residual=anchor_residual,
         target_residual=target_residual,
         covariance=anchor_covariance,
-        derivative_native=fit.derivative_native,
+        derivative_native=derivative_native,
         response=fit.response,
         predicted_response=fit.predicted_response,
         residual_response=fit.residual_response,
         normal_matrix_native=fit.normal_matrix_native,
         normal_matrix_scaled=fit.normal_matrix_scaled,
-        covariance_native=fit.covariance_native,
-        correlation_native=fit.correlation_native,
+        covariance_native=covariance_native,
+        correlation_native=correlation_native,
+        recovered_delta=recovered_delta,
+        expected_delta=expected_delta,
     )
+    expected_values = {name: float(expected_delta[index]) for index, name in enumerate(names)}
+    recovered_values = {name: float(recovered_delta[index]) for index, name in enumerate(names)}
+    hierarchy_audit = None
+    hierarchy_capture_success = None
+    if reduction is not None:
+        expected_split = _dx_internals(expected_values, specs)
+        recovered_split = _dx_internals(recovered_values, specs)
+        outer_expected = float(expected_split["outer_relative_layer0_minus_layer2_mm"])
+        outer_recovered = float(recovered_split["outer_relative_layer0_minus_layer2_mm"])
+        outer_error = abs(outer_recovered - outer_expected)
+        station_fixed = _six_vectors_close(proposed_transforms, dict(anchor_transforms))
+        outer_tol = 0.05
+        internals_tol = 0.05
+        internals = expected_split["layer_internal_dx_mm"]
+        recovered_internals = recovered_split["layer_internal_dx_mm"]
+        internals_ok = all(
+            abs(float(recovered_internals[key]) - float(internals[key])) <= internals_tol for key in internals
+        )
+        rank_ok = bool(fit.full_rank) and int(fit.normal_matrix_rank) == len(reduction.names)
+        pre_rms = _rms(fit.response)
+        post_rms = _rms(fit.residual_response)
+        residual_ok = math.isfinite(pre_rms) and math.isfinite(post_rms) and post_rms <= 0.5 * max(pre_rms, 1.0e-12)
+        hierarchy_capture_success = bool(outer_error <= outer_tol and station_fixed and rank_ok and residual_ok)
+        hierarchy_audit = {
+            "gauge": str(args.gauge),
+            "constraint": reduction.constraint,
+            "reduced_parameter_names": list(reduction.names),
+            "dropped_parameter_names": list(reduction.dropped_names),
+            "compare_gauge_invariant_internals_not_labels": True,
+            "expected": expected_split,
+            "recovered": recovered_split,
+            "outer_relative_error_mm": outer_error,
+            "outer_relative_tolerance_mm": outer_tol,
+            "internal_tolerance_mm": internals_tol,
+            "per_layer_internal_within_tolerance": internals_ok,
+            "station_transforms_unchanged": station_fixed,
+            "full_rank": rank_ok,
+            "prefit_residual_rms": pre_rms,
+            "postfit_residual_rms": post_rms,
+            "post_over_pre_rms": (post_rms / pre_rms) if pre_rms > 0.0 and math.isfinite(pre_rms) else float("nan"),
+            "capture_success": hierarchy_capture_success,
+        }
     if capture_aggregate is not None:
         capture_success = bool(capture_aggregate["capture_success"])
+    elif hierarchy_capture_success is not None:
+        capture_success = hierarchy_capture_success
     else:
         capture_success = None if tolerance is None else bool(all(row["capture_success"] for row in parameter_rows))
     summary: dict[str, object] = {
@@ -637,6 +909,15 @@ def main() -> None:
         "test_opened": False,
         "architecture_or_threshold_tuning": False,
         "scan_root": str(scan_root),
+        "target_scan_root": (
+            None if args.target_scan_root is None else str(Path(args.target_scan_root).expanduser().resolve())
+        ),
+        "scan_mode": scan_mode,
+        "only_parameters": list(names),
+        "gauge": None if args.gauge is None else str(args.gauge),
+        "allow_nominal_anchor": bool(
+            args.allow_nominal_anchor or target_point.get("point_role") == "held_out_closure"
+        ),
         "anchor_point": str(args.anchor_point),
         "target_point": str(args.target_point),
         "probe_points": {name: {"positive": positive_points[name], "negative": negative_points[name]} for name in names},
@@ -685,34 +966,39 @@ def main() -> None:
         "data_singular_values": fit.data_singular_values,
         "response_chi2": float(fit.response_chi2),
         "response_ndof": int(fit.response_ndof),
-        "parameter_covariance": fit.covariance_native,
-        "parameter_correlation": fit.correlation_native,
+        "parameter_covariance": covariance_native,
+        "parameter_correlation": correlation_native,
         "parameters": parameter_rows,
         "prior_audit": prior_rows,
         "capture_aggregate": capture_aggregate,
         "capture_criteria": None if args.capture_criteria is None else str(Path(args.capture_criteria).expanduser().resolve()),
+        "hierarchy_internal_audit": hierarchy_audit,
         "proposed_next_parameter_values": proposal_values,
         "proposed_next_station_transforms": proposed_transforms,
+        "proposed_next_layer_transforms": proposed_layer_transforms,
         "capture_success": capture_success,
     }
     (output / "route_selected_update.json").write_text(
         json.dumps(_json_ready(summary), indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",
     )
-    print(
-        json.dumps(
-            _json_ready(
-                {
-                    "output_dir": str(output),
-                    "used_selected_observations": len(keys),
-                    "normal_matrix_rank": fit.normal_matrix_rank,
-                    "normal_matrix_condition_number": fit.normal_matrix_condition_number,
-                    "proposed_next_parameter_values": proposal_values,
-                }
-            ),
-            indent=2,
-        )
-    )
+    printed: dict[str, object] = {
+        "output_dir": str(output),
+        "used_selected_observations": len(keys),
+        "normal_matrix_rank": fit.normal_matrix_rank,
+        "normal_matrix_condition_number": fit.normal_matrix_condition_number,
+        "proposed_next_parameter_values": proposal_values,
+        "capture_success": capture_success,
+    }
+    if hierarchy_audit is not None:
+        printed["hierarchy_internal_audit"] = {
+            "gauge": hierarchy_audit["gauge"],
+            "expected_outer_relative_mm": hierarchy_audit["expected"]["outer_relative_layer0_minus_layer2_mm"],
+            "recovered_outer_relative_mm": hierarchy_audit["recovered"]["outer_relative_layer0_minus_layer2_mm"],
+            "station_transforms_unchanged": hierarchy_audit["station_transforms_unchanged"],
+            "capture_success": hierarchy_audit["capture_success"],
+        }
+    print(json.dumps(_json_ready(printed), indent=2))
 
 
 if __name__ == "__main__":

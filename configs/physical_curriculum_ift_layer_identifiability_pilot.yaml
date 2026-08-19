@@ -1,0 +1,21 @@
+# Three train-only original xAOD sources for the IFT layer identifiability
+# pilot.  This is not a full train/validation hierarchy curriculum.  Test
+# remains forbidden.  Sources match the station-0 6-DoF identifiability pilot.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+
+  alignment_hierarchy:
+    active_level: station
+    frozen_station_parameters: [ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad]
+    survey_constrained_parameters:
+      ift_dz_mm:
+        prior_sigma: 5.0
+        interpretation: survey_prior_not_track_measurement
+    pilot_level: layer
+    pilot_station: 0
+    pilot_layers: [0, 1, 2]
+    reserved_future_levels: [module]
+    activation_rule: identifiability_gate_after_explicit_gauge

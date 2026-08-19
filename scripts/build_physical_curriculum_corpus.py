@@ -571,6 +571,7 @@ def _payload_matches_injection(
     expected_offsets_xy_mm: Mapping[str, object] | None,
     station_ids: Sequence[int],
     expected_station_transforms: Mapping[str, object] | None = None,
+    expected_layer_transforms: Mapping[str, object] | None = None,
 ) -> tuple[bool, str]:
     """Verify that the persisted /Tracker/Align payload is the planned point."""
     if expected_station_transforms is not None:
@@ -591,6 +592,27 @@ def _payload_matches_injection(
                 actual, expected, rtol=0.0, atol=1.0e-12
             ):
                 return False, f"alignment_payload_transform_mismatch:{int(station)}"
+        if expected_layer_transforms is not None:
+            if not isinstance(expected_layer_transforms, Mapping):
+                return False, "planned_payload_invalid_layer_transforms"
+            for raw_station, raw_layers in expected_layer_transforms.items():
+                if not isinstance(raw_layers, Mapping):
+                    return False, f"planned_payload_invalid_layer_station:{raw_station}"
+                station = int(raw_station)
+                for raw_layer, raw_expected in raw_layers.items():
+                    if not isinstance(raw_expected, (list, tuple)) or len(raw_expected) != 6:
+                        return False, f"planned_payload_missing_layer_transform:{station}:{raw_layer}"
+                    try:
+                        expected = np.asarray(raw_expected, dtype=np.float64)
+                    except (TypeError, ValueError):
+                        return False, f"planned_payload_invalid_layer_transform:{station}:{raw_layer}"
+                    actual = np.asarray(
+                        payload.transform_for_layer(station, int(raw_layer)), dtype=np.float64
+                    )
+                    if not np.isfinite(expected).all() or not np.allclose(
+                        actual, expected, rtol=0.0, atol=1.0e-12
+                    ):
+                        return False, f"alignment_payload_layer_transform_mismatch:{station}:{raw_layer}"
         return True, "accepted"
     if expected_offsets_xy_mm is None:
         return False, "planned_payload_missing_injection_definition"
@@ -622,6 +644,7 @@ def _physical_point_completion(
     station_ids: Sequence[int],
     expected_offsets_xy_mm: Mapping[str, object] | None,
     expected_station_transforms: Mapping[str, object] | None = None,
+    expected_layer_transforms: Mapping[str, object] | None = None,
 ) -> tuple[bool, str]:
     """Accept only a physically complete and audited refit/Acts point.
 
@@ -655,6 +678,7 @@ def _physical_point_completion(
             expected_offsets_xy_mm,
             station_ids,
             expected_station_transforms=expected_station_transforms,
+            expected_layer_transforms=expected_layer_transforms,
         )
     if not payload_accepted:
         return False, payload_status

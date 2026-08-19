@@ -1,0 +1,73 @@
+# Clean linear IFT layer-internal held-out payloads.
+#
+# Station 5-DoF stays frozen at zero.  Finite-difference probes are NOT
+# reproduced; the Jacobian is reused from the already-screened identifiability
+# bank (layer dx/rx/ry only).  Layer dy/rz stay out.  Two independent points:
+#   * outer-antisymmetric relative dx  (+0.12, 0, -0.12) mm
+#   * separate outer-antisymmetric relative ry (±0.7 mrad)
+# Never mix dx and rotation, and never inject source-unstable layer1 rx.
+# Mode-0, V2, route policy, and physical_edge_deduplicated stay frozen.
+# Sealed test stays closed.
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  held_out_only: true
+  reused_jacobian_manifest: outputs/mc24_ift_layer_identifiability_pilot_v1/iteration_manifest.json
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_station_layer_hierarchy_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - {name: ift_dx_mm, scope: station, station_id: 0, component: dx_mm, unit: mm, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: ift_dy_mm, scope: station, station_id: 0, component: dy_mm, unit: mm, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: ift_rx_mrad, scope: station, station_id: 0, component: rx_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_ry_mrad, scope: station, station_id: 0, component: ry_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_rz_mrad, scope: station, station_id: 0, component: rz_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_layer0_dx_mm, scope: layer, station_id: 0, layer_id: 0, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer0_dy_mm, scope: layer, station_id: 0, layer_id: 0, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer0_rx_mrad, scope: layer, station_id: 0, layer_id: 0, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer0_ry_mrad, scope: layer, station_id: 0, layer_id: 0, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer0_rz_mrad, scope: layer, station_id: 0, layer_id: 0, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_dx_mm, scope: layer, station_id: 0, layer_id: 1, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer1_dy_mm, scope: layer, station_id: 0, layer_id: 1, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer1_rx_mrad, scope: layer, station_id: 0, layer_id: 1, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_ry_mrad, scope: layer, station_id: 0, layer_id: 1, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_rz_mrad, scope: layer, station_id: 0, layer_id: 1, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_dx_mm, scope: layer, station_id: 0, layer_id: 2, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer2_dy_mm, scope: layer, station_id: 0, layer_id: 2, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer2_rx_mrad, scope: layer, station_id: 0, layer_id: 2, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_ry_mrad, scope: layer, station_id: 0, layer_id: 2, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_rz_mrad, scope: layer, station_id: 0, layer_id: 2, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+
+  rigid_points:
+    - name: placeholder_overwritten_by_compiler
+      point_role: nominal
+      direction_trial: placeholder
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      layer_transforms:
+        0:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+  held_out_closure_points:
+    - name: closure_relative_dx
+      alignment_parameter_values:
+        ift_layer0_dx_mm: 0.12
+        ift_layer2_dx_mm: -0.12
+    - name: closure_relative_ry
+      alignment_parameter_values:
+        ift_layer0_ry_mrad: 0.7
+        ift_layer2_ry_mrad: -0.7

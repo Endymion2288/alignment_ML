@@ -1,0 +1,82 @@
+# IFT station → layer identifiability pilot (not a full hierarchy curriculum).
+#
+# Linearization is the frozen, already-captured station geometry (all-zero
+# station 5-DoF; dz remains 0).  The joint Jacobian contains:
+#   * station common-mode dx/dy/rx/ry/rz
+#   * IFT layer-internal dx/dy/rx/ry/rz on planes 0, 1, and 2
+# Layer conditions are written as Calypso L2 keys `{station}{layer}` and are
+# never copied into a station payload slot.  Sealed test stays closed.
+# Mode-0, V2 backbone, route policy, and observation semantics stay frozen.
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_station_layer_hierarchy_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - {name: ift_dx_mm, scope: station, station_id: 0, component: dx_mm, unit: mm, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: ift_dy_mm, scope: station, station_id: 0, component: dy_mm, unit: mm, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: ift_rx_mrad, scope: station, station_id: 0, component: rx_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_ry_mrad, scope: station, station_id: 0, component: ry_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_rz_mrad, scope: station, station_id: 0, component: rz_mrad, unit: mrad, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: ift_layer0_dx_mm, scope: layer, station_id: 0, layer_id: 0, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer0_dy_mm, scope: layer, station_id: 0, layer_id: 0, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer0_rx_mrad, scope: layer, station_id: 0, layer_id: 0, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer0_ry_mrad, scope: layer, station_id: 0, layer_id: 0, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer0_rz_mrad, scope: layer, station_id: 0, layer_id: 0, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_dx_mm, scope: layer, station_id: 0, layer_id: 1, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer1_dy_mm, scope: layer, station_id: 0, layer_id: 1, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer1_rx_mrad, scope: layer, station_id: 0, layer_id: 1, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_ry_mrad, scope: layer, station_id: 0, layer_id: 1, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer1_rz_mrad, scope: layer, station_id: 0, layer_id: 1, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_dx_mm, scope: layer, station_id: 0, layer_id: 2, component: dx_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer2_dy_mm, scope: layer, station_id: 0, layer_id: 2, component: dy_mm, unit: mm, finite_difference_step: 0.2, severity_scale: 5.0}
+    - {name: ift_layer2_rx_mrad, scope: layer, station_id: 0, layer_id: 2, component: rx_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_ry_mrad, scope: layer, station_id: 0, layer_id: 2, component: ry_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+    - {name: ift_layer2_rz_mrad, scope: layer, station_id: 0, layer_id: 2, component: rz_mrad, unit: mrad, finite_difference_step: 2.0, severity_scale: 60.0}
+
+  rigid_points:
+    - name: nominal
+      point_role: nominal
+      direction_trial: nominal
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      layer_transforms:
+        0:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+  held_out_closure_points:
+    # Pure IFT-internal deformation, equal-weight sum-to-zero, station at 0.
+    - name: closure_internal
+      alignment_parameter_values:
+        ift_layer0_dx_mm: 0.12
+        ift_layer2_dx_mm: -0.12
+        ift_layer0_dy_mm: -0.08
+        ift_layer2_dy_mm: 0.08
+        ift_layer0_ry_mrad: 1.2
+        ift_layer2_ry_mrad: -1.2
+    # Same internals plus a small station common dx.  Recovery must keep the
+    # internals and not dump them into the station slot.
+    - name: closure_mixed
+      alignment_parameter_values:
+        ift_dx_mm: 0.15
+        ift_layer0_dx_mm: 0.12
+        ift_layer2_dx_mm: -0.12
+        ift_layer0_dy_mm: -0.08
+        ift_layer2_dy_mm: 0.08
+        ift_layer0_ry_mrad: 1.2
+        ift_layer2_ry_mrad: -1.2

@@ -59,6 +59,32 @@ def parse_transform(value: str) -> tuple[int, tuple[float, float, float, float, 
     return station, components
 
 
+def parse_layer_transform(
+    value: str,
+) -> tuple[int, int, tuple[float, float, float, float, float, float]]:
+    """Parse one IFT/SCT plane transform for Calypso L2 ``{station}{layer}`` keys."""
+    parts = value.split(":")
+    if len(parts) != 8:
+        raise argparse.ArgumentTypeError(
+            "layer transform must have the form STATION:LAYER:DX_MM:DY_MM:DZ_MM:RX_RAD:RY_RAD:RZ_RAD"
+        )
+    try:
+        station = int(parts[0])
+        layer = int(parts[1])
+        components = tuple(float(component) for component in parts[2:])
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "layer transform must have integer station/layer and finite floating-point components"
+        ) from error
+    if station not in (0, 1, 2, 3):
+        raise argparse.ArgumentTypeError("station must be one of 0, 1, 2, 3")
+    if layer not in (0, 1, 2):
+        raise argparse.ArgumentTypeError("layer must be one of 0, 1, 2")
+    if len(components) != 6 or not all(math.isfinite(component) for component in components):
+        raise argparse.ArgumentTypeError("layer transform components must be finite")
+    return station, layer, components
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -90,6 +116,17 @@ def parse_args() -> argparse.Namespace:
             "Repeat for every station represented in the payload."
         ),
     )
+    parser.add_argument(
+        "--layer-transform",
+        action="append",
+        type=parse_layer_transform,
+        default=[],
+        metavar="STATION:LAYER:DX_MM:DY_MM:DZ_MM:RX_RAD:RY_RAD:RZ_RAD",
+        help=(
+            "Exact IFT/SCT plane (L2) transform written as Calypso key '{station}{layer}'. "
+            "Translations are mm and rotations are rad.  Repeat for each plane."
+        ),
+    )
     parser.add_argument("--geometry", default="FASERNU-04")
     parser.add_argument("--global-tag", default="OFLCOND-FASER-06")
     parser.add_argument("--tag", default="TRACKER-ALIGN-ML")
@@ -105,8 +142,8 @@ def main() -> int:
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", args.tag):
         raise SystemExit("--tag may contain only letters, digits, underscore, dot, and hyphen")
 
-    if not args.offset and not args.transform:
-        raise SystemExit("at least one --offset or --transform is required")
+    if not args.offset and not args.transform and not args.layer_transform:
+        raise SystemExit("at least one --offset, --transform, or --layer-transform is required")
 
     transforms: dict[int, tuple[float, float, float, float, float, float]] = {}
     for station, dx_mm, dy_mm in args.offset:
@@ -119,6 +156,14 @@ def main() -> int:
                 f"station {station} was specified more than once; use one --transform instead of --offset"
             )
         transforms[station] = transform
+    layer_transforms: dict[tuple[int, int], tuple[float, float, float, float, float, float]] = {}
+    for station, layer, transform in args.layer_transform:
+        key = (station, layer)
+        if key in layer_transforms:
+            raise SystemExit(f"duplicate layer transform for station {station} layer {layer}")
+        layer_transforms[key] = transform
+    if layer_transforms and not transforms:
+        raise SystemExit("layer transforms require explicit station --transform entries in the same payload")
 
     output_dir = Path(args.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -134,6 +179,12 @@ def main() -> int:
         f"station:{station}": list(transform)
         for station, transform in sorted(transforms.items())
     }
+    alignment_constants.update(
+        {
+            f"{station}{layer}": list(transform)
+            for (station, layer), transform in sorted(layer_transforms.items())
+        }
+    )
 
     # The POOL catalog is generated relative to the process working directory.
     os.chdir(output_dir)
@@ -200,6 +251,14 @@ def main() -> int:
             "composition": "T(dx,dy,dz) * Rz(rz) * Ry(ry) * Rx(rx)",
             "rotation_units": "rad",
             "implementation": "TrackerAlignDBTool::stationAlignment",
+        },
+        "layer_transform_convention": {
+            "frame": "global_conjugated_to_plane_z",
+            "components": "[dx_mm, dy_mm, dz_mm, rx_rad, ry_rad, rz_rad]",
+            "composition": "T(dx,dy,dz) * Rz(rz) * Ry(ry) * Rx(rx)",
+            "rotation_units": "rad",
+            "calypso_key": "{station}{layer}",
+            "implementation": "TrackerAlignDBTool L2 Planes",
         },
         "alignment_constants": alignment_constants,
         "sqlite": str(sqlite_path),

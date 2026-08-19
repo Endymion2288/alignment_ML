@@ -13,11 +13,13 @@ tracklet covariance in ways that a coordinate shift cannot represent.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
 
 import numpy as np
+
+from alignment.layer_hierarchy import is_calypso_layer_key, parse_calypso_layer_key
 
 
 _COMPONENTS = "[dx_mm, dy_mm, dz_mm, rx_rad, ry_rad, rz_rad]"
@@ -61,10 +63,19 @@ class StationRigidAlignmentPayload:
     sqlite_path: Path
     pool_path: Path
     pool_catalog_path: Path
+    layer_transforms: Mapping[tuple[int, int], tuple[float, float, float, float, float, float]] = field(
+        default_factory=dict
+    )
 
     def transform_for_station(self, station_id: int) -> tuple[float, float, float, float, float, float]:
         """Return a six-component identity transform for an absent station."""
         return self.transforms.get(int(station_id), (0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+
+    def transform_for_layer(
+        self, station_id: int, layer_id: int
+    ) -> tuple[float, float, float, float, float, float]:
+        """Return a six-component identity transform for an absent IFT/SCT plane."""
+        return self.layer_transforms.get((int(station_id), int(layer_id)), (0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     def offset_for_station(self, station_id: int) -> tuple[float, float]:
         """Return the translation part when a report needs a compact view."""
@@ -122,25 +133,37 @@ def load_station_rigid_alignment_payload(path: str | Path) -> StationRigidAlignm
     if not isinstance(constants, dict):
         raise ValueError("payload manifest lacks alignment_constants")
     transforms: dict[int, tuple[float, float, float, float, float, float]] = {}
+    layer_transforms: dict[tuple[int, int], tuple[float, float, float, float, float, float]] = {}
     for key, value in constants.items():
-        if not isinstance(key, str) or not key.startswith("station:"):
+        if not isinstance(key, str):
             raise ValueError(f"unsupported alignment-constant key: {key!r}")
-        try:
-            station = int(key.removeprefix("station:"))
-        except ValueError as error:
-            raise ValueError(f"invalid station key: {key!r}") from error
-        if station in transforms:
-            raise ValueError(f"duplicate station transform for station {station}")
         values = np.asarray(value, dtype=np.float64)
         if values.shape != (6,) or not np.isfinite(values).all():
-            raise ValueError(f"station {station} requires six finite transform components")
-        transforms[station] = tuple(float(component) for component in values)
+            raise ValueError(f"alignment constant {key!r} requires six finite transform components")
+        packed = tuple(float(component) for component in values)
+        if key.startswith("station:"):
+            try:
+                station = int(key.removeprefix("station:"))
+            except ValueError as error:
+                raise ValueError(f"invalid station key: {key!r}") from error
+            if station in transforms:
+                raise ValueError(f"duplicate station transform for station {station}")
+            transforms[station] = packed
+            continue
+        if is_calypso_layer_key(key):
+            station, layer = parse_calypso_layer_key(key)
+            if (station, layer) in layer_transforms:
+                raise ValueError(f"duplicate layer transform for station {station} layer {layer}")
+            layer_transforms[(station, layer)] = packed
+            continue
+        raise ValueError(f"unsupported alignment-constant key: {key!r}")
     return StationRigidAlignmentPayload(
         manifest_path=manifest_path,
         transforms=transforms,
         sqlite_path=resolved_paths["sqlite"],
         pool_path=resolved_paths["pool"],
         pool_catalog_path=resolved_paths["pool_catalog"],
+        layer_transforms=layer_transforms,
     )
 
 
@@ -152,6 +175,8 @@ def load_station_alignment_payload(path: str | Path) -> StationAlignmentPayload:
     to build a controlled coordinate-level injection.
     """
     rigid = load_station_rigid_alignment_payload(path)
+    if rigid.layer_transforms:
+        raise ValueError("V1 coordinate injection supports only station-level dx/dy; layer transforms are present")
     offsets: dict[int, tuple[float, float]] = {}
     for station, transform in rigid.transforms.items():
         values = np.asarray(transform, dtype=np.float64)

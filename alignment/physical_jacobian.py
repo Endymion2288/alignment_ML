@@ -14,6 +14,13 @@ from typing import Mapping, Sequence
 
 import numpy as np
 
+from alignment.layer_hierarchy import (
+    IFT_LAYER_IDS,
+    IFT_STATION_ID,
+    require_station_scope,
+    spec_scope,
+)
+
 
 RESIDUAL_DIMENSION = 4
 COMPONENT_INDEX_AND_PAYLOAD_SCALE: dict[str, tuple[int, float]] = {
@@ -140,6 +147,7 @@ def parameter_values_from_station_transforms(
     transforms: Mapping[int | str, Sequence[float]],
 ) -> dict[str, float]:
     """Read named native-unit parameters from a payload transform mapping."""
+    require_station_scope(parameter_specs)
     result: dict[str, float] = {}
     for spec in parameter_specs:
         try:
@@ -175,6 +183,7 @@ def station_transforms_with_parameter_values(
     ``/Tracker/Align``.  It is deliberately a payload-plan helper, not a
     coordinate transformation of exported tracklets.
     """
+    require_station_scope(parameter_specs)
     result: dict[str, list[float]] = {}
     for raw_station, raw_transform in base_transforms.items():
         try:
@@ -209,6 +218,119 @@ def station_transforms_with_parameter_values(
         index, scale = COMPONENT_INDEX_AND_PAYLOAD_SCALE[component]
         result[str(station)][index] = float(value / scale)
     return result
+
+
+def _copy_six_component_map(
+    transforms: Mapping[int | str, Sequence[float]],
+    *,
+    label: str,
+) -> dict[str, list[float]]:
+    result: dict[str, list[float]] = {}
+    for raw_key, raw_transform in transforms.items():
+        values = np.asarray(raw_transform, dtype=np.float64)
+        if values.shape != (6,) or not np.isfinite(values).all():
+            raise ValueError(f"{label} '{raw_key}' has no finite six-component transform")
+        key = str(raw_key)
+        if key in result:
+            raise ValueError(f"{label} repeats key {key}")
+        result[key] = [float(value) for value in values]
+    return result
+
+
+def _nested_layer_transforms(
+    transforms: Mapping[object, object],
+) -> dict[str, dict[str, list[float]]]:
+    """Normalise station -> layer -> [dx, dy, dz, rx, ry, rz] maps."""
+    result: dict[str, dict[str, list[float]]] = {}
+    for raw_station, raw_layers in transforms.items():
+        station = int(raw_station)
+        if station != IFT_STATION_ID:
+            raise ValueError(f"layer transforms currently admit only IFT station {IFT_STATION_ID}")
+        if not isinstance(raw_layers, Mapping):
+            raise ValueError(f"layer transforms for station {station} must map layer ids to six-vectors")
+        layers = _copy_six_component_map(raw_layers, label=f"station {station} layer")
+        expected = {str(layer) for layer in IFT_LAYER_IDS}
+        if set(layers) != expected:
+            raise ValueError(f"station {station} must declare layer transforms for {sorted(expected)}")
+        result[str(station)] = layers
+    if str(IFT_STATION_ID) not in result:
+        raise ValueError("layer transforms must include IFT station 0")
+    return result
+
+
+def parameter_values_from_payload(
+    parameter_specs: Sequence[Mapping[str, object]],
+    station_transforms: Mapping[int | str, Sequence[float]],
+    layer_transforms: Mapping[object, object],
+) -> dict[str, float]:
+    """Read station and IFT-layer parameters from a hierarchy payload."""
+    stations = _copy_six_component_map(station_transforms, label="station")
+    layers = _nested_layer_transforms(layer_transforms)
+    result: dict[str, float] = {}
+    for spec in parameter_specs:
+        try:
+            name = str(spec["name"])
+            station = int(spec["station_id"])
+            component = str(spec["component"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("alignment parameter spec is incomplete") from error
+        if not name or component not in COMPONENT_INDEX_AND_PAYLOAD_SCALE:
+            raise ValueError("alignment parameter spec has an invalid name or component")
+        index, scale = COMPONENT_INDEX_AND_PAYLOAD_SCALE[component]
+        scope = spec_scope(spec)
+        if scope == "station":
+            values = np.asarray(stations.get(str(station)), dtype=np.float64)
+            if values.shape != (6,):
+                raise ValueError(f"station {station} has no finite six-component transform")
+            result[name] = float(values[index] * scale)
+            continue
+        layer = int(spec["layer_id"])
+        layer_map = layers.get(str(station))
+        if layer_map is None or str(layer) not in layer_map:
+            raise ValueError(f"station {station} layer {layer} has no finite six-component transform")
+        result[name] = float(layer_map[str(layer)][index] * scale)
+    if len(result) != len(parameter_specs):
+        raise ValueError("alignment parameter specs contain duplicate names")
+    return result
+
+
+def payload_transforms_with_parameter_values(
+    parameter_specs: Sequence[Mapping[str, object]],
+    base_station_transforms: Mapping[int | str, Sequence[float]],
+    base_layer_transforms: Mapping[object, object],
+    parameter_values: Mapping[str, float],
+) -> tuple[dict[str, list[float]], dict[str, dict[str, list[float]]]]:
+    """Apply named native-unit parameters to station and IFT-layer payloads."""
+    stations = _copy_six_component_map(base_station_transforms, label="base station")
+    layers = _nested_layer_transforms(base_layer_transforms)
+    expected = {str(spec.get("name", "")) for spec in parameter_specs}
+    if not expected or "" in expected or len(expected) != len(parameter_specs):
+        raise ValueError("parameter specs require unique non-empty names")
+    if set(parameter_values) != expected:
+        raise ValueError("parameter_values must specify exactly the configured named parameters")
+    for spec in parameter_specs:
+        try:
+            name = str(spec["name"])
+            station = int(spec["station_id"])
+            component = str(spec["component"])
+            value = float(parameter_values[name])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("alignment parameter update is incomplete/non-numeric") from error
+        if component not in COMPONENT_INDEX_AND_PAYLOAD_SCALE or not math.isfinite(value):
+            raise ValueError(f"alignment parameter '{name}' has an invalid component or value")
+        index, scale = COMPONENT_INDEX_AND_PAYLOAD_SCALE[component]
+        native = float(value / scale)
+        scope = spec_scope(spec)
+        if scope == "station":
+            if str(station) not in stations:
+                raise ValueError(f"alignment parameter '{name}' references absent station {station}")
+            stations[str(station)][index] = native
+            continue
+        layer = int(spec["layer_id"])
+        if str(station) not in layers or str(layer) not in layers[str(station)]:
+            raise ValueError(f"alignment parameter '{name}' references absent station {station} layer {layer}")
+        layers[str(station)][str(layer)][index] = native
+    return stations, layers
 
 
 def solve_physical_finite_difference(

@@ -69,6 +69,7 @@ def _complete_source(source_root: Path) -> bool:
         if not isinstance(transforms, Mapping) or not isinstance(relative, str):
             return False
         root = source_root / "physical_scan" / relative
+        layer_transforms = point.get("injected_layer_transforms")
         completed, _ = _physical_point_completion(
             tracklets=root / "refit" / "tracklets.root",
             propagations=root / "refit" / "propagations.root",
@@ -78,6 +79,9 @@ def _complete_source(source_root: Path) -> bool:
             station_ids=tuple(int(station) for station in station_ids),
             expected_offsets_xy_mm=None,
             expected_station_transforms=dict(transforms),
+            expected_layer_transforms=(
+                dict(layer_transforms) if isinstance(layer_transforms, Mapping) else None
+            ),
         )
         if not completed:
             return False

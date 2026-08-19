@@ -102,16 +102,24 @@ pilot 准入 station-0 的 `dx`、`dy`、`Rx`、`Ry`、`Rz` 作为径迹约束�
 `dz`（对当前近平行样本呈 gauge-like）。`dz` 只能以冻结 survey prior 进入法方程；
 prior 主导的后验恢复不得解释为径迹测量。单步 Newton 更新保持在已验证线性域
 （5-DoF 归一化 severity `<= 0.15`，另保留少量 `~0.2` 应力点）。禁止把
-severity `0.5–1.0` 当作单步 closure 目标。station、layer、module 层级仍预留；
-不得把 layer/module conditions 静默映射成 station payload。
+severity `0.5–1.0` 当作单步 closure 目标。IFT station/layer 层级是当前
+identifiability 步骤：station 公共模 `dx/dy/rx/ry/rz` 保持冻结，`dz` 仍为
+survey 约束，layer 内部自由度只有在显式 gauge（加权和为零或固定 reference
+layer）后仍满秩、源间稳定时才准入。layer 条件写入 Calypso L2
+`{station}{layer}` 键，不得复制进 station payload。module 层级仍预留。
 
 ## 当前状态
 
-station-level **5 个径迹约束 DoF + 1 个 survey 约束 DoF** 已冻结（条目 36）。
-从 severity 0.12 的联合随机 5-DoF 起点出发，未知关联 Newton 步在 source-disjoint
-train 与 validation 上单轮闭合（`framework_capture_success=true`，剩余 severity
-0.01–0.02）。`dz` 不进入径迹 capture，不得解释为测量。下一步是 station/layer
-层级，不是新的 Transformer。
+Truth-selected IFT **layer 内部相对 dx** 已闭合（条目 39）：两种 gauge 把
+外层反对称 `[+0.12, 0, −0.12]` mm 回收为同一套 `layer_i − mean` internals
+（外层相对 0.241 mm vs 0.240 mm），满秩、条件数 16–37、残差 RMS ×0.035，
+没有写进 station 槽。同一相对 dx 的冻结 V2 route-selected 也已通过：193
+条去重物理边、满秩 2/2、条件数 28–54、外层相对 0.240 mm（`sum_to_zero`）
+与 0.236 mm（`reference_layer`）、残差 RMS ×0.005，station 六矢保持全零。
+该相对 dx 是 hierarchy curriculum 第一项正式准入自由度。外层相对 ry 仍为
+后续候选（truth-selected 上两种 gauge 物理解不一致）。当前 0.2 mm / 2 mrad
+下 layer **dy/rz** 不准入。station 5-DoF 保持固定。station-level **5 个径迹
+约束 DoF + 1 个 survey 约束 DoF** 仍按条目 36 冻结。`dz` 不进入径迹 capture。
 
 **3-DoF 迭代环此前已闭合。** iteration-0（anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad）在 held-out
 validation 上将偏移恢复到 −0.26/−0.22 mm/−0.05 mrad，并提出 iteration-1 anchor

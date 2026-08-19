@@ -85,11 +85,36 @@ def _plan_signature(plan: Mapping[str, object]) -> dict[str, object]:
         "station_ids",
         "reference_station_ids",
         "movable_station_ids",
+        "movable_layer_ids",
         "condition_axis",
         "alignment_parameter_specs",
         "points",
     )
     return {field: copy.deepcopy(plan.get(field)) for field in fields}
+
+
+def _compile_scan(
+    template: Mapping[str, object],
+    *,
+    iteration: int,
+    current_values: Mapping[str, float],
+) -> tuple[dict[str, object], dict[str, object]]:
+    raw_scan = template.get("physical_refit_capture_scan", template)
+    if not isinstance(raw_scan, Mapping):
+        raise ValueError("physical_refit_capture_scan must be a mapping")
+    mode = str(raw_scan.get("scan_mode", ""))
+    if mode == "station_rigid_multidof":
+        return compile_iteration(template, iteration=iteration, current_values=current_values)
+    if mode == "ift_layer_hierarchy":
+        from scripts.prepare_layer_identifiability_pilot import compile_layer_identifiability_pilot
+
+        return compile_layer_identifiability_pilot(
+            template,
+            iteration=iteration,
+            current_values=current_values,
+            include_finite_differences=not bool(raw_scan.get("held_out_only", False)),
+        )
+    raise ValueError(f"unsupported iteration scan_mode '{mode}'")
 
 
 def prepare_iteration(
@@ -127,7 +152,7 @@ def prepare_iteration(
         raise ValueError("source configuration must provide both train and validation")
 
     template = _read_template(iteration_template_path)
-    compiled, contract = compile_iteration(template, iteration=iteration, current_values=current_values)
+    compiled, contract = _compile_scan(template, iteration=iteration, current_values=current_values)
     raw_scan = compiled.get("physical_refit_capture_scan")
     if not isinstance(raw_scan, Mapping):
         raise ValueError("compiled iteration has no physical_refit_capture_scan")

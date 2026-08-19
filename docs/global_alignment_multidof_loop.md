@@ -115,18 +115,29 @@ current near-parallel sample. `dz` may enter the normal equation only with a
 frozen survey prior; prior-dominated posterior recovery is not a track-based
 measurement. Single-step Newton updates stay in the validated linear regime
 (normalized 5-DoF severity `<= 0.15`, with sparse `~0.2` stress points).
-Severity `0.5–1.0` is not a single-step closure target. Station, layer, and
-module hierarchy levels remain reserved; a layer/module condition must not be
-silently mapped onto a station payload.
+Severity `0.5–1.0` is not a single-step closure target. The IFT
+station/layer hierarchy is now the active identifiability step: station
+common-mode `dx/dy/rx/ry/rz` stay frozen, `dz` stays survey-constrained, and
+layer internals are admitted only after an explicit gauge
+(`sum_to_zero` or `reference_layer`) leaves a full-rank, source-stable
+sub-block. A layer condition is written as a Calypso L2 `{station}{layer}`
+key and is never copied onto a station payload. Module level remains reserved.
 
 ## Current Status
 
-Station-level **5 track-constrained DoF + 1 survey-constrained DoF** is
-frozen (workbook 36). A joint-random 5-DoF start at severity 0.12 closed in
-one unknown-association Newton step on source-disjoint train and validation
-(`framework_capture_success=true`; remaining severity 0.01–0.02). `dz` stays
-out of the track-based capture and is not interpreted as a measurement. The
-next hierarchy step is station/layer, not a new Transformer.
+Truth-selected IFT **layer-internal relative dx** closed (workbook 39): both
+gauges recover the outer-antisymmetric `[+0.12, 0, −0.12]` mm injection as
+the same `layer_i − mean` internals (outer relative 0.241 mm vs 0.240 mm),
+full rank, condition 16–37, residual RMS ×0.035, no station-slot leakage.
+Frozen-V2 route-selected closure of the same relative dx also passed: 193
+deduplicated physical edges, rank 2/2, condition 28–54, outer relative
+0.240 mm (`sum_to_zero`) and 0.236 mm (`reference_layer`), residual RMS
+×0.005, station six-vector unchanged. That relative dx is the first
+admitted hierarchy-curriculum DoF. Outer relative ry remains a later
+candidate (gauges disagree on truth-selected internals). Layer **dy/rz**
+stay out at the present 0.2 mm / 2 mrad probes. Station 5-DoF stays
+fixed. Station-level **5 track-constrained DoF + 1 survey-constrained DoF**
+remains frozen (workbook 36). `dz` stays out of the track-based capture.
 
 **The 3-DoF loop had already closed.** Iteration-0 (anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad)
 recovered the offset to −0.26/−0.22 mm/−0.05 mrad on held-out validation and
