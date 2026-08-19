@@ -22,6 +22,7 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+from alignment.capture_criteria import attach_capture_and_prior, load_capture_criteria
 from alignment.physical_jacobian import (
     PhysicalJacobianFit,
     parameter_values_from_station_transforms,
@@ -122,6 +123,7 @@ def _parse_named_nonnegative(
     names: Sequence[str],
     *,
     label: str,
+    require_all: bool = True,
 ) -> np.ndarray | None:
     if not values:
         return None
@@ -136,9 +138,12 @@ def _parse_named_nonnegative(
         if not math.isfinite(value) or value < 0.0:
             raise ValueError(f"{label} values must be finite and non-negative")
         parsed[name] = value
-    if set(parsed) != set(names):
+    unknown = set(parsed) - set(names)
+    if unknown:
+        raise ValueError(f"{label} has unknown parameter(s): " + ", ".join(sorted(unknown)))
+    if require_all and set(parsed) != set(names):
         raise ValueError(f"{label} must specify exactly: " + ", ".join(names))
-    return np.asarray([parsed[name] for name in names], dtype=np.float64)
+    return np.asarray([parsed[name] if name in parsed else math.nan for name in names], dtype=np.float64)
 
 
 def _plan_contract(plan: Mapping[str, object]) -> dict[str, object]:
@@ -720,10 +725,17 @@ def main() -> None:
     parser.add_argument("--damping", type=float, default=1.0)
     parser.add_argument("--prior-sigma", action="append", default=None, metavar="PARAMETER:VALUE")
     parser.add_argument("--capture-tolerance", action="append", default=None, metavar="PARAMETER:VALUE")
+    parser.add_argument(
+        "--capture-criteria",
+        default=None,
+        help="Pre-registered dual engineering+pull capture JSON selected on train only.",
+    )
     parser.add_argument("--candidate-chi2-gate", type=float, default=25.0)
     parser.add_argument("--rcond", type=float, default=1.0e-10)
     parser.add_argument("--require-full-rank", action="store_true")
     args = parser.parse_args()
+    if args.capture_criteria is not None and args.capture_tolerance is not None:
+        parser.error("provide only one of --capture-criteria or --capture-tolerance")
     if args.fit_split == args.held_out_split:
         parser.error("--fit-split and --held-out-split must differ")
     if not np.isfinite(args.min_truth_match_fraction) or not 0.0 <= args.min_truth_match_fraction <= 1.0:
@@ -767,8 +779,9 @@ def main() -> None:
         if not np.allclose(fit_values, held_out_values, rtol=0.0, atol=1.0e-12):
             raise ValueError("fit and held-out banks do not share the frozen physical payload values")
     names = fit_bank.parameter_names
-    prior = _parse_named_nonnegative(args.prior_sigma, names, label="--prior-sigma")
+    prior = _parse_named_nonnegative(args.prior_sigma, names, label="--prior-sigma", require_all=False)
     tolerance = _parse_named_nonnegative(args.capture_tolerance, names, label="--capture-tolerance")
+    criteria = None if args.capture_criteria is None else load_capture_criteria(Path(args.capture_criteria).expanduser().resolve())
     fit = _fit_bank(fit_bank, prior_sigma=prior, rcond=float(args.rcond))
     held_out_fit = _fit_bank(held_out_bank, prior_sigma=prior, rcond=float(args.rcond))
     if args.require_full_rank and (not fit.full_rank or not held_out_fit.full_rank):
@@ -826,16 +839,50 @@ def main() -> None:
                 ),
             }
         )
+    held_out_errors = held_out_fit.recovered_parameters - expected_delta
+    held_out_sigmas = []
+    for index in range(len(names)):
+        variance = float(held_out_fit.covariance_native[index, index])
+        held_out_sigmas.append(
+            math.sqrt(variance) if math.isfinite(variance) and variance >= 0.0 else None
+        )
+    parameter_rows, capture_aggregate, prior_rows = attach_capture_and_prior(
+        parameter_rows,
+        names=names,
+        errors=[float(value) for value in errors],
+        fit_sigmas=[row["recovered_sigma"] for row in parameter_rows],
+        criteria=criteria,
+        normal_matrix_native=fit.normal_matrix_native,
+        covariance_native=fit.covariance_native,
+        prior_sigma_native=prior,
+    )
+    _, held_out_capture_aggregate, held_out_prior_rows = attach_capture_and_prior(
+        [{} for _ in names],
+        names=names,
+        errors=[float(value) for value in held_out_errors],
+        fit_sigmas=held_out_sigmas,
+        criteria=criteria,
+        normal_matrix_native=held_out_fit.normal_matrix_native,
+        covariance_native=held_out_fit.covariance_native,
+        prior_sigma_native=prior,
+    )
     capture_parameters = tolerance is not None and all(row["capture_success"] for row in parameter_rows)
     held_out_capture_parameters = tolerance is not None and all(
         row["held_out_independent_capture_success"] for row in parameter_rows
     )
     heldout_reduces_response = bool(held_out_application["response_chi2_reduction"] > 0.0)
-    capture_success = (
-        None
-        if tolerance is None
-        else bool(capture_parameters and held_out_capture_parameters and heldout_reduces_response)
-    )
+    if capture_aggregate is not None:
+        capture_success = bool(
+            capture_aggregate["capture_success"]
+            and held_out_capture_aggregate["capture_success"]
+            and heldout_reduces_response
+        )
+    else:
+        capture_success = (
+            None
+            if tolerance is None
+            else bool(capture_parameters and held_out_capture_parameters and heldout_reduces_response)
+        )
     candidate_metrics = _candidate_metrics(manifest, chi2_gate=args.candidate_chi2_gate)
     _write_csv(output / "candidate_metrics.csv", _flat_candidate_rows(candidate_metrics))
     _write_csv(output / "fit_split_response_pairs.csv", _response_rows(fit_bank, fit))
@@ -922,6 +969,11 @@ def main() -> None:
         "parameter_covariance": fit.covariance_native,
         "parameter_correlation": fit.correlation_native,
         "parameters": parameter_rows,
+        "prior_audit": prior_rows,
+        "held_out_prior_audit": held_out_prior_rows,
+        "capture_aggregate": capture_aggregate,
+        "held_out_capture_aggregate": held_out_capture_aggregate,
+        "capture_criteria": None if args.capture_criteria is None else str(Path(args.capture_criteria).expanduser().resolve()),
         "proposed_next_parameter_values": proposed_values,
         "proposed_next_station_transforms": proposed_transforms,
         "candidate_metrics": candidate_metrics,
@@ -929,8 +981,11 @@ def main() -> None:
         "station_pair_fit_diagnostics": station_pair_diagnostics,
         "capture_success": capture_success,
         "capture_success_definition": (
-            "fit and held-out independent parameter recoveries lie within declared tolerances, and the frozen "
-            "fit-split update reduces held-out physical response chi2"
+            "With --capture-criteria: train and held-out free parameters pass the pre-registered "
+            "statistical+coverage gate, and the frozen fit-split update reduces held-out response chi2. "
+            "Survey-constrained dz is excluded from capture.  With --capture-tolerance: fit and held-out "
+            "independent parameter recoveries lie within declared absolute tolerances, and the frozen "
+            "fit-split update reduces held-out physical response chi2."
         ),
     }
     (output / "multisource_local_step.json").write_text(

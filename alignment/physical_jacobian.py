@@ -262,8 +262,13 @@ def solve_physical_finite_difference(
     priors = None
     if prior_sigma_native is not None:
         priors = np.asarray(prior_sigma_native, dtype=np.float64)
-        if priors.shape != (parameters,) or not np.isfinite(priors).all() or np.any(priors <= 0.0):
-            raise ValueError("prior_sigma_native must have one positive finite value per parameter")
+        if priors.shape != (parameters,):
+            raise ValueError("prior_sigma_native must have one value per parameter")
+        finite_prior = np.isfinite(priors)
+        if np.any(finite_prior & (priors <= 0.0)):
+            raise ValueError("finite prior_sigma_native values must be positive")
+        if not np.any(finite_prior):
+            priors = None
 
     inverse_covariance = _inverse_covariances(covariance, pairs)
     # [parameter, pair, residual] -> [pair, residual, parameter]
@@ -292,8 +297,10 @@ def solve_physical_finite_difference(
 
     fit_normal = np.array(normal_scaled, copy=True)
     if priors is not None:
-        scaled_prior = priors / scales
-        fit_normal += np.diag(1.0 / np.square(scaled_prior))
+        finite_prior = np.isfinite(priors)
+        contribution = np.zeros(parameters, dtype=np.float64)
+        contribution[finite_prior] = 1.0 / np.square(priors[finite_prior] / scales[finite_prior])
+        fit_normal += np.diag(contribution)
     fit_normal = 0.5 * (fit_normal + fit_normal.T)
     fit_singular, fit_rank, fit_tolerance, _, _ = _svd_rank(fit_normal, rcond=rcond)
     inverse_fit_scaled = _pinv(fit_normal, tolerance=fit_tolerance)

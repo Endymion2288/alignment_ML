@@ -7,9 +7,10 @@ It adds no new Transformer architecture. The association backbone remains
 frozen, with the sealed V2 BCE route-query artifact as the usable control.
 The permanently sealed test bank is never read.
 
-The initial active block is IFT/station-0 `dx`, `dy`, and `Ry`; stations
-S1--S3 define the reference frame. Calypso payloads use
-`[dx, dy, dz, Rx, Ry, Rz]` in mm/rad, while reports use mrad for rotations.
+The initial active block is IFT/station-0 `dx`, `dy`, `Rx`, `Ry`, and `Rz`,
+with `dz` survey-constrained; stations S1--S3 define the reference frame.
+Calypso payloads use `[dx, dy, dz, Rx, Ry, Rz]` in mm/rad, while reports use
+mrad for rotations.
 
 ## Physical Contract
 
@@ -107,16 +108,27 @@ requested.
 
 ## DoF Admission
 
-The payload/Jacobian code supports all station rigid components, but `dz`,
-`Rx`, and `Rz` remain inactive. Admit one only after a real finite-difference
-bank demonstrates full rank, acceptable scaled conditioning/correlation,
-source and station-pair stability, and held-out physical closure. Station,
-layer, and module hierarchy levels are reserved; a layer/module condition must
-not be silently mapped onto a station payload.
+The payload/Jacobian code supports all station rigid components. The 6-DoF
+identifiability pilot admitted station-0 `dx`, `dy`, `Rx`, `Ry`, and `Rz` as
+track-constrained free parameters and rejected `dz` as gauge-like for the
+current near-parallel sample. `dz` may enter the normal equation only with a
+frozen survey prior; prior-dominated posterior recovery is not a track-based
+measurement. Single-step Newton updates stay in the validated linear regime
+(normalized 5-DoF severity `<= 0.15`, with sparse `~0.2` stress points).
+Severity `0.5–1.0` is not a single-step closure target. Station, layer, and
+module hierarchy levels remain reserved; a layer/module condition must not be
+silently mapped onto a station payload.
 
 ## Current Status
 
-**The loop has closed.** Iteration-0 (anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad)
+Station-level **5 track-constrained DoF + 1 survey-constrained DoF** is
+frozen (workbook 36). A joint-random 5-DoF start at severity 0.12 closed in
+one unknown-association Newton step on source-disjoint train and validation
+(`framework_capture_success=true`; remaining severity 0.01–0.02). `dz` stays
+out of the track-based capture and is not interpreted as a measurement. The
+next hierarchy step is station/layer, not a new Transformer.
+
+**The 3-DoF loop had already closed.** Iteration-0 (anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad)
 recovered the offset to −0.26/−0.22 mm/−0.05 mrad on held-out validation and
 proposed the iteration-1 anchor (−0.14 mm/+0.11 mm/+0.74 mrad). Iteration-1
 passed every frozen held-out tolerance (dx −0.014 mm, dy +0.019 mm, Ry

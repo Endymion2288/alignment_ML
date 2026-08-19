@@ -6,7 +6,8 @@
 association backbone 保持冻结，当前可用的严格封存控制为 V2 BCE route-query。
 永久封存的 test bank 不会被读取。
 
-第一批激活的是 IFT/station-0 的 `dx`、`dy`、`Ry`，下游 S1--S3 固定为参考坐标系。
+第一批激活的是 IFT/station-0 的 `dx`、`dy`、`Rx`、`Ry`、`Rz`，`dz` 以 survey prior
+约束；下游 S1--S3 固定为参考坐标系。
 Calypso payload 为 `[dx, dy, dz, Rx, Ry, Rz]`，单位为 mm/rad；报告中转动使用 mrad。
 
 ## 物理约束
@@ -96,14 +97,23 @@ closure 的 update，诊断性 override 必须显式指定。
 
 ## 自由度准入
 
-payload/Jacobian 代码已支持完整 station rigid components，但 `dz`、`Rx`、`Rz` 仍未激活。
-只有真实有限差分 bank 同时给出 full rank、可接受的 scaled condition/correlation、稳定的
-source 与 station-pair response 和 held-out physical closure 时，才加入一个新分量。station、
-layer、module 层级均已预留；不得把 layer/module conditions 静默映射成 station payload。
+payload/Jacobian 代码已支持完整 station rigid components。6-DoF identifiability
+pilot 准入 station-0 的 `dx`、`dy`、`Rx`、`Ry`、`Rz` 作为径迹约束自由参数，并拒绝
+`dz`（对当前近平行样本呈 gauge-like）。`dz` 只能以冻结 survey prior 进入法方程；
+prior 主导的后验恢复不得解释为径迹测量。单步 Newton 更新保持在已验证线性域
+（5-DoF 归一化 severity `<= 0.15`，另保留少量 `~0.2` 应力点）。禁止把
+severity `0.5–1.0` 当作单步 closure 目标。station、layer、module 层级仍预留；
+不得把 layer/module conditions 静默映射成 station payload。
 
 ## 当前状态
 
-**迭代环已闭合。** iteration-0（anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad）在 held-out
+station-level **5 个径迹约束 DoF + 1 个 survey 约束 DoF** 已冻结（条目 36）。
+从 severity 0.12 的联合随机 5-DoF 起点出发，未知关联 Newton 步在 source-disjoint
+train 与 validation 上单轮闭合（`framework_capture_success=true`，剩余 severity
+0.01–0.02）。`dz` 不进入径迹 capture，不得解释为测量。下一步是 station/layer
+层级，不是新的 Transformer。
+
+**3-DoF 迭代环此前已闭合。** iteration-0（anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad）在 held-out
 validation 上将偏移恢复到 −0.26/−0.22 mm/−0.05 mrad，并提出 iteration-1 anchor
 （−0.14 mm/+0.11 mm/+0.74 mrad）。iteration-1 通过全部冻结 held-out 容差
 （dx −0.014 mm、dy +0.019 mm、Ry −0.0003 mrad；逐源散布塌缩 20–40 倍），随后无真值的

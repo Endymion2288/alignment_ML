@@ -26,6 +26,7 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+from alignment.capture_criteria import attach_capture_and_prior, load_capture_criteria
 from alignment.physical_jacobian import (
     parameter_values_from_station_transforms,
     solve_physical_finite_difference,
@@ -92,7 +93,13 @@ def _parameter_paths(values: Sequence[str] | None, names: Sequence[str], *, labe
     return result
 
 
-def _name_values(values: Sequence[str] | None, names: Sequence[str], *, label: str) -> np.ndarray | None:
+def _name_values(
+    values: Sequence[str] | None,
+    names: Sequence[str],
+    *,
+    label: str,
+    require_all: bool = True,
+) -> np.ndarray | None:
     if not values:
         return None
     parsed: dict[str, float] = {}
@@ -106,9 +113,12 @@ def _name_values(values: Sequence[str] | None, names: Sequence[str], *, label: s
         if not math.isfinite(value) or value < 0.0:
             raise ValueError(f"{label} parameter '{name}' must be finite and non-negative")
         parsed[name] = value
-    if set(parsed) != set(names):
+    unknown = set(parsed) - set(names)
+    if unknown:
+        raise ValueError(f"{label} has unknown parameter(s): " + ", ".join(sorted(unknown)))
+    if require_all and set(parsed) != set(names):
         raise ValueError(f"{label} must specify exactly: " + ", ".join(names))
-    return np.asarray([parsed[name] for name in names], dtype=np.float64)
+    return np.asarray([parsed[name] if name in parsed else math.nan for name in names], dtype=np.float64)
 
 
 def _json_ready(value: object) -> object:
@@ -289,6 +299,11 @@ def main() -> None:
     )
     parser.add_argument("--prior-sigma", action="append", default=None, metavar="PARAMETER:VALUE")
     parser.add_argument("--capture-tolerance", action="append", default=None, metavar="PARAMETER:VALUE")
+    parser.add_argument(
+        "--capture-criteria",
+        default=None,
+        help="Pre-registered dual engineering+pull capture JSON. Validation must not have selected it.",
+    )
     parser.add_argument("--rcond", type=float, default=1.0e-10)
     parser.add_argument("--require-full-rank", action="store_true")
     parser.add_argument(
@@ -330,6 +345,8 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.capture_criteria is not None and args.capture_tolerance is not None:
+        parser.error("provide only one of --capture-criteria or --capture-tolerance")
     if not math.isfinite(args.damping) or not 0.0 < args.damping <= 1.0:
         parser.error("--damping must lie in (0, 1]")
     if not math.isfinite(args.rcond) or not 0.0 < args.rcond < 1.0:
@@ -501,8 +518,9 @@ def main() -> None:
         parameter_values_from_station_transforms(specs, points[negative_points[name]]["injected_station_transforms"])[name]
         for name in names
     ]
-    prior = _name_values(args.prior_sigma, names, label="--prior-sigma")
+    prior = _name_values(args.prior_sigma, names, label="--prior-sigma", require_all=False)
     tolerance = _name_values(args.capture_tolerance, names, label="--capture-tolerance")
+    criteria = None if args.capture_criteria is None else load_capture_criteria(Path(args.capture_criteria).expanduser().resolve())
     fit = solve_physical_finite_difference(
         anchor_residual,
         positive_residual,
@@ -553,6 +571,17 @@ def main() -> None:
                 ),
             }
         )
+    sigmas = [row["recovered_sigma"] for row in parameter_rows]
+    parameter_rows, capture_aggregate, prior_rows = attach_capture_and_prior(
+        parameter_rows,
+        names=names,
+        errors=[float(value) for value in delta_error],
+        fit_sigmas=sigmas,
+        criteria=criteria,
+        normal_matrix_native=fit.normal_matrix_native,
+        covariance_native=fit.covariance_native,
+        prior_sigma_native=prior,
+    )
     observation_rows: list[dict[str, object]] = []
     for row_index, key in enumerate(keys):
         sample, run_id, event_id, signature, *_ = key
@@ -596,7 +625,10 @@ def main() -> None:
         covariance_native=fit.covariance_native,
         correlation_native=fit.correlation_native,
     )
-    capture_success = None if tolerance is None else bool(all(row["capture_success"] for row in parameter_rows))
+    if capture_aggregate is not None:
+        capture_success = bool(capture_aggregate["capture_success"])
+    else:
+        capture_success = None if tolerance is None else bool(all(row["capture_success"] for row in parameter_rows))
     summary: dict[str, object] = {
         "method": "truth_free_route_selected_physical_multidof_local_update",
         "physical_geometry_repropagation": True,
@@ -656,6 +688,9 @@ def main() -> None:
         "parameter_covariance": fit.covariance_native,
         "parameter_correlation": fit.correlation_native,
         "parameters": parameter_rows,
+        "prior_audit": prior_rows,
+        "capture_aggregate": capture_aggregate,
+        "capture_criteria": None if args.capture_criteria is None else str(Path(args.capture_criteria).expanduser().resolve()),
         "proposed_next_parameter_values": proposal_values,
         "proposed_next_station_transforms": proposed_transforms,
         "capture_success": capture_success,
