@@ -214,6 +214,35 @@ def compile_iteration(
                     finite_difference_anchor=anchor_name,
                 )
             )
+    held_out = scan.pop("held_out_closure_points", None)
+    if held_out is not None:
+        if not isinstance(held_out, list) or any(not isinstance(item, Mapping) for item in held_out):
+            raise ValueError("held_out_closure_points must be a list of mappings")
+        seen_names = {str(point["name"]) for point in points}
+        for item in held_out:
+            raw_name = str(item.get("name", ""))
+            name = _safe_name(f"{prefix}_{raw_name}", label="held-out closure point name")
+            if name in seen_names:
+                raise ValueError(f"held-out closure point '{name}' collides with a scan point")
+            seen_names.add(name)
+            held_values = _parse_named_values(
+                [
+                    f"{key}:{value}"
+                    for key, value in dict(item.get("alignment_parameter_values", {})).items()
+                ],
+                names,
+                label=f"held-out closure point '{raw_name}'",
+            )
+            points.append(
+                _point(
+                    name=name,
+                    values=held_values,
+                    specs=specs,
+                    base_transforms=base,
+                    role="held_out_closure",
+                    direction_trial=name,
+                )
+            )
     scan["rigid_points"] = points
     scan["run_alignment_closure"] = False
     contract: dict[str, object] = {
@@ -227,6 +256,9 @@ def compile_iteration(
         "anchor_point": anchor_name,
         "anchor_parameter_values": values,
         "finite_difference_steps": {str(spec["name"]): float(spec["finite_difference_step"]) for spec in specs},
+        "held_out_closure_points": [
+            str(point["name"]) for point in points if point.get("point_role") == "held_out_closure"
+        ],
         "update_semantics": (
             "MC closure only: subsequent route-selected WLS solves the local physical update from the anchor "
             "toward this independently refitted nominal reference.  It does not assert a real-data correction sign."

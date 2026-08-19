@@ -165,6 +165,93 @@ def test_prepare_multisource_iteration_requires_explicit_test_seal(tmp_path):
         )
 
 
+def test_compile_iteration_appends_six_dof_held_out_closure_points(tmp_path):
+    from scripts.prepare_multidof_alignment_iteration import compile_iteration
+
+    template = {
+        "physical_refit_capture_scan": {
+            "scan_mode": "station_rigid_multidof",
+            "input_xaod": "/unused/template.root",
+            "nevents": 1,
+            "station_ids": [0, 1, 2, 3],
+            "reference_station_ids": [1, 2, 3],
+            "movable_station_ids": [0],
+            "condition_axis": "ift_station0_six_dof_l2",
+            "q_over_p_mode": 0,
+            "min_truth_match_fraction": 0.99,
+            "chi2_gate": 25.0,
+            "refinement_iterations": 1,
+            "alignment_parameter_specs": [
+                {
+                    "name": "ift_dx_mm",
+                    "station_id": 0,
+                    "component": "dx_mm",
+                    "unit": "mm",
+                    "finite_difference_step": 0.5,
+                    "severity_scale": 5.0,
+                },
+                {
+                    "name": "ift_dz_mm",
+                    "station_id": 0,
+                    "component": "dz_mm",
+                    "unit": "mm",
+                    "finite_difference_step": 2.0,
+                    "severity_scale": 5.0,
+                },
+                {
+                    "name": "ift_rz_mrad",
+                    "station_id": 0,
+                    "component": "rz_mrad",
+                    "unit": "mrad",
+                    "finite_difference_step": 10.0,
+                    "severity_scale": 60.0,
+                },
+            ],
+            "rigid_points": [
+                {
+                    "name": "nominal",
+                    "point_role": "nominal",
+                    "direction_trial": "nominal",
+                    "alignment_parameter_values": {
+                        "ift_dx_mm": 0.0,
+                        "ift_dz_mm": 0.0,
+                        "ift_rz_mrad": 0.0,
+                    },
+                    "station_transforms": {station: [0.0] * 6 for station in range(4)},
+                }
+            ],
+            "held_out_closure_points": [
+                {
+                    "name": "closure_6dof_a",
+                    "alignment_parameter_values": {
+                        "ift_dx_mm": 1.0,
+                        "ift_dz_mm": 1.5,
+                        "ift_rz_mrad": -6.0,
+                    },
+                }
+            ],
+        }
+    }
+    compiled, contract = compile_iteration(
+        template,
+        iteration=2,
+        current_values={"ift_dx_mm": 0.1, "ift_dz_mm": 0.0, "ift_rz_mrad": 0.0},
+    )
+    points = compiled["physical_refit_capture_scan"]["rigid_points"]
+    # reference + anchor + 3 central FD pairs + 1 held-out closure point
+    assert len(points) == 9
+    closure = points[-1]
+    assert closure["name"] == "iteration_02_closure_6dof_a"
+    assert closure["point_role"] == "held_out_closure"
+    assert closure.get("finite_difference_for") is None
+    assert closure.get("probe_sign") is None
+    # dx=1.0 mm, dz=1.5 mm, rz=-6 mrad -> station-0 transform slots 0/2/5
+    assert closure["station_transforms"]["0"] == [1.0, 0.0, 1.5, 0.0, 0.0, -0.006]
+    assert closure["station_transforms"]["1"] == [0.0] * 6
+    assert contract["held_out_closure_points"] == ["iteration_02_closure_6dof_a"]
+    assert "held_out_closure_points" not in compiled["physical_refit_capture_scan"]
+
+
 def test_held_out_application_only_evaluates_the_given_update():
     bank = ResponseBank(
         split="validation",

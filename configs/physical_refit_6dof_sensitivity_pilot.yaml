@@ -1,0 +1,116 @@
+# Rx/Rz/dz sensitivity + identifiability pilot (multi-DoF mainline, stage 1).
+#
+# Station-0 six-parameter central finite-difference scan around the converged
+# iteration-01 anchor (dx=-0.1408 mm, dy=+0.1144 mm, Ry=+0.7426 mrad; the
+# canonical mode-0 closure residual to nominal is <10 um / <1 urad, so this
+# anchor is the near-nominal linearization point).  Every point independently
+# writes a full /Tracker/Align payload and reruns the real
+# SCT_ClusterContainer -> SegmentFitRefit -> SegmentsRefit -> NtupleDumper ->
+# FaserActsExtrapolationTool(mode 0) chain.  No coordinate surrogate.
+#
+# Finite-difference step rationale (linearity vs measurable response):
+#   dx/dy 0.5 mm   unchanged from the validated iteration-00/01 scans.
+#   dz    2.0 mm   response enters only through track slopes
+#                  (Delta_r ~ t * dz ~ 5 mrad * 2 mm ~ 10 um); translation
+#                  along the beam is exactly linear, so a larger step is safe
+#                  and keeps the coherent mean response above per-edge noise.
+#   rx    10 mrad  response ~ ty * rx * y_lever (um scale at mrad slopes);
+#                  expected weak - measuring that weakness is a pilot goal.
+#   ry    10 mrad  unchanged from the validated scans.
+#   rz    10 mrad  in-plane rotation; response ~ rz * y ~ 0.5 mm at y=50 mm.
+# Severity scales keep the established convention (translations 5 mm,
+# rotations 60 mrad) so condition magnitudes stay comparable with the
+# iteration-00/01 curriculum.
+#
+# The two held_out_closure_points inject all six DoF jointly at moderate
+# severity (~0.5 and ~0.95) and are excluded from the finite-difference
+# derivative definition.  They are the small-scale joint anchors for the
+# post-gate closure check: parameters that fail the identifiability gate are
+# expected to contribute negligibly to these residuals (that is what failing
+# the gate means), so closure on the admitted subset remains coherent.
+physical_refit_capture_scan:
+  scan_mode: station_rigid_multidof
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  condition_axis: ift_station0_six_dof_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dz_mm
+      station_id: 0
+      component: dz_mm
+      unit: mm
+      finite_difference_step: 2.0
+      severity_scale: 5.0
+    - name: ift_rx_mrad
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_ry_mrad
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_rz_mrad
+      station_id: 0
+      component: rz_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+
+  rigid_points:
+    - name: nominal
+      point_role: nominal
+      direction_trial: nominal
+      alignment_parameter_values:
+        ift_dx_mm: 0.0
+        ift_dy_mm: 0.0
+        ift_dz_mm: 0.0
+        ift_rx_mrad: 0.0
+        ift_ry_mrad: 0.0
+        ift_rz_mrad: 0.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+  held_out_closure_points:
+    - name: closure_6dof_a
+      alignment_parameter_values:
+        ift_dx_mm: 1.0
+        ift_dy_mm: -0.8
+        ift_dz_mm: 1.5
+        ift_rx_mrad: 8.0
+        ift_ry_mrad: 20.0
+        ift_rz_mrad: -6.0
+    - name: closure_6dof_b
+      alignment_parameter_values:
+        ift_dx_mm: -2.0
+        ift_dy_mm: 1.5
+        ift_dz_mm: -2.5
+        ift_rx_mrad: -12.0
+        ift_ry_mrad: -35.0
+        ift_rz_mrad: 10.0
