@@ -75,7 +75,8 @@ def _ordered_fd_points(
     plan: Mapping[str, object],
     *,
     anchor_point: str,
-    reference_point: str,
+    target_point: str,
+    only_parameters: Sequence[str] | None = None,
 ) -> tuple[tuple[dict[str, object], ...], tuple[str, ...], np.ndarray, set[int], list[Mapping[str, object]]]:
     if plan.get("scan_mode") != "station_rigid_multidof" or int(plan.get("q_over_p_mode", -1)) != 0:
         raise ValueError("source scan is not a mode-0 station_rigid_multidof physical scan")
@@ -85,12 +86,20 @@ def _ordered_fd_points(
     specs = tuple(dict(item) for item in raw_specs)
     names = tuple(str(spec["name"]) for spec in specs)
     scales = np.asarray([float(spec["severity_scale"]) for spec in specs], dtype=np.float64)
+    if only_parameters is not None:
+        requested = tuple(str(name) for name in only_parameters)
+        unknown = set(requested) - set(names)
+        if unknown or len(set(requested)) != len(requested):
+            raise ValueError(f"unknown or duplicated parameter selection: {sorted(unknown)}")
+        specs = tuple(spec for spec in specs if str(spec["name"]) in requested)
+        names = tuple(str(spec["name"]) for spec in specs)
+        scales = np.asarray([float(spec["severity_scale"]) for spec in specs], dtype=np.float64)
     movable = {int(station) for station in plan.get("movable_station_ids", ())}
     points = _point_map(plan)
     anchor = points.get(anchor_point)
-    reference = points.get(reference_point)
-    if anchor is None or reference is None:
-        raise ValueError(f"scan plan lacks anchor '{anchor_point}' or reference '{reference_point}'")
+    target = points.get(target_point)
+    if anchor is None or target is None:
+        raise ValueError(f"scan plan lacks anchor '{anchor_point}' or target '{target_point}'")
     ordered: list[Mapping[str, object]] = [anchor]
     for name in names:
         for sign in ("positive", "negative"):
@@ -104,7 +113,7 @@ def _ordered_fd_points(
             if len(matches) != 1:
                 raise ValueError(f"scan plan needs exactly one {sign} probe for '{name}'")
             ordered.append(matches[0])
-    ordered.append(reference)
+    ordered.append(target)
     return specs, names, scales, movable, ordered
 
 
@@ -112,14 +121,15 @@ def _source_bank(
     entry: Mapping[str, object],
     *,
     anchor_point: str,
-    reference_point: str,
+    target_point: str,
     min_truth_match_fraction: float,
+    only_parameters: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     source_id = str(entry["source_id"])
     root = Path(str(entry["physical_scan_root"])).expanduser().resolve()
     plan = _read_json(root / "scan_plan.json")
     specs, names, scales, movable, ordered = _ordered_fd_points(
-        plan, anchor_point=anchor_point, reference_point=reference_point
+        plan, anchor_point=anchor_point, target_point=target_point, only_parameters=only_parameters
     )
     payloads = []
     evaluations = []
@@ -131,7 +141,7 @@ def _source_bank(
     rows = [np.asarray([index[key] for key in keys], dtype=np.intp) for index in indexes]
     parameters = len(names)
     anchor_values = parameter_values_from_station_transforms(specs, payloads[0].transforms)
-    reference_values = parameter_values_from_station_transforms(specs, payloads[-1].transforms)
+    target_values = parameter_values_from_station_transforms(specs, payloads[-1].transforms)
     positive_values = np.asarray(
         [
             parameter_values_from_station_transforms(specs, payloads[1 + 2 * index].transforms)[name]
@@ -155,7 +165,7 @@ def _source_bank(
         "names": names,
         "scales": scales,
         "anchor_values": np.asarray([anchor_values[name] for name in names], dtype=np.float64),
-        "reference_values": np.asarray([reference_values[name] for name in names], dtype=np.float64),
+        "reference_values": np.asarray([target_values[name] for name in names], dtype=np.float64),
         "positive_values": positive_values,
         "negative_values": negative_values,
         "anchor_residual": np.asarray(anchor_evaluation.residual[anchor_rows], dtype=np.float64),
@@ -470,7 +480,7 @@ def main() -> None:
         _source_bank(
             entry,
             anchor_point=str(args.anchor_point),
-            reference_point=str(args.reference_point),
+            target_point=str(args.reference_point),
             min_truth_match_fraction=float(args.min_truth_match_fraction),
         )
         for entry in entries
