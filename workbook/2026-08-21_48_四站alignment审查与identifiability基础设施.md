@@ -80,7 +80,7 @@ gauge 合同，不是 Calypso 写入器。
 - compiler 在 nominal 线性化并对 s0..s3 全部分量出 FD
 - `parse_transform` 接受 0–3 站独立六矢量
 
-## 阶段 4 生产计划（提交前预注册，尚未跑）
+## 阶段 4 生产计划（已制备，待提交）
 
 | 项 | 值 |
 | --- | --- |
@@ -91,7 +91,20 @@ gauge 合同，不是 Calypso 写入器。
 | 作业 | 每源 1 个 Condor 作业，共 2 |
 | 内存 / flavour | 6000 MB / `tomorrow`（与条目 47 同量级；点×事件 ≈ 1.4× 条目 33） |
 | 产物根 | `outputs/mc24_four_station_identifiability_pilot_v1/` |
+| manifest | `.../iteration_manifest.json`（`four_station_v1` / `unconstrained_full`，`test_data_accessed=false`） |
 | 禁止 | validation 选阈、密封 test、V2 重训、20D curriculum |
+
+制备命令已跑通（不读 test）：
+
+```bash
+python scripts/prepare_four_station_identifiability_pilot.py \
+  --source-config configs/physical_curriculum_four_station_identifiability_sources.yaml \
+  --iteration-template configs/physical_refit_four_station_identifiability_pilot.yaml \
+  --output-root outputs/mc24_four_station_identifiability_pilot_v1 \
+  --iteration 0 --nevents 50 \
+  --source-id mc24_100043_00200_00299 \
+  --source-id mc24_100044_00300_00399
+```
 
 Held-out：`closure_relative`（S1 dx / S2 dy / S3 ry，S0=0 只是坐标图）与
 `closure_relative_plus_common`（同一相对量 + 公共 dx）。只用于事后
