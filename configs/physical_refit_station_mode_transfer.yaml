@@ -1,0 +1,84 @@
+# Station Mode large-statistics transfer: 5-DoF + survey-constrained dz.
+#
+# Isolation contract: layer internals are identically C_dx=0 (this scan has
+# no layer payload).  Injected station dx/dy/rx/ry/rz stay in the already
+# validated local regime; dz is identically 0.  Seed is distinct from the
+# current-corpus 5-DoF bank (20260819).  Do not retrain V2.
+five_dof_sampling:
+  seed: 20260822
+  start_severity: 0.12
+  linear_held_out_severities: [0.10, 0.14]
+  stress_held_out_severities: [0.20]
+  survey_prior_sigma:
+    ift_dz_mm: 5.0
+
+physical_refit_capture_scan:
+  scan_mode: station_rigid_multidof
+  calibration_mode: station
+  cdx_fixed_by: isolation_zero
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  condition_axis: ift_station0_five_dof_survey_dz_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dz_mm
+      station_id: 0
+      component: dz_mm
+      unit: mm
+      finite_difference_step: 2.0
+      severity_scale: 5.0
+    - name: ift_rx_mrad
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_ry_mrad
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_rz_mrad
+      station_id: 0
+      component: rz_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+
+  rigid_points:
+    - name: nominal
+      point_role: nominal
+      direction_trial: nominal
+      alignment_parameter_values:
+        ift_dx_mm: 0.0
+        ift_dy_mm: 0.0
+        ift_dz_mm: 0.0
+        ift_rx_mrad: 0.0
+        ift_ry_mrad: 0.0
+        ift_rz_mrad: 0.0
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

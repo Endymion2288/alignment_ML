@@ -38,7 +38,14 @@ DEFAULT_ENGINEERING: dict[str, float] = {
 def load_capture_criteria(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         payload = json.load(handle)
-    if not isinstance(payload, Mapping) or payload.get("schema_version") != SCHEMA_VERSION:
+    if not isinstance(payload, Mapping):
+        raise ValueError(f"not a capture-criteria contract: {path}")
+    schema = payload.get("schema_version")
+    if schema == "faser-ift-layer-contrast-2d-capture-criteria-v1":
+        from alignment.layer_contrast_capture import validate_layer_contrast_capture_criteria
+
+        return validate_layer_contrast_capture_criteria(payload, path)
+    if schema != SCHEMA_VERSION:
         raise ValueError(f"not a 5-DoF capture-criteria contract: {path}")
     if payload.get("validation_used_in_registration") is not False:
         raise ValueError("capture criteria must declare validation_used_in_registration=false")
@@ -92,7 +99,11 @@ def evaluate_parameter_capture(
     }
 
 
-def overall_framework_capture(per_parameter: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def overall_framework_capture(
+    per_parameter: Sequence[Mapping[str, Any]],
+    *,
+    survey_parameters: Sequence[str] | None = None,
+) -> dict[str, Any]:
     free = [row for row in per_parameter if row.get("role") == "free"]
     if not free:
         raise ValueError("capture criteria produced no free parameters")
@@ -100,13 +111,14 @@ def overall_framework_capture(per_parameter: Sequence[Mapping[str, Any]]) -> dic
     statistical = all(row.get("statistical_capture") is True for row in free)
     coverage = all(row.get("coverage_capture") is True for row in free)
     framework = all(row.get("track_capture") is True for row in free)
+    excluded = list(SURVEY_PARAMETERS if survey_parameters is None else survey_parameters)
     return {
         "engineering_capture_success": engineering,
         "statistical_capture_success": statistical,
         "coverage_capture_success": coverage,
         "framework_capture_success": framework,
         "capture_success": framework,
-        "survey_parameters_excluded_from_capture": list(SURVEY_PARAMETERS),
+        "survey_parameters_excluded_from_capture": excluded,
     }
 
 
@@ -188,5 +200,12 @@ def attach_capture_and_prior(
             merged["capture"] = scored
             capture_rows.append(scored)
         enriched.append(merged)
-    aggregate = None if criteria is None else overall_framework_capture(capture_rows)
+    aggregate = None
+    if criteria is not None:
+        survey = (
+            []
+            if criteria.get("schema_version") == "faser-ift-layer-contrast-2d-capture-criteria-v1"
+            else None
+        )
+        aggregate = overall_framework_capture(capture_rows, survey_parameters=survey)
     return enriched, aggregate, prior_rows

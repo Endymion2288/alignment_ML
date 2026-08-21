@@ -1,0 +1,33 @@
+# Source-disjoint train/validation declaration for FASER hierarchical
+# alignment V1: station 5 track-constrained DoF + survey dz + IFT 1-D C_dx.
+#
+# Mode-0, V2 association, route policy, physical_edge_deduplicated
+# observation semantics, and sealed test stay frozen.  C_rx, relative ry,
+# layer dy/rz, layer1, and module stay out.  Station and C_dx are never
+# solved in one six-parameter Newton step.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+
+  alignment_hierarchy:
+    active_level: hierarchical_v1
+    active_parameters: [ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad, C_dx]
+    survey_constrained_parameters:
+      ift_dz_mm:
+        prior_sigma: 5.0
+        source: identifiability_pilot_severity_scale
+        interpretation: survey_prior_not_track_measurement
+        written_value: 0.0
+    reserved_future_levels: [module]
+    reserved_layer_components: [dy_mm, rz_mrad, ry_mrad, rx_mrad]
+    canonical_internal_basis: outer_contrast
+    payload_expansion: station 5-DoF + dz=0; L0=+C_dx, L1=0, L2=-C_dx; C_rx identically 0
+    joint_newton: forbidden
+    block_order_canonical: station_then_C_dx
+    block_order_control: C_dx_then_station
+    activation_rule: hierarchical_v1_source_disjoint_closure
+
+  synthetic_multitrack:
+    overlay_seed_scope: alignment_iteration_shared_across_payloads

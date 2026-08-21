@@ -1,0 +1,69 @@
+# First official IFT layer-hierarchy mini-curriculum in the canonical
+# outer-contrast coordinates C_dx and C_rx.
+#
+# Linearization is the frozen, already-captured station geometry (all-zero
+# station 5-DoF; dz remains 0).  Joint random sampling stays inside the
+# already physically verified envelope |C_dx|<=0.12 mm, |C_rx|<=0.7 mrad.
+# Finite-difference probes are axial in C-space only (four points).  Shared
+# geometry across the original 10 train / 8 validation xAOD files; sealed
+# test stays closed.  Frozen-station reference_layer is not a fit chart.
+contrast_2d_sampling:
+  seed: 20260820
+  envelope:
+    C_dx: 0.12
+    C_rx: 0.70
+  start_radius: 0.65
+  linear_radii: [0.32, 0.48]
+  stress_radii: [0.96]
+  held_out_radii: [0.72]
+  min_axis_fraction: 0.25
+
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  fit_basis: outer_contrast
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_layer_outer_contrast_2d_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: C_dx
+      scope: contrast
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.10
+      severity_scale: 0.12
+    - name: C_rx
+      scope: contrast
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 0.50
+      severity_scale: 0.70
+
+  rigid_points:
+    - name: nominal
+      point_role: nominal
+      direction_trial: nominal
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      layer_transforms:
+        0:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      alignment_parameter_values:
+        C_dx: 0.0
+        C_rx: 0.0

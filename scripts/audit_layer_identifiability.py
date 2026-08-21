@@ -306,7 +306,7 @@ def _bank_for_target(bank: Mapping[str, Any], target_name: str) -> dict[str, Any
     return updated
 
 
-def _fit(bank: Mapping[str, Any], *, rcond: float, names=None, scales=None, column_transform=None):
+def _fit(bank: Mapping[str, Any], *, rcond: float, names=None, scales=None, column_transform=None, prior_sigma_native=None):
     names = tuple(bank["names"] if names is None else names)
     scales = np.asarray(bank["scales"] if scales is None else scales, dtype=np.float64)
     if column_transform is None:
@@ -320,6 +320,7 @@ def _fit(bank: Mapping[str, Any], *, rcond: float, names=None, scales=None, colu
             positive_values=bank["positive_values"],
             negative_values=bank["negative_values"],
             parameter_scales=scales,
+            prior_sigma_native=prior_sigma_native,
             rcond=rcond,
         )
     unconstrained = solve_physical_finite_difference(

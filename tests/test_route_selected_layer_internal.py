@@ -5,7 +5,7 @@ import pytest
 
 from alignment.layer_hierarchy import reduce_gauge
 from scripts.run_route_selected_multidof_update import (
-    _dx_internals,
+    _component_internals,
     _gauged_finite_difference_fit,
     _point_parameter_values,
     _select_parameter_specs,
@@ -112,14 +112,14 @@ def test_gauged_finite_difference_recovers_outer_relative_dx_not_labels():
         reduction,
         specs,
     )
-    internals = _dx_internals(recovered_full, specs)
-    expected_split = _dx_internals(dict(zip(names, expected)), specs)
+    internals = _component_internals(recovered_full, specs, "dx_mm")
+    expected_split = _component_internals(dict(zip(names, expected)), specs, "dx_mm")
     assert gauged.full_rank
-    assert internals["outer_relative_layer0_minus_layer2_mm"] == pytest.approx(
-        expected_split["outer_relative_layer0_minus_layer2_mm"], abs=1.0e-3
+    assert internals["outer_relative_layer0_minus_layer2"] == pytest.approx(
+        expected_split["outer_relative_layer0_minus_layer2"], abs=1.0e-3
     )
-    assert internals["layer_internal_dx_mm"]["layer_0"] == pytest.approx(0.12, abs=5.0e-3)
-    assert internals["layer_internal_dx_mm"]["layer_2"] == pytest.approx(-0.12, abs=5.0e-3)
+    assert internals["layer_internal"]["layer_0"] == pytest.approx(0.12, abs=5.0e-3)
+    assert internals["layer_internal"]["layer_2"] == pytest.approx(-0.12, abs=5.0e-3)
     assert internals["station_common"]["dx_mm"] == pytest.approx(0.0)
 
 

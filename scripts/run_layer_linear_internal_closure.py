@@ -3,11 +3,11 @@
 
 The finite-difference bank stays frozen (layer dx/rx/ry only).  The observed
 payloads are a separate held-out-only physical scan: outer-antisymmetric
-relative dx, and optionally a separate relative ry point.  Station 5-DoF,
-mode-0, and sealed test stay closed.  Two gauges are solved independently and
-compared only after converting to gauge-invariant
-``layer_i - weighted_mean(layer)`` internals.  Parameter labels are not
-required to match item-by-item.
+relative dx or relative rx.  Station 5-DoF, mode-0, and sealed test stay
+closed.  Admission is in the zero-common-mode family
+(``outer_contrast``, equal-weight ``sum_to_zero``).  Frozen-station
+``reference_layer`` is solved and reported as a negative control of a
+different physical constraint, not as a gauge cross-check.
 """
 
 from __future__ import annotations
@@ -21,8 +21,14 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
+from alignment.gauge_equivalence import (
+    CANONICAL_INTERNAL_BASIS,
+    FROZEN_STATION_NEGATIVE_CONTROL,
+    ZERO_COMMON_MODE_CHOICES,
+)
 from alignment.layer_hierarchy import (
     FREE_COMPONENTS,
+    HIERARCHY_FIT_CHOICES,
     IFT_LAYER_IDS,
     expand_gauged_parameters,
     reduce_gauge,
@@ -48,14 +54,21 @@ from scripts.audit_layer_identifiability import (
 )
 
 
-SCHEMA_VERSION = "faser-ift-layer-linear-internal-closure-v1"
-GAUGE_CHOICES = ("sum_to_zero", "reference_layer")
+SCHEMA_VERSION = "faser-ift-layer-linear-internal-closure-v3"
+GAUGE_CHOICES = HIERARCHY_FIT_CHOICES
 COMPONENT_THRESHOLDS = {
     "dx_mm": {
         "internal_abs": 0.03,
         "gauge_agreement_abs": 0.02,
         "station_abs": 0.03,
         "source_spread_abs": 0.03,
+        "relative_fraction": 0.25,
+    },
+    "rx_mrad": {
+        "internal_abs": 0.15,
+        "gauge_agreement_abs": 0.10,
+        "station_abs": 0.15,
+        "source_spread_abs": 0.25,
         "relative_fraction": 0.25,
     },
     "ry_mrad": {
@@ -111,17 +124,29 @@ def injected_linear_component(
         if spec_scope(spec) == "station":
             raise ValueError(f"held-out injects station parameter '{name}'")
         component = str(spec.get("component"))
-        if component not in {"dx_mm", "ry_mrad"}:
+        if component not in {"dx_mm", "rx_mrad", "ry_mrad"}:
             raise ValueError(f"held-out injects non-linear or excluded component '{component}'")
         active.add(component)
     if len(active) != 1:
-        raise ValueError(f"held-out must inject exactly one of layer dx or ry, found {sorted(active)}")
+        raise ValueError(f"held-out must inject exactly one of layer dx, rx, or ry, found {sorted(active)}")
     return next(iter(active))
 
 
 def internals_by_layer(split: Mapping[str, object], component: str) -> dict[str, float]:
     internal = split["layer_internal"]
     return {f"layer_{layer}": float(internal[f"layer_{layer}"][component]) for layer in IFT_LAYER_IDS}
+
+
+def _partition_representations(choices: Sequence[str]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Split zero-common-mode admission charts from the frozen-station negative control."""
+    available = tuple(str(choice) for choice in choices)
+    admission = tuple(choice for choice in ZERO_COMMON_MODE_CHOICES if choice in available)
+    if not admission:
+        admission = tuple(choice for choice in available if choice != FROZEN_STATION_NEGATIVE_CONTROL)
+    if not admission:
+        admission = available
+    negative = tuple(choice for choice in available if choice == FROZEN_STATION_NEGATIVE_CONTROL)
+    return admission, negative
 
 
 def physics_verdict(
@@ -135,63 +160,91 @@ def physics_verdict(
     residual_ratios: Mapping[str, float],
     max_condition_number: float,
 ) -> dict[str, Any]:
-    """Compare gauge-invariant internals, not gauge-parameter labels."""
+    """Admit the zero-common-mode family; treat frozen-station reference_layer as a control."""
     thresholds = COMPONENT_THRESHOLDS[component]
     expected = {key: float(value) for key, value in expected_internals.items()}
+    choices = tuple(recovered_by_gauge)
+    if not choices:
+        raise ValueError("physics verdict requires at least one hierarchy representation")
+    admission_choices, negative_choices = _partition_representations(choices)
     gauge_tables = {
-        choice: {key: float(value) for key, value in recovered_by_gauge[choice].items()}
-        for choice in GAUGE_CHOICES
+        choice: {key: float(value) for key, value in recovered_by_gauge[choice].items()} for choice in choices
     }
-    peak = max(abs(value) for value in expected.values()) or 1.0
-    internal_tol = max(float(thresholds["internal_abs"]), float(thresholds["relative_fraction"]) * peak)
-    agreement_tol = max(float(thresholds["gauge_agreement_abs"]), 0.5 * internal_tol)
+    outer_expected = expected["layer_0"] - expected["layer_2"]
+    peak = abs(outer_expected) or 1.0
+    internal_tol = max(float(thresholds["internal_abs"]), float(thresholds["relative_fraction"]) * (max(abs(value) for value in expected.values()) or 1.0))
+    outer_tol = max(float(thresholds["internal_abs"]), float(thresholds["relative_fraction"]) * peak)
+    agreement_tol = max(float(thresholds["gauge_agreement_abs"]), 0.5 * outer_tol)
 
-    recovered = True
+    outer_recovered = {
+        choice: gauge_tables[choice]["layer_0"] - gauge_tables[choice]["layer_2"] for choice in choices
+    }
+    recovered = all(abs(outer_recovered[choice] - outer_expected) <= outer_tol for choice in admission_choices)
     gauge_agreement = True
+    for index, left in enumerate(admission_choices):
+        for right in admission_choices[index + 1 :]:
+            if abs(outer_recovered[left] - outer_recovered[right]) > agreement_tol:
+                gauge_agreement = False
     per_layer: dict[str, Any] = {}
     for layer_key, truth in expected.items():
-        values = {choice: gauge_tables[choice][layer_key] for choice in GAUGE_CHOICES}
-        delta = abs(values["sum_to_zero"] - values["reference_layer"])
+        values = {choice: gauge_tables[choice][layer_key] for choice in choices}
         errors = {choice: abs(value - truth) for choice, value in values.items()}
-        layer_recovered = all(error <= internal_tol for error in errors.values())
-        layer_agree = delta <= agreement_tol
-        recovered = recovered and layer_recovered
-        gauge_agreement = gauge_agreement and layer_agree
         per_layer[layer_key] = {
             "expected": truth,
             "recovered": values,
             "abs_error": errors,
-            "gauge_delta": delta,
-            "recovered_pass": layer_recovered,
-            "gauge_agreement_pass": layer_agree,
+            "informational": layer_key == "layer_1",
         }
 
-    outer_expected = expected["layer_0"] - expected["layer_2"]
-    outer_recovered = {
-        choice: gauge_tables[choice]["layer_0"] - gauge_tables[choice]["layer_2"] for choice in GAUGE_CHOICES
-    }
+    sample_gauges = next(iter(source_internals.values()), {})
+    if "outer_contrast" in sample_gauges:
+        primary = "outer_contrast"
+    elif "sum_to_zero" in sample_gauges:
+        primary = "sum_to_zero"
+    else:
+        primary = admission_choices[0] if admission_choices else choices[0]
     outer_by_source = {
-        source_id: float(gauges["sum_to_zero"]["layer_0"] - gauges["sum_to_zero"]["layer_2"])
+        source_id: float(gauges[primary]["layer_0"] - gauges[primary]["layer_2"])
         for source_id, gauges in source_internals.items()
     }
     outer_spread = (
         float(max(outer_by_source.values()) - min(outer_by_source.values())) if outer_by_source else float("nan")
     )
     source_stable = bool(outer_by_source) and outer_spread <= float(thresholds["source_spread_abs"])
+    direction_consistent = True
+    per_source_direction: dict[str, Any] = {}
+    for source_id, gauges in source_internals.items():
+        source_outers = {
+            choice: float(table["layer_0"] - table["layer_2"]) for choice, table in gauges.items() if choice in admission_choices
+        }
+        signs_ok = all(
+            value == 0.0 or outer_expected == 0.0 or ((value > 0.0) == (outer_expected > 0.0))
+            for value in source_outers.values()
+        )
+        direction_consistent = direction_consistent and signs_ok
+        per_source_direction[source_id] = {
+            "outer_relative": {
+                choice: float(table["layer_0"] - table["layer_2"]) for choice, table in gauges.items()
+            },
+            "admission_outer_relative": source_outers,
+            "direction_pass": signs_ok,
+        }
     source_spread = {
         "outer_relative_layer0_minus_layer2": {
             "expected": outer_expected,
             "recovered": outer_recovered,
+            "admission_recovered": {choice: outer_recovered[choice] for choice in admission_choices},
             "per_source": outer_by_source,
             "abs_spread": outer_spread,
             "pass": source_stable,
+            "direction_consistent": direction_consistent,
+            "per_source_all_representations": per_source_direction,
         },
         "per_layer_informational": {},
     }
     for layer_key, truth in expected.items():
         by_source = {
-            source_id: float(gauges["sum_to_zero"][layer_key])
-            for source_id, gauges in source_internals.items()
+            source_id: float(gauges[primary][layer_key]) for source_id, gauges in source_internals.items()
         }
         spread = float(max(by_source.values()) - min(by_source.values())) if by_source else float("nan")
         source_spread["per_layer_informational"][layer_key] = {
@@ -201,16 +254,18 @@ def physics_verdict(
 
     no_leakage = True
     leakage = {}
-    for choice, station in station_leakage_by_gauge.items():
-        dx_or_ry = abs(float(station.get(component, 0.0)))
-        leak_pass = dx_or_ry <= float(thresholds["station_abs"])
+    for choice in admission_choices:
+        station = station_leakage_by_gauge.get(choice, {})
+        dx_or_rot = abs(float(station.get(component, 0.0)))
+        leak_pass = dx_or_rot <= float(thresholds["station_abs"])
         no_leakage = no_leakage and leak_pass
         leakage[choice] = {"station_common": dict(station), "pass": leak_pass}
 
     rank_pass = True
     condition_pass = True
     rank_table = {}
-    for choice, payload in ranks.items():
+    for choice in admission_choices:
+        payload = ranks[choice]
         full_rank = bool(payload["full_rank"])
         condition = payload["normal_matrix_condition_number"]
         well = condition is not None and float(condition) <= float(max_condition_number)
@@ -222,30 +277,83 @@ def physics_verdict(
             "full_rank": full_rank,
             "condition_number": condition,
             "condition_pass": well,
+            "role": "admission",
+        }
+    for choice in negative_choices:
+        if choice not in ranks:
+            continue
+        payload = ranks[choice]
+        rank_table[choice] = {
+            "rank": payload["normal_matrix_rank"],
+            "dimension": payload["dimension"],
+            "full_rank": bool(payload["full_rank"]),
+            "condition_number": payload["normal_matrix_condition_number"],
+            "condition_pass": None,
+            "role": "frozen_station_negative_control",
         }
 
     residual_pass = True
     residual_table = {}
-    for choice, ratio in residual_ratios.items():
+    for choice in admission_choices:
+        ratio = residual_ratios[choice]
         ok = math.isfinite(ratio) and ratio <= 0.5
         residual_pass = residual_pass and ok
-        residual_table[choice] = {"post_over_pre_rms": ratio, "pass": ok}
+        residual_table[choice] = {"post_over_pre_rms": ratio, "pass": ok, "role": "admission"}
+    for choice in negative_choices:
+        if choice not in residual_ratios:
+            continue
+        residual_table[choice] = {
+            "post_over_pre_rms": residual_ratios[choice],
+            "pass": None,
+            "role": "frozen_station_negative_control",
+        }
+
+    negative_control = None
+    if negative_choices:
+        choice = negative_choices[0]
+        negative_control = {
+            "choice": choice,
+            "role": "frozen_station_different_physical_family",
+            "not_a_gauge_cross_check": True,
+            "outer_relative": outer_recovered.get(choice),
+            "outer_relative_error": (
+                None if choice not in outer_recovered else abs(outer_recovered[choice] - outer_expected)
+            ),
+            "agrees_with_zero_common_mode_family": (
+                choice in outer_recovered
+                and all(abs(outer_recovered[choice] - outer_recovered[item]) <= agreement_tol for item in admission_choices)
+            ),
+            "post_over_pre_rms": residual_ratios.get(choice),
+        }
 
     passed = bool(
-        recovered and gauge_agreement and source_stable and no_leakage and rank_pass and condition_pass and residual_pass
+        recovered
+        and gauge_agreement
+        and source_stable
+        and direction_consistent
+        and no_leakage
+        and rank_pass
+        and condition_pass
+        and residual_pass
     )
     return {
         "component": component,
+        "canonical_internal_basis": CANONICAL_INTERNAL_BASIS,
+        "admission_representations": list(admission_choices),
+        "negative_control_representations": list(negative_choices),
         "internal_tolerance": internal_tol,
+        "outer_relative_tolerance": outer_tol,
         "gauge_agreement_tolerance": agreement_tol,
         "layers": per_layer,
         "source_stability": source_spread,
         "station_leakage": leakage,
         "rank_condition": rank_table,
         "post_fit_residual": residual_table,
+        "negative_control": negative_control,
         "physics_recovered": recovered,
         "gauges_agree": gauge_agreement,
         "source_stable": source_stable,
+        "source_direction_consistent": direction_consistent,
         "no_station_common_mode_leakage": no_leakage,
         "full_rank": rank_pass,
         "well_conditioned": condition_pass,
@@ -547,6 +655,7 @@ def _close_target(
     }
     station_component_name = {
         "dx_mm": "ift_dx_mm",
+        "rx_mrad": "ift_rx_mrad",
         "ry_mrad": "ift_ry_mrad",
     }[component]
     station_value = abs(float(station_recovered.get(station_component_name, 0.0)))
@@ -645,9 +754,12 @@ def main() -> None:
         for name in target_points
     }
     dx_targets = [name for name, payload in targets.items() if payload["component"] == "dx_mm"]
+    rx_targets = [name for name, payload in targets.items() if payload["component"] == "rx_mrad"]
     ry_targets = [name for name, payload in targets.items() if payload["component"] == "ry_mrad"]
     dx_passed = bool(dx_targets) and all(targets[name]["verdict"]["passed"] for name in dx_targets)
+    rx_passed = bool(rx_targets) and all(targets[name]["verdict"]["passed"] for name in rx_targets)
     ry_passed = all(targets[name]["verdict"]["passed"] for name in ry_targets) if ry_targets else None
+    ready = rx_passed if rx_targets else dx_passed
     report = {
         "schema_version": SCHEMA_VERSION,
         "created_utc": datetime.now(timezone.utc).isoformat(),
@@ -660,17 +772,18 @@ def main() -> None:
         "test_data_accessed": False,
         "station_5dof_frozen": True,
         "reused_existing_fd_jacobian": True,
+        "fit_representations": list(GAUGE_CHOICES),
+        "canonical_internal_basis": CANONICAL_INTERNAL_BASIS,
+        "admission_representations": list(ZERO_COMMON_MODE_CHOICES),
+        "negative_control_representations": [FROZEN_STATION_NEGATIVE_CONTROL],
         "forbidden_directions": ["layer_dy_mm", "layer_rz_mrad", "layer1_rx_mrad"],
         "sources": [str(observed["source_id"]) for _jacobian, observed in pairs],
         "targets": targets,
-        "dx_passed": dx_passed,
+        "dx_passed": dx_passed if dx_targets else None,
+        "rx_passed": rx_passed if rx_targets else None,
         "ry_passed": ry_passed,
-        "ready_for_route_selected": dx_passed,
-        "answer": (
-            "yes"
-            if dx_passed
-            else "no"
-        ),
+        "ready_for_route_selected": ready,
+        "answer": "yes" if ready else "no",
         "question": (
             "Without station rigid motion and without dy/rz nonlinear contamination, "
             "does real FASER reconstruction stably recover a gauge-defined IFT internal relative deformation?"
@@ -680,9 +793,10 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=False)
     output_path = output_dir / "layer_linear_internal_closure.json"
     output_path.write_text(json.dumps(_json_ready(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"dx_passed: {dx_passed}")
-    print(f"ry_passed: {ry_passed}")
-    print(f"ready_for_route_selected: {dx_passed}")
+    print(f"dx_passed: {report['dx_passed']}")
+    print(f"rx_passed: {report['rx_passed']}")
+    print(f"ry_passed: {report['ry_passed']}")
+    print(f"ready_for_route_selected: {ready}")
     for name, payload in targets.items():
         verdict = payload["verdict"]
         print(

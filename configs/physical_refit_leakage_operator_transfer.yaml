@@ -1,0 +1,96 @@
+# Analysis-only leakage-operator Jacobian for large-statistics transfer.
+#
+# This is not a calibration-mode bank and never writes geometry.  Every probe
+# is axial around the all-zero reference: station 5-DoF + survey dz, plus C_dx.
+# No joint station+C_dx operating-point injection.  A is remeasured here and
+# compared with the frozen contract; it is never redefined.
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  fit_basis: hierarchical_v1
+  analysis_only: leakage_operator_A
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_hierarchical_v1_station_cdx_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      scope: station
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      scope: station
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dz_mm
+      scope: station
+      station_id: 0
+      component: dz_mm
+      unit: mm
+      finite_difference_step: 2.0
+      severity_scale: 5.0
+    - name: ift_rx_mrad
+      scope: station
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_ry_mrad
+      scope: station
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_rz_mrad
+      scope: station
+      station_id: 0
+      component: rz_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: C_dx
+      scope: contrast
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.10
+      severity_scale: 0.12
+
+  rigid_points:
+    - name: placeholder_overwritten_by_compiler
+      point_role: nominal
+      direction_trial: placeholder
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      layer_transforms:
+        0:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      alignment_parameter_values:
+        ift_dx_mm: 0.0
+        ift_dy_mm: 0.0
+        ift_dz_mm: 0.0
+        ift_rx_mrad: 0.0
+        ift_ry_mrad: 0.0
+        ift_rz_mrad: 0.0
+        C_dx: 0.0

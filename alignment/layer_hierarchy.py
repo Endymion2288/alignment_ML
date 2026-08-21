@@ -5,12 +5,24 @@ are internal to IFT (station 0, planes 0--2) and must not silently reuse a
 station payload slot.  Calypso ``TrackerAlignDBTool`` stores a plane transform
 under the two-digit key ``f"{station}{layer}"`` (level-2 ``/Tracker/Align/Planes``).
 
-Two explicit gauges remove the layer-common / station-rigid duplication:
+The canonical internal basis is the zero-common-mode outer contrast.
+Hierarchical alignment V1 floats station 5-DoF and ``C_dx`` as separate
+blocks, never as one six-parameter Newton step:
 
-* ``sum_to_zero``: keep the station rigid transform; constrain the coverage-
-  weighted layer corrections of each component to sum to zero.
-* ``reference_layer``: keep the station rigid transform; fix one IFT plane
-  (default layer 0) to zero.
+* station 5-DoF ``dx/dy/rx/ry/rz`` with survey-constrained ``dz``
+* ``C_dx = (dx_L0 - dx_L2) / 2``
+
+``C_rx`` is identifiable in isolation but is not a hierarchy update DoF.
+
+Layer 1 is not floated.  Equal-weight ``sum_to_zero`` writes the same
+physical family ``L = [+C, 0, -C]``.  ``reference_layer`` is the same
+additive geometry only after a compensating station transform
+``S = +C``, ``L = [0, -C, -2C]``.  With the station frozen it is a
+different physical constraint and is retained only as a negative control,
+not as a gauge cross-check.  Compare ``layer_0 - layer_2``, not labels.
+
+See ``alignment.gauge_equivalence`` for the payload-level map and the
+Calypso detector-element composition (plane-*z* conjugation).
 
 Neither gauge is a physical measurement of ``dz``.  Layer ``dz`` is not part of
 this hierarchy step.
@@ -28,6 +40,15 @@ IFT_STATION_ID = 0
 IFT_LAYER_IDS = (0, 1, 2)
 FREE_COMPONENTS = ("dx_mm", "dy_mm", "rx_mrad", "ry_mrad", "rz_mrad")
 GAUGE_CHOICES = ("sum_to_zero", "reference_layer")
+CONTRAST_CHOICE = "outer_contrast"
+CANONICAL_INTERNAL_BASIS = CONTRAST_CHOICE
+HIERARCHY_FIT_CHOICES = GAUGE_CHOICES + (CONTRAST_CHOICE,)
+ZERO_COMMON_MODE_CHOICES = (CONTRAST_CHOICE, "sum_to_zero")
+FROZEN_STATION_NEGATIVE_CONTROL = "reference_layer"
+CONTRAST_COMPONENTS = ("dx_mm", "rx_mrad", "ry_mrad")
+CONTRAST_SCOPE = "contrast"
+SPEC_SCOPES = ("station", "layer", CONTRAST_SCOPE)
+ADMITTED_CONTRAST_COMPONENTS = ("dx_mm", "rx_mrad")
 NEAR_DEGENERACY_COSINE = 0.9
 
 _LAYER_KEY_STATIONS = (0, 1, 2, 3)
@@ -64,9 +85,37 @@ def is_calypso_layer_key(key: object) -> bool:
 
 def spec_scope(spec: Mapping[str, object]) -> str:
     scope = str(spec.get("scope", "station"))
-    if scope not in {"station", "layer"}:
+    if scope not in SPEC_SCOPES:
         raise ValueError(f"alignment parameter '{spec.get('name')}' has unsupported scope '{scope}'")
     return scope
+
+
+def is_contrast_spec(spec: Mapping[str, object]) -> bool:
+    return spec_scope(spec) == CONTRAST_SCOPE
+
+
+def contrast_parameter_name(component: str) -> str:
+    """Return the explicit outer-contrast coordinate for one IFT component."""
+    names = {"dx_mm": "C_dx", "rx_mrad": "C_rx", "ry_mrad": "C_ry"}
+    if component not in names:
+        raise ValueError(f"no outer-contrast coordinate for component '{component}'")
+    return names[component]
+
+
+def contrast_layer_six_vectors(c_dx_mm: float, c_rx_mrad: float) -> dict[str, list[float]]:
+    """Expand canonical contrast coordinates into IFT layer payload six-vectors.
+
+    Payload units are millimetres and radians.  Layer 1 and every unused
+    component stay identically zero.  The station six-vector is not part of
+    this expansion and must remain zero separately.
+    """
+    rx_rad = float(c_rx_mrad) / 1.0e3
+    dx = float(c_dx_mm)
+    return {
+        "0": [dx, 0.0, 0.0, rx_rad, 0.0, 0.0],
+        "1": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        "2": [-dx, 0.0, 0.0, -rx_rad, 0.0, 0.0],
+    }
 
 
 def require_station_scope(parameter_specs: Sequence[Mapping[str, object]]) -> None:
@@ -113,6 +162,11 @@ def hierarchy_index(parameter_specs: Sequence[Mapping[str, object]]) -> Hierarch
         index = len(names)
         names.append(name)
         scope = spec_scope(spec)
+        if scope == CONTRAST_SCOPE:
+            raise ValueError(
+                f"hierarchy parameter '{name}' is already in outer-contrast coordinates; "
+                "do not pass C_dx/C_rx through reduce_gauge or treat reference_layer as equivalent"
+            )
         if scope == "station":
             if "layer_id" in spec:
                 raise ValueError(f"station parameter '{name}' must not declare layer_id")
@@ -256,6 +310,37 @@ def _reference_layer_transform(
     return np.column_stack(columns), keep, dropped
 
 
+def _outer_contrast_transform(
+    index: HierarchyIndex,
+) -> tuple[np.ndarray, list[int], list[int], tuple[str, ...]]:
+    """Map each admitted component onto C=(outer0-outer2)/2 with layer1 and common mode fixed."""
+    keep: list[int] = []
+    dropped: list[int] = []
+    columns: list[np.ndarray] = []
+    names: list[str] = []
+    for component in FREE_COMPONENTS:
+        if component in index.station_by_component:
+            dropped.append(index.station_by_component[component])
+        layers = index.layer_by_component[component]
+        if not layers:
+            continue
+        if component not in CONTRAST_COMPONENTS:
+            dropped.extend(layers[layer] for layer in IFT_LAYER_IDS)
+            continue
+        if set(layers) != set(IFT_LAYER_IDS):
+            raise ValueError(f"outer_contrast component '{component}' requires all three IFT layers")
+        column = np.zeros(index.n_parameters, dtype=np.float64)
+        column[layers[0]] = 1.0
+        column[layers[2]] = -1.0
+        columns.append(column)
+        keep.append(layers[0])
+        dropped.extend((layers[1], layers[2]))
+        names.append(contrast_parameter_name(component))
+    if not columns:
+        raise ValueError("outer_contrast requires at least one layer dx/rx/ry component")
+    return np.column_stack(columns), keep, dropped, tuple(names)
+
+
 def reduce_gauge(
     parameter_specs: Sequence[Mapping[str, object]],
     *,
@@ -265,10 +350,26 @@ def reduce_gauge(
     dropped_layer: int = 2,
 ) -> GaugeReduction:
     """Build the explicit gauge that separates station common-mode from layers."""
-    if choice not in GAUGE_CHOICES:
+    if choice not in HIERARCHY_FIT_CHOICES:
         raise ValueError(f"unsupported gauge choice '{choice}'")
     index = hierarchy_index(parameter_specs)
     weights = normalize_layer_weights(layer_weights)
+    if choice == CONTRAST_CHOICE:
+        transform, keep, dropped, keep_names = _outer_contrast_transform(index)
+        return GaugeReduction(
+            choice=choice,
+            names=keep_names,
+            keep_indices=tuple(keep),
+            dropped_names=tuple(index.names[item] for item in dropped),
+            dropped_indices=tuple(dropped),
+            column_transform=transform,
+            layer_weights=tuple(float(value) for value in weights),
+            reference_layer=None,
+            constraint=(
+                "station rigid transform frozen; IFT layer common mode fixed at 0; "
+                "layer 1 frozen; fit C=(layer0-layer2)/2"
+            ),
+        )
     if choice == "sum_to_zero":
         if dropped_layer not in IFT_LAYER_IDS:
             raise ValueError(f"unsupported dropped layer {dropped_layer}")
@@ -377,6 +478,17 @@ def project_to_gauge(
                 projected[name] = (
                     0.0 if layer == reference else float(full_values[name]) - float(full_values[index.names[layers[reference]]])
                 )
+    elif reduction.choice == CONTRAST_CHOICE:
+        for component in CONTRAST_COMPONENTS:
+            name = contrast_parameter_name(component)
+            if name not in reduction.names:
+                continue
+            layers = index.layer_by_component[component]
+            if set(layers) != set(IFT_LAYER_IDS):
+                raise ValueError(f"outer_contrast component '{component}' requires all three IFT layers")
+            projected[name] = 0.5 * (
+                float(full_values[index.names[layers[0]]]) - float(full_values[index.names[layers[2]]])
+            )
     else:
         raise ValueError(f"unsupported gauge choice '{reduction.choice}'")
     return {name: projected[name] for name in reduction.names}

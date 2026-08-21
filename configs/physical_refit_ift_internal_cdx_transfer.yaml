@@ -1,0 +1,63 @@
+# IFT-Internal Mode large-statistics transfer: 1-D C_dx only.
+#
+# Isolation contract: station six-vector is identically the closed nominal
+# geometry.  Injected C_dx stays inside the already verified |C_dx|<=0.12 mm
+# linear envelope.  Payload is L0=+C_dx, L1=0, L2=-C_dx; C_rx is identically 0.
+# Finite-difference probes are axial around the all-zero reference.
+# Do not inject C_rx, relative ry, layer dy/rz, layer1, or module DoF.
+cdx_1d_sampling:
+  seed: 20260823
+  envelope_C_dx_mm: 0.12
+  start_C_dx_mm: 0.12
+  held_out_C_dx_mm: -0.12
+
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  fit_basis: outer_contrast
+  calibration_mode: ift_internal
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_internal_cdx_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: C_dx
+      scope: contrast
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.10
+      severity_scale: 0.12
+
+  rigid_points:
+    - name: placeholder_overwritten_by_compiler
+      point_role: nominal
+      direction_trial: placeholder
+      station_transforms:
+        0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        3: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      layer_transforms:
+        0:
+          0: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          1: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          2: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      alignment_parameter_values:
+        C_dx: 0.0
+
+  held_out_closure_points:
+    - name: start
+      alignment_parameter_values:
+        C_dx: 0.12
+    - name: heldout_00
+      alignment_parameter_values:
+        C_dx: -0.12

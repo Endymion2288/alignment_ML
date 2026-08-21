@@ -515,11 +515,14 @@ def _hierarchy_parameter_value(
 ) -> float:
     index = int(spec["transform_index"])
     scale = float(spec["payload_scale"])
-    if str(spec["scope"]) == "station":
-        return float(station_transforms[str(int(spec["station_id"]))][index] * scale)
-    return float(
-        layer_transforms[str(int(spec["station_id"]))][str(int(spec["layer_id"]))][index] * scale
-    )
+    scope = str(spec["scope"])
+    station = str(int(spec["station_id"]))
+    if scope == "station":
+        return float(station_transforms[station][index] * scale)
+    layers = layer_transforms[station]
+    if scope == "contrast":
+        return 0.5 * (float(layers["0"][index] * scale) - float(layers["2"][index] * scale))
+    return float(layers[str(int(spec["layer_id"]))][index] * scale)
 
 
 def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]:
@@ -528,7 +531,8 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
     Station 5-DoF remains the common-mode rigid transform.  IFT planes 0--2
     carry internal corrections.  Layer conditions are written as Calypso L2
     keys and are never silently copied into a station payload slot.  Station
-    and layer ``dz`` stay identically zero.
+    and layer ``dz`` stay identically zero except the hierarchical-V1 survey
+    coordinate, which may be present in the normal equation but is written 0.
     """
     from alignment.layer_hierarchy import FREE_COMPONENTS, IFT_LAYER_IDS, IFT_STATION_ID
 
@@ -554,6 +558,8 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
     axis = str(config.get("condition_axis", "ift_station_layer_hierarchy"))
     if not axis:
         raise ValueError("IFT layer hierarchy scans require a non-empty condition_axis")
+    fit_basis = str(config.get("fit_basis", ""))
+    hierarchical_v1 = fit_basis == "hierarchical_v1"
 
     raw_specs = config.get("alignment_parameter_specs")
     if not isinstance(raw_specs, list) or not raw_specs:
@@ -570,8 +576,8 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
             raise ValueError(f"duplicate alignment parameter name '{name}'")
         names.add(name)
         scope = str(raw_spec.get("scope", ""))
-        if scope not in {"station", "layer"}:
-            raise ValueError(f"alignment parameter '{name}' must declare scope station or layer")
+        if scope not in {"station", "layer", "contrast"}:
+            raise ValueError(f"alignment parameter '{name}' must declare scope station, layer, or contrast")
         try:
             station = int(raw_spec["station_id"])
         except (KeyError, TypeError, ValueError) as error:
@@ -579,7 +585,13 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
         if station != IFT_STATION_ID:
             raise ValueError(f"alignment parameter '{name}' must belong to IFT station {IFT_STATION_ID}")
         component = str(raw_spec.get("component", ""))
-        if component not in FREE_COMPONENTS:
+        if component == "dz_mm":
+            if scope != "station" or not hierarchical_v1:
+                raise ValueError(
+                    f"alignment parameter '{name}' has unsupported component '{component}'; "
+                    "layer hierarchy does not admit dz"
+                )
+        elif component not in FREE_COMPONENTS:
             raise ValueError(
                 f"alignment parameter '{name}' has unsupported component '{component}'; "
                 "layer hierarchy does not admit dz"
@@ -616,6 +628,19 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
             if "layer_id" in raw_spec:
                 raise ValueError(f"station parameter '{name}' must not declare layer_id")
             station_slots.add(component)
+        elif scope == "contrast":
+            from alignment.layer_hierarchy import ADMITTED_CONTRAST_COMPONENTS, contrast_parameter_name
+
+            if "layer_id" in raw_spec:
+                raise ValueError(f"contrast parameter '{name}' must not declare layer_id")
+            if component not in ADMITTED_CONTRAST_COMPONENTS:
+                raise ValueError(
+                    f"contrast parameter '{name}' does not admit component '{component}'; "
+                    "relative ry, layer dy/rz, and layer1 stay frozen"
+                )
+            expected = contrast_parameter_name(component)
+            if name != expected:
+                raise ValueError(f"contrast parameter '{name}' must be named '{expected}'")
         else:
             try:
                 layer = int(raw_spec["layer_id"])
@@ -628,17 +653,46 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
             layer_slots.add((layer, component))
             spec["layer_id"] = layer
         specs.append(spec)
-    missing_station = [component for component in FREE_COMPONENTS if component not in station_slots]
-    if missing_station:
-        raise ValueError("IFT layer hierarchy is missing station common-mode: " + ", ".join(missing_station))
-    missing_layers = [
-        f"layer {layer} {component}"
-        for component in FREE_COMPONENTS
-        for layer in movable_layers
-        if (layer, component) not in layer_slots
-    ]
-    if missing_layers:
-        raise ValueError("IFT layer hierarchy is missing " + ", ".join(missing_layers))
+    scopes = {str(spec["scope"]) for spec in specs}
+    contrast_only = scopes == {"contrast"}
+    if hierarchical_v1:
+        from alignment.hierarchical_v1 import C_DX, HIERARCHICAL_V1_PARAMETERS, STATION_SOLVE_PARAMETERS
+
+        names_present = {str(spec["name"]) for spec in specs}
+        if names_present != set(HIERARCHICAL_V1_PARAMETERS):
+            raise ValueError(
+                "hierarchical V1 requires station 5-DoF + survey dz + C_dx; "
+                f"got {sorted(names_present)}"
+            )
+        if scopes != {"station", "contrast"}:
+            raise ValueError("hierarchical V1 mixes station specs with C_dx contrast only")
+        if any(str(spec["name"]) == "C_rx" for spec in specs):
+            raise ValueError("hierarchical V1 does not admit C_rx")
+        if C_DX not in names_present:
+            raise ValueError("hierarchical V1 requires C_dx")
+        missing_station = [name for name in STATION_SOLVE_PARAMETERS if name not in names_present]
+        if missing_station:
+            raise ValueError("hierarchical V1 is missing " + ", ".join(missing_station))
+        if layer_slots:
+            raise ValueError("hierarchical V1 does not admit layer-label parameters")
+    elif "contrast" in scopes and not contrast_only:
+        raise ValueError("contrast coordinates cannot be mixed with station or layer labels")
+    if contrast_only:
+        names_present = {str(spec["name"]) for spec in specs}
+        if names_present not in ({"C_dx"}, {"C_dx", "C_rx"}):
+            raise ValueError("contrast curriculum requires C_dx or exactly C_dx+C_rx")
+    elif not hierarchical_v1:
+        missing_station = [component for component in FREE_COMPONENTS if component not in station_slots]
+        if missing_station:
+            raise ValueError("IFT layer hierarchy is missing station common-mode: " + ", ".join(missing_station))
+        missing_layers = [
+            f"layer {layer} {component}"
+            for component in FREE_COMPONENTS
+            for layer in movable_layers
+            if (layer, component) not in layer_slots
+        ]
+        if missing_layers:
+            raise ValueError("IFT layer hierarchy is missing " + ", ".join(missing_layers))
 
     supplied_points = config.get("rigid_points")
     if not isinstance(supplied_points, list) or not supplied_points:
@@ -711,6 +765,12 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
             for spec in specs
             if spec["scope"] == "layer"
         }
+        for spec in specs:
+            if spec["scope"] != "contrast":
+                continue
+            index = int(spec["transform_index"])
+            permitted_layer.add((0, index))
+            permitted_layer.add((2, index))
         for layer, values in layer_transforms[str(IFT_STATION_ID)].items():
             for index, value in enumerate(values):
                 if (int(layer), index) not in permitted_layer and not math.isclose(
@@ -744,7 +804,8 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
                 raise ValueError(f"nominal hierarchy point '{name}' must be the all-zero payload")
             nominal_count += 1
         elif is_zero:
-            raise ValueError(f"non-nominal hierarchy point '{name}' must contain a non-zero enabled parameter")
+            if not (bool(raw_point.get("allow_identically_zero")) and role == "held_out_closure"):
+                raise ValueError(f"non-nominal hierarchy point '{name}' must contain a non-zero enabled parameter")
         finite_difference_for = raw_point.get("finite_difference_for")
         probe_sign = raw_point.get("probe_sign")
         finite_difference_anchor = raw_point.get("finite_difference_anchor")
@@ -868,6 +929,7 @@ def _build_ift_layer_hierarchy_plan(config: Mapping[str, Any]) -> dict[str, Any]
     return {
         "method": "physical_refit_ift_layer_hierarchy_scan",
         "scan_mode": "ift_layer_hierarchy",
+        "fit_basis": fit_basis,
         "station_ids": list(stations),
         "reference_station_ids": list(reference_stations),
         "movable_station_ids": list(movable_stations),

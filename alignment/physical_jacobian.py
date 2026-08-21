@@ -284,9 +284,18 @@ def parameter_values_from_payload(
                 raise ValueError(f"station {station} has no finite six-component transform")
             result[name] = float(values[index] * scale)
             continue
-        layer = int(spec["layer_id"])
         layer_map = layers.get(str(station))
-        if layer_map is None or str(layer) not in layer_map:
+        if layer_map is None:
+            raise ValueError(f"station {station} has no layer transforms")
+        if scope == "contrast":
+            if "0" not in layer_map or "2" not in layer_map:
+                raise ValueError(f"station {station} lacks outer IFT layers for contrast readout")
+            result[name] = 0.5 * (
+                float(layer_map["0"][index] * scale) - float(layer_map["2"][index] * scale)
+            )
+            continue
+        layer = int(spec["layer_id"])
+        if str(layer) not in layer_map:
             raise ValueError(f"station {station} layer {layer} has no finite six-component transform")
         result[name] = float(layer_map[str(layer)][index] * scale)
     if len(result) != len(parameter_specs):
@@ -326,8 +335,17 @@ def payload_transforms_with_parameter_values(
                 raise ValueError(f"alignment parameter '{name}' references absent station {station}")
             stations[str(station)][index] = native
             continue
+        if str(station) not in layers:
+            raise ValueError(f"alignment parameter '{name}' references absent station {station} layers")
+        if scope == "contrast":
+            layer_map = layers[str(station)]
+            if "0" not in layer_map or "1" not in layer_map or "2" not in layer_map:
+                raise ValueError(f"contrast parameter '{name}' requires IFT layers 0, 1, and 2")
+            layer_map["0"][index] = native
+            layer_map["2"][index] = -native
+            continue
         layer = int(spec["layer_id"])
-        if str(station) not in layers or str(layer) not in layers[str(station)]:
+        if str(layer) not in layers[str(station)]:
             raise ValueError(f"alignment parameter '{name}' references absent station {station} layer {layer}")
         layers[str(station)][str(layer)][index] = native
     return stations, layers

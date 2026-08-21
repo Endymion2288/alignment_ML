@@ -104,8 +104,9 @@ prior 主导的后验恢复不得解释为径迹测量。单步 Newton 更新保
 （5-DoF 归一化 severity `<= 0.15`，另保留少量 `~0.2` 应力点）。禁止把
 severity `0.5–1.0` 当作单步 closure 目标。IFT station/layer 层级是当前
 identifiability 步骤：station 公共模 `dx/dy/rx/ry/rz` 保持冻结，`dz` 仍为
-survey 约束，layer 内部自由度只有在显式 gauge（加权和为零或固定 reference
-layer）后仍满秩、源间稳定时才准入。layer 条件写入 Calypso L2
+survey 约束，layer 内部自由度只有在零公共模 contrast 基（`outer_contrast`，等权
+`sum_to_zero` 为同一物理族）下满秩、源间稳定时才准入。冻结 station 的
+`reference_layer` 是不同物理约束的负对照，不是 gauge 交叉检验。layer 条件写入 Calypso L2
 `{station}{layer}` 键，不得复制进 station payload。module 层级仍预留。
 
 ## 当前状态
@@ -116,9 +117,44 @@ Truth-selected IFT **layer 内部相对 dx** 已闭合（条目 39）：两种 g
 没有写进 station 槽。同一相对 dx 的冻结 V2 route-selected 也已通过：193
 条去重物理边、满秩 2/2、条件数 28–54、外层相对 0.240 mm（`sum_to_zero`）
 与 0.236 mm（`reference_layer`）、残差 RMS ×0.005，station 六矢保持全零。
-该相对 dx 是 hierarchy curriculum 第一项正式准入自由度。外层相对 ry 仍为
-后续候选（truth-selected 上两种 gauge 物理解不一致）。当前 0.2 mm / 2 mrad
-下 layer **dy/rz** 不准入。station 5-DoF 保持固定。station-level **5 个径迹
+该相对 dx 是 hierarchy curriculum 第一项正式准入自由度，现写为显式
+contrast 坐标 `C_dx=(dx_L0-dx_L2)/2`（条目 40）：layer 公共模固定为 0，
+layer1 不浮动。在条目 39 的相对 dx bank 上直接拟合 `C_dx=0.121` mm
+（外层相对 0.243 mm vs 0.240 mm），与两种旧 gauge 同解，**不重调**。
+条目 41 证明：冻结 station 时 `reference_layer` 不是同一物理子空间的
+另一套坐标。要把 `L=[+C,0,-C]` 写成 layer0=0，必须整体平移
+`L'=[0,-C,-2C]` 并由 station `S=+C` 补偿；station 冻结后拟合的是另一族
+变形。Calypso 合成下，该补偿对 `dx` 逐位等价，对 `rx` 不等价（station
+`rx` 绕全局原点，layer `rx` 共轭到平面 z）。因此外层相对 rx 在
+contrast 基下准入：truth-selected `C_rx=0.702` mrad 把 1.400 mrad 注入
+回收为 1.404 mrad（条件数 1、残差 RMS ×0.015），冻结 V2
+route-selected 在 195 条去重边上回收 1.399 mrad（秩 1、条件数 1、残差
+RMS ×0.005），station 六矢保持全零。该求解不混入 `C_dx`。第一份 `C_dx+C_rx` 二维 source-disjoint
+mini-curriculum 已闭合（条目 42）且**不予准入**：10/8 联合 bank（cluster 999274，
+180 次真实 refit）上 train 后验相关 **0.969**，truth-selected 出现 source-dependent
+反号 `C_rx`，source-disjoint validation 的 route-selected 残差几乎不降
+（post/pre 0.92–0.97）。条目 43 不再重试联合 Newton，而把两个已闭合 1-D
+mode 当作 block coordinate。同一 `iteration_00_start` / `heldout_00` 注入上，
+只浮动 `C_dx`（`C_rx` 固定为当前几何）时点估计落在冻结 3σ 内，但有
+~0.009 mm 的转动泄漏偏置；只浮动 `C_rx` 则符号反转，remaining
+`|C_rx|≈1.7` mrad，超出已验证的 0.70 mrad 包络，故 **不**生产
+`C_rx→C_dx` 顺序。`C_dx→C_rx` remaining 已写入并真实 refit（cluster 999291，
+36 次）；第二步物理 `C_rx` 在 train 上只收回 leftover 转动的 ~7%，
+source-disjoint validation 残差不变（post/pre 0.996–1.00）。**不**准入
+sequential contrast alignment。`C_rx` 退出层级主线；当前唯一可靠的 IFT
+internal DoF 仍是已冻结的 1-D `C_dx`。层级对齐 V1 **作为联合层级已关闭**
+（条目 45）：station 5-DoF + survey `dz` 与 IFT 1-D `C_dx` 仍是各自有效的
+**独立 calibration mode**，但泄漏算子 `A_dx≈−59`、`A_ry≈−32` 是稳定
+Jacobian 几何，station `dx` 要保持 0.1 mm 就要求残留 `|C_dx|≲1.7 µm`，而
+已注册 `σ(C_dx)=6.91 µm`。对 `C_dx` 做 nuisance 投影后 5-DoF 形式上满秩，
+但 `σ(dx)` 膨胀约 30 倍。二者不可同时、也不可按层级顺序求解。不增加
+layer 参数，不把 relative ry 拉进来补偿。条目 46 把它们冻结为两个互斥
+calibration mode，并写成 mode-validity contract（Station Mode 前要求未建模
+`|C_dx|≲1.5–1.7 µm`；`C_dx` Mode 前要求条目 36 station capture，并记录
+0.715 µm 的 station→`C_dx` 系统项）。见
+`docs/faser_alignment_operating_protocol_v1_cn.md`。
+外层相对 ry、layer **dy/rz** 与 module
+层级继续冻结。station 5-DoF 保持固定。station-level **5 个径迹
 约束 DoF + 1 个 survey 约束 DoF** 仍按条目 36 冻结。`dz` 不进入径迹 capture。
 
 **3-DoF 迭代环此前已闭合。** iteration-0（anchor dx/dy/Ry = 2.0 mm/−1.5 mm/35 mrad）在 held-out

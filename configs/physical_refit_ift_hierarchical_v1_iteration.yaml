@@ -1,0 +1,82 @@
+# FASER hierarchical alignment V1 iteration: station 5-DoF + IFT 1-D C_dx.
+#
+# Joint injections keep station 5-DoF in the already-verified local regime
+# (severity <= 0.15) and |C_dx|<=0.12 mm.  Station dz is identically 0.
+# Finite-difference probes are axial around the all-zero reference: six
+# station parameters (dz is the 5 mm survey coordinate) plus C_dx.
+# C_rx, relative ry, layer dy/rz, layer1, and module stay out.
+hierarchical_v1_sampling:
+  seed: 20260821
+  start_severity: 0.12
+  held_out_severity: 0.14
+  envelope_C_dx_mm: 0.12
+  min_cdx_fraction: 0.40
+  survey_prior_sigma:
+    ift_dz_mm: 5.0
+
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  fit_basis: hierarchical_v1
+  input_xaod: /unused/per-source/override.root
+  nevents: 100
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_hierarchical_v1_station_cdx_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      scope: station
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      scope: station
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dz_mm
+      scope: station
+      station_id: 0
+      component: dz_mm
+      unit: mm
+      finite_difference_step: 2.0
+      severity_scale: 5.0
+    - name: ift_rx_mrad
+      scope: station
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_ry_mrad
+      scope: station
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_rz_mrad
+      scope: station
+      station_id: 0
+      component: rz_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: C_dx
+      scope: contrast
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.10
+      severity_scale: 0.12

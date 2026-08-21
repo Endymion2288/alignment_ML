@@ -35,7 +35,24 @@ LAYER_DX_JACOBIAN_POINTS = (
     "iteration_00_fd_ift_layer2_dx_mm_p",
     "iteration_00_fd_ift_layer2_dx_mm_m",
 )
+LAYER_RX_JACOBIAN_POINTS = (
+    "iteration_00_reference",
+    "iteration_00_fd_ift_layer0_rx_mrad_p",
+    "iteration_00_fd_ift_layer0_rx_mrad_m",
+    "iteration_00_fd_ift_layer1_rx_mrad_p",
+    "iteration_00_fd_ift_layer1_rx_mrad_m",
+    "iteration_00_fd_ift_layer2_rx_mrad_p",
+    "iteration_00_fd_ift_layer2_rx_mrad_m",
+)
+JACOBIAN_POINTS_BY_COMPONENT = {
+    "dx": LAYER_DX_JACOBIAN_POINTS,
+    "rx": LAYER_RX_JACOBIAN_POINTS,
+}
 DEFAULT_OBSERVED_POINT = "iteration_00_closure_relative_dx"
+DEFAULT_OBSERVED_POINT_BY_COMPONENT = {
+    "dx": "iteration_00_closure_relative_dx",
+    "rx": "iteration_00_closure_relative_rx",
+}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -199,12 +216,15 @@ def main() -> None:
     parser.add_argument("--jacobian-manifest", required=True)
     parser.add_argument("--observed-manifest", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--observed-point", default=DEFAULT_OBSERVED_POINT)
+    parser.add_argument("--component", choices=tuple(JACOBIAN_POINTS_BY_COMPONENT), default="dx")
+    parser.add_argument("--observed-point", default=None)
     args = parser.parse_args()
+    observed_point = str(args.observed_point or DEFAULT_OBSERVED_POINT_BY_COMPONENT[str(args.component)])
     manifest = build_corpus_manifest(
         jacobian_manifest=Path(args.jacobian_manifest).expanduser().resolve(),
         observed_manifest=Path(args.observed_manifest).expanduser().resolve(),
-        observed_point=str(args.observed_point),
+        jacobian_points=JACOBIAN_POINTS_BY_COMPONENT[str(args.component)],
+        observed_point=observed_point,
     )
     incomplete = [
         f"{source['source_id']}:{point['payload_id']}"

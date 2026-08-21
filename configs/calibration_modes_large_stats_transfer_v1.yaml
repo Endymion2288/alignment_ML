@@ -1,0 +1,78 @@
+# Exclusive calibration-mode large-statistics transfer declaration.
+# This is not a drop-in curriculum for prepare_* scripts. Extra sources stay
+# pending until each completes the real
+# /Tracker/Align -> SCT_ClusterContainer -> SegmentFitRefit -> SegmentsRefit
+# -> NtupleDumper -> Acts(mode 0) chain. Do not retrain V2. Do not open the
+# sealed test. Do not mix Station Mode and IFT-Internal Mode on one stage.
+schema_version: faser-ift-calibration-mode-transfer-declaration-v1
+retrain: false
+q_over_p_mode: 0
+sealed_test: never
+validation_must_not_register: true
+residual_reduction_is_not_alignment_success: true
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+current_admitted_corpus: configs/physical_curriculum_v3_expanded_trainval.yaml
+isolation_only: true
+joint_station_cdx_forbidden: true
+schur_projection_production: false
+new_layer_or_module_dof: false
+
+modes:
+  station:
+    floated: [ift_dx_mm, ift_dy_mm, ift_dz_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad]
+    prior_sigma: {ift_dz_mm: 5.0}
+    written_dz: 0.0
+    capture_criteria: outputs/mc24_ift_5dof_survey_dz_capture_criteria_train_v1/capture_criteria.json
+    cdx_fixed_by: isolation_zero
+  ift_internal:
+    floated: [C_dx]
+    payload: "L0=+C_dx, L1=0, L2=-C_dx"
+    capture_criteria: outputs/mc24_ift_layer_contrast_2d_capture_criteria_train_v1/capture_criteria.json
+    requires_station_workbook: 36
+
+metrics:
+  - bias
+  - pull
+  - source_run_stability
+  - association_efficiency_purity_fake
+  - normal_matrix_condition
+  - independent_closure
+  - A_stability
+  - residual_width_mean  # recorded; never success by itself
+
+current_corpus_baseline: outputs/mc24_ift_calibration_mode_transfer_current_corpus_v1/transfer_report.json
+A_stability_current: outputs/mc24_ift_calibration_mode_validity_contract_v1/A_stability_iteration00_route_selected.json
+
+source_config: configs/physical_curriculum_calibration_modes_large_stats_sources.yaml
+physical_banks:
+  station: outputs/mc24_ift_station_mode_large_stats_transfer_physical_v1
+  ift_internal: outputs/mc24_ift_internal_cdx_large_stats_transfer_physical_v1
+  leakage_operator_analysis_only: outputs/mc24_ift_leakage_operator_large_stats_transfer_physical_v1
+
+# First-wave extra files: double the 10 train sources; add four validation
+# files (00200-00299 of 100047/100048). Remaining 100047/048 files stay in
+# reserve if the first wave is stable. All are source-disjoint from the
+# sealed 100116/100117 test.
+first_wave_pending_physical_chain:
+  extra_train_sources: 10
+  extra_validation_sources: 4
+  train:
+    - mc24_100043_00000_00099
+    - mc24_100043_00100_00199
+    - mc24_100043_00700_00799
+    - mc24_100043_00800_00899
+    - mc24_100043_00900_00999
+    - mc24_100044_00000_00099
+    - mc24_100044_00100_00199
+    - mc24_100044_00700_00799
+    - mc24_100044_00800_00899
+    - mc24_100044_00900_00999
+  validation:
+    - mc24_100047_00200_00249
+    - mc24_100047_00250_00299
+    - mc24_100048_00200_00249
+    - mc24_100048_00250_00299
+  xaod_root: /eos/experiment/faser/data0/sim/mc24/particle_gun
+  release: s0013-r0022
+  admission_rule: complete_physical_refit_and_mode0_acts_export
+  isolation_injections_only: true

@@ -1,0 +1,34 @@
+# Source-disjoint train/validation declaration for the first IFT
+# C_dx + C_rx layer-hierarchy mini-curriculum.
+#
+# Station 5-DoF, station dz, mode-0, V2 association, route policy,
+# physical_edge_deduplicated observation semantics, and sealed test stay
+# frozen.  Canonical coordinates are the zero-common-mode outer contrast
+# C_dx=(dx_L0-dx_L2)/2 and C_rx=(rx_L0-rx_L2)/2.  Relative ry, layer dy/rz,
+# layer1, and module parameters stay out.
+base_config: physical_curriculum_v3_expanded_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+
+  alignment_hierarchy:
+    active_level: layer
+    active_parameters: [C_dx, C_rx]
+    frozen_station_parameters: [ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad]
+    survey_constrained_parameters:
+      ift_dz_mm:
+        prior_sigma: 5.0
+        source: identifiability_pilot_severity_scale
+        interpretation: survey_prior_not_track_measurement
+        written_value: 0.0
+    reserved_future_levels: [module]
+    reserved_layer_components: [dy_mm, rz_mrad, ry_mrad]
+    canonical_internal_basis: outer_contrast
+    payload_expansion: L0=(+C_dx,+C_rx), L1=0, L2=(-C_dx,-C_rx)
+    station_six_vector: identically_zero
+    activation_rule: joint_contrast_source_disjoint_closure
+    negative_control: frozen_station_reference_layer_is_not_a_gauge
+
+  synthetic_multitrack:
+    overlay_seed_scope: alignment_iteration_shared_across_payloads

@@ -21,6 +21,7 @@ from typing import Any, Mapping, Sequence
 
 import yaml
 
+from alignment.contrast_sampling import CONTRAST_ENVELOPE, CONTRAST_PARAMETERS, inside_contrast_envelope
 from alignment.layer_hierarchy import IFT_LAYER_IDS, IFT_STATION_ID, spec_scope
 from alignment.physical_jacobian import payload_transforms_with_parameter_values
 from scripts.config_loader import load_yaml_with_base
@@ -139,13 +140,50 @@ def _layer_component_values(
     return selected
 
 
+def _validate_contrast_heldout(
+    values: Mapping[str, float],
+    specs: Sequence[Mapping[str, object]],
+    *,
+    raw_name: str,
+    allow_identically_zero: bool = False,
+) -> None:
+    """Refuse envelope violations, station motion, ry/dy/rz, and empty injections."""
+    if not specs or any(spec_scope(spec) != "contrast" for spec in specs):
+        raise ValueError(f"contrast held-out '{raw_name}' requires only C_dx/C_rx specs")
+    names = {str(spec["name"]) for spec in specs}
+    if names == {"C_dx"}:
+        c_dx = float(values["C_dx"])
+        if abs(c_dx) > float(CONTRAST_ENVELOPE["C_dx"]) + 1.0e-12:
+            raise ValueError(
+                f"1-D C_dx held-out '{raw_name}' must stay inside "
+                f"|C_dx|<={CONTRAST_ENVELOPE['C_dx']} mm"
+            )
+        if math.isclose(c_dx, 0.0, rel_tol=0.0, abs_tol=1.0e-15) and not allow_identically_zero:
+            raise ValueError(f"1-D C_dx held-out '{raw_name}' is identically zero")
+        return
+    if names != set(CONTRAST_PARAMETERS):
+        raise ValueError(f"contrast held-out '{raw_name}' requires C_dx or C_dx+C_rx")
+    if not inside_contrast_envelope(values):
+        raise ValueError(
+            f"contrast held-out '{raw_name}' must stay inside "
+            f"|C_dx|<={CONTRAST_ENVELOPE['C_dx']} mm and |C_rx|<={CONTRAST_ENVELOPE['C_rx']} mrad"
+        )
+    active = [
+        name
+        for name in CONTRAST_PARAMETERS
+        if not math.isclose(float(values[name]), 0.0, rel_tol=0.0, abs_tol=1.0e-15)
+    ]
+    if not active and not allow_identically_zero:
+        raise ValueError(f"contrast held-out '{raw_name}' is identically zero")
+
+
 def _validate_linear_internal_heldout(
     values: Mapping[str, float],
     specs: Sequence[Mapping[str, object]],
     *,
     raw_name: str,
 ) -> None:
-    """Refuse dy/rz, station motion, mixed dx+rotation, and source-unstable layer rx."""
+    """Refuse dy/rz, station motion, mixed components, and source-unstable layer1 rx."""
     for spec in specs:
         name = str(spec["name"])
         value = float(values[name])
@@ -161,20 +199,24 @@ def _validate_linear_internal_heldout(
             raise ValueError(
                 f"linear internal held-out '{raw_name}' must not inject unusable layer {component}"
             )
-        if component == "rx_mrad":
+        if component == "rx_mrad" and int(spec["layer_id"]) == 1:
             raise ValueError(
-                f"linear internal held-out '{raw_name}' must not inject layer rx "
-                "(layer1 rx is source-unstable; keep rx as a later candidate)"
+                f"linear internal held-out '{raw_name}' must keep source-unstable layer1 rx at zero"
             )
-    dx_layers = _layer_component_values(values, specs, "dx_mm")
-    ry_layers = _layer_component_values(values, specs, "ry_mrad")
-    has_dx = any(not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15) for value in dx_layers.values())
-    has_ry = any(not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15) for value in ry_layers.values())
-    if has_dx and has_ry:
-        raise ValueError(f"linear internal held-out '{raw_name}' must not mix dx and rotation")
-    if not has_dx and not has_ry:
-        raise ValueError(f"linear internal held-out '{raw_name}' has no linear layer dx or ry injection")
-    active = dx_layers if has_dx else ry_layers
+    active_components: list[str] = []
+    active_layers: dict[str, dict[int, float]] = {}
+    for component in ("dx_mm", "rx_mrad", "ry_mrad"):
+        layers = _layer_component_values(values, specs, component)
+        if any(not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-15) for value in layers.values()):
+            active_components.append(component)
+            active_layers[component] = layers
+    if len(active_components) != 1:
+        raise ValueError(
+            f"linear internal held-out '{raw_name}' must inject exactly one of layer dx, rx, or ry, "
+            f"found {active_components or 'none'}"
+        )
+    component = active_components[0]
+    active = active_layers[component]
     if not math.isclose(float(active.get(1, 0.0)), 0.0, rel_tol=0.0, abs_tol=1.0e-15):
         raise ValueError(f"linear internal held-out '{raw_name}' must keep layer1 at zero")
     outer_plus = float(active.get(0, 0.0))
@@ -183,11 +225,11 @@ def _validate_linear_internal_heldout(
         raise ValueError(f"linear internal held-out '{raw_name}' must be outer-antisymmetric")
     if math.isclose(outer_plus, 0.0, rel_tol=0.0, abs_tol=1.0e-15):
         raise ValueError(f"linear internal held-out '{raw_name}' outer planes are identically zero")
-    if has_ry:
+    if component in {"rx_mrad", "ry_mrad"}:
         magnitude = abs(outer_plus)
         if magnitude < 0.6 - 1.0e-12 or magnitude > 0.8 + 1.0e-12:
             raise ValueError(
-                f"linear internal held-out '{raw_name}' outer ry must stay near identifiable "
+                f"linear internal held-out '{raw_name}' outer {component} must stay near identifiable "
                 "precision, in 0.6–0.8 mrad"
             )
 
@@ -216,6 +258,11 @@ def compile_layer_identifiability_pilot(
         raise ValueError("iteration must be non-negative")
     specs = _parameter_specs(scan)
     names = [str(spec["name"]) for spec in specs]
+    contrast_only = bool(specs) and all(spec_scope(spec) == "contrast" for spec in specs)
+    contrast_names = set(names)
+    cdx_only = contrast_only and contrast_names == {"C_dx"}
+    if contrast_only and contrast_names not in (set(CONTRAST_PARAMETERS), {"C_dx"}):
+        raise ValueError("contrast curriculum requires C_dx or exactly C_dx+C_rx")
     zeros = _zero_values(names)
     if any(not math.isclose(float(current_values[name]), 0.0, rel_tol=0.0, abs_tol=1.0e-15) for name in names):
         raise ValueError(
@@ -224,6 +271,14 @@ def compile_layer_identifiability_pilot(
         )
     if set(current_values) != set(names):
         raise ValueError("current_values must specify every hierarchy parameter, all identically zero")
+    if contrast_only:
+        for spec in specs:
+            parameter = str(spec["name"])
+            step = float(spec["finite_difference_step"])
+            if step > float(CONTRAST_ENVELOPE[parameter]) + 1.0e-12:
+                raise ValueError(
+                    f"contrast finite-difference step for '{parameter}' exceeds the verified linear envelope"
+                )
     base_station, base_layer = _zero_payload(scan)
     prefix = f"iteration_{iteration:02d}"
     reference_name = f"{prefix}_reference"
@@ -280,7 +335,14 @@ def compile_layer_identifiability_pilot(
                 names,
                 label=f"held-out closure point '{raw_name}'",
             )
-            if not include_finite_differences:
+            if contrast_only:
+                _validate_contrast_heldout(
+                    held_values,
+                    specs,
+                    raw_name=raw_name,
+                    allow_identically_zero=bool(item.get("allow_identically_zero", False)),
+                )
+            elif not include_finite_differences:
                 _validate_linear_internal_heldout(held_values, specs, raw_name=raw_name)
             points.append(
                 _point(
@@ -302,9 +364,17 @@ def compile_layer_identifiability_pilot(
     reused_jacobian = scan.get("reused_jacobian_manifest")
     contract: dict[str, object] = {
         "method": (
-            "physical_ift_layer_linear_internal_heldout"
-            if not include_finite_differences
-            else "physical_ift_layer_hierarchy_identifiability_pilot"
+            "physical_ift_internal_cdx_transfer"
+            if cdx_only
+            else (
+                "physical_ift_layer_contrast_2d_curriculum"
+                if contrast_only
+                else (
+                    "physical_ift_layer_linear_internal_heldout"
+                    if not include_finite_differences
+                    else "physical_ift_layer_hierarchy_identifiability_pilot"
+                )
+            )
         ),
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "iteration": iteration,
@@ -321,19 +391,43 @@ def compile_layer_identifiability_pilot(
             str(spec["name"]) for spec in specs if spec.get("scope") == "station"
         ],
         "layer_internal_parameters": [str(spec["name"]) for spec in specs if spec.get("scope") == "layer"],
+        "contrast_parameters": [str(spec["name"]) for spec in specs if spec.get("scope") == "contrast"],
+        "canonical_internal_basis": "outer_contrast",
+        "payload_expansion": (
+            "L0=(+C_dx,0), L1=0, L2=(-C_dx,0); C_rx identically 0; station six-vector identically 0"
+            if cdx_only
+            else "L0=(+C_dx,+C_rx), L1=0, L2=(-C_dx,-C_rx); station six-vector identically 0"
+        ),
         "anchor_parameter_values": zeros,
         "finite_difference_steps": {str(spec["name"]): float(spec["finite_difference_step"]) for spec in specs},
         "held_out_closure_points": held_out_names,
-        "gauge_choices": ["sum_to_zero", "reference_layer"],
-        "forbidden_components": ["dz_mm", "layer_dy_mm", "layer_rz_mrad"],
+        "gauge_choices": ["outer_contrast"] if contrast_only else ["sum_to_zero", "reference_layer", "outer_contrast"],
+        "forbidden_components": [
+            "dz_mm",
+            "layer_dy_mm",
+            "layer_rz_mrad",
+            "layer1_rx_mrad",
+            "relative_ry",
+            "module",
+            "reference_layer_as_gauge",
+            *(["C_rx"] if cdx_only else []),
+        ],
         "update_semantics": (
-            "Linear internal held-out only: reuse the already-screened layer dx/rx/ry Jacobian. "
-            "Do not reproduce finite-difference probes, do not inject layer dy/rz, and do not "
-            "refit the frozen station 5-DoF solution."
-            if not include_finite_differences
+            "IFT-Internal Mode transfer: float only 1-D C_dx with station six-vector frozen at 0. "
+            "Do not inject C_rx, relative ry, layer dy/rz, layer1, or module parameters, "
+            "and do not retune registered C_dx capture."
+            if cdx_only
             else (
-                "Identifiability pilot only: recover IFT layer-internal deformation on top of the "
-                "frozen station 5-DoF solution.  Do not double-fit the same rigid DoF."
+            "C_dx+C_rx 2D mini-curriculum: joint contrast payloads with station six-vector frozen at 0. "
+            "Do not treat frozen-station reference_layer as a gauge-equivalent fit, do not inject "
+            "relative ry, layer dy/rz, layer1, or module parameters, and do not retune C_dx."
+            if contrast_only
+            else (
+                "Held-out-only linear IFT internals: reuse the already-screened Jacobian; "
+                "station six-vector stays 0 except in explicit mixed negative-control points."
+                if not include_finite_differences
+                else "Identifiability pilot: joint station/layer finite differences linearized at the frozen station."
+            )
             )
         ),
     }

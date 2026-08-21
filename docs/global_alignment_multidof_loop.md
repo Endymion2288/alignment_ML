@@ -118,9 +118,10 @@ measurement. Single-step Newton updates stay in the validated linear regime
 Severity `0.5–1.0` is not a single-step closure target. The IFT
 station/layer hierarchy is now the active identifiability step: station
 common-mode `dx/dy/rx/ry/rz` stay frozen, `dz` stays survey-constrained, and
-layer internals are admitted only after an explicit gauge
-(`sum_to_zero` or `reference_layer`) leaves a full-rank, source-stable
-sub-block. A layer condition is written as a Calypso L2 `{station}{layer}`
+layer internals are admitted only in the zero-common-mode contrast basis
+(`outer_contrast`, with equal-weight `sum_to_zero` as the same family).
+Frozen-station `reference_layer` is a negative control of a different
+physical constraint, not a gauge cross-check. A layer condition is written as a Calypso L2 `{station}{layer}`
 key and is never copied onto a station payload. Module level remains reserved.
 
 ## Current Status
@@ -132,10 +133,57 @@ full rank, condition 16–37, residual RMS ×0.035, no station-slot leakage.
 Frozen-V2 route-selected closure of the same relative dx also passed: 193
 deduplicated physical edges, rank 2/2, condition 28–54, outer relative
 0.240 mm (`sum_to_zero`) and 0.236 mm (`reference_layer`), residual RMS
-×0.005, station six-vector unchanged. That relative dx is the first
-admitted hierarchy-curriculum DoF. Outer relative ry remains a later
-candidate (gauges disagree on truth-selected internals). Layer **dy/rz**
-stay out at the present 0.2 mm / 2 mrad probes. Station 5-DoF stays
+×0.005, station six-vector unchanged. The admitted physical internals are now written as the explicit contrast
+basis `C_dx=(dx_L0-dx_L2)/2` (workbook 40): layer common mode is fixed at
+zero and layer 1 is not floated. Re-solving the workbook-39 relative-dx
+bank in this basis recovers `C_dx=0.121` mm (outer 0.243 mm vs 0.240 mm)
+in agreement with both older gauges; `C_dx` is frozen and not retuned.
+Workbook 41 showed that frozen-station `reference_layer` is not a
+coordinate of the same physical subspace: the additive map of
+`L=[+C,0,-C]` onto layer 0 fixed at 0 is `L'=[0,-C,-2C]` **plus** a
+compensating station `S=+C`. With the station frozen, `reference_layer`
+fits a different family. Calypso composition then shows that even the
+compensated chart is SE(3)-equivalent for `dx` but not for `rx`, because
+station `rx` rotates about the global origin while layer `rx` is
+conjugated to plane *z*. Outer relative rx is admitted in the contrast
+basis: truth-selected `C_rx=0.702` mrad recovers 1.404 vs 1.400 mrad
+(condition 1, residual RMS ×0.015), and frozen-V2 route-selected
+recovers 1.399 mrad on 195 deduplicated edges (rank 1, condition 1,
+residual RMS ×0.005), station six-vector unchanged. `C_dx` is not mixed
+into that solve. The first 2-D `C_dx+C_rx` source-disjoint
+mini-curriculum closed and was **not admitted** (workbook 42): the 10/8
+joint bank (cluster 999274, 180 real refits) has train posterior
+correlation **0.969**, truth-selected source-dependent sign flips on
+`C_rx`, and source-disjoint validation route-selected residuals that
+barely drop (post/pre 0.92–0.97). Workbook 43 then treats the two closed
+1-D modes as block coordinates rather than retrying a joint Newton step.
+On the same `iteration_00_start` / `heldout_00` injections, 1-D `C_dx`
+(with `C_rx` held at the current geometry) is statistically inside the
+frozen 3σ window with a ~0.009 mm leakage bias from the unmodelled
+rotation; 1-D `C_rx` (with `C_dx` held) sign-flips and leaves remaining
+`|C_rx|≈1.7` mrad, outside the verified 0.70 mrad envelope, so the
+`C_rx→C_dx` order is not physically produced. The `C_dx→C_rx` remaining
+payloads were written and refit (cluster 999291, 36 real refits); the
+second physical `C_rx` step then recovers only ~7% of leftover rotation
+on train and leaves source-disjoint validation residuals unchanged
+(post/pre 0.996–1.00). Sequential contrast alignment is **not admitted**.
+`C_rx` is dropped from the hierarchy mainline; the only reliable IFT
+internal DoF remains the already-frozen 1-D `C_dx`. Hierarchical alignment
+V1 is **closed as a joint hierarchy** (workbook 45): station 5-DoF+survey
+`dz` and IFT 1-D `C_dx` remain valid **independent calibration modes**, but
+the leakage operator `A_dx≈−59`, `A_ry≈−32` is a stable Jacobian geometry,
+so a station `dx` gate of 0.1 mm would require leftover `|C_dx|≲1.7 µm`
+while registered `σ(C_dx)=6.91 µm`. Nuisance projection of `C_dx` leaves
+station 5-DoF formally full rank but inflates `σ(dx)` by ~30×. They must
+not be solved together, sequentially or jointly. Do not add layer
+parameters or pull in relative ry to compensate. Workbook 46 freezes them
+as two exclusive calibration modes with a machine-readable mode-validity
+contract (`|A_dx|≈59.213` requires unmodeled `|C_dx|≲1.5–1.7 µm` before
+Station Mode; `C_dx` Mode requires workbook-36 station capture and records
+a 0.715 µm station→`C_dx` systematic). See
+`docs/faser_alignment_operating_protocol_v1.md`.
+Outer relative ry,
+layer **dy/rz**, and module level stay out. Station 5-DoF stays
 fixed. Station-level **5 track-constrained DoF + 1 survey-constrained DoF**
 remains frozen (workbook 36). `dz` stays out of the track-based capture.
 

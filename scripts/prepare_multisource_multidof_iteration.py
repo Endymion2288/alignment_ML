@@ -106,6 +106,15 @@ def _compile_scan(
     if mode == "station_rigid_multidof":
         return compile_iteration(template, iteration=iteration, current_values=current_values)
     if mode == "ift_layer_hierarchy":
+        if str(raw_scan.get("fit_basis", "")) == "hierarchical_v1":
+            from scripts.prepare_hierarchical_v1_iteration import compile_hierarchical_v1
+
+            return compile_hierarchical_v1(
+                template,
+                iteration=iteration,
+                current_values=current_values,
+                include_finite_differences=not bool(raw_scan.get("held_out_only", False)),
+            )
         from scripts.prepare_layer_identifiability_pilot import compile_layer_identifiability_pilot
 
         return compile_layer_identifiability_pilot(

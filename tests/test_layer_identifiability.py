@@ -8,9 +8,11 @@ import pytest
 import yaml
 
 from alignment.layer_hierarchy import (
+    CONTRAST_CHOICE,
     FREE_COMPONENTS,
     IFT_LAYER_IDS,
     calypso_layer_key,
+    contrast_parameter_name,
     expand_gauged_parameters,
     hierarchy_index,
     parse_calypso_layer_key,
@@ -428,14 +430,14 @@ def test_compile_linear_internal_heldout_skips_fd_and_keeps_station_zero():
     assert ry["layer_transforms"]["0"]["2"][4] == pytest.approx(-0.0007)
 
 
-def test_compile_linear_internal_heldout_rejects_dy_station_rx_and_mixed_rotation():
+def test_compile_linear_internal_heldout_rejects_dy_station_layer1_rx_and_mixed_rotation():
     template = _linear_heldout_template()
     current = {
         spec["name"]: 0.0 for spec in template["physical_refit_capture_scan"]["alignment_parameter_specs"]
     }
 
-    def compile_with(held_out):
-        payload = yaml.safe_load(yaml.safe_dump(template))
+    def compile_with(held_out, source_template=None):
+        payload = yaml.safe_load(yaml.safe_dump(source_template or template))
         payload["physical_refit_capture_scan"]["held_out_closure_points"] = held_out
         return compile_layer_identifiability_pilot(
             payload, iteration=0, current_values=current, include_finite_differences=False
@@ -447,11 +449,11 @@ def test_compile_linear_internal_heldout_rejects_dy_station_rx_and_mixed_rotatio
         compile_with(
             [{"name": "bad_station", "alignment_parameter_values": {"ift_dx_mm": 0.15, "ift_layer0_dx_mm": 0.12, "ift_layer2_dx_mm": -0.12}}]
         )
-    with pytest.raises(ValueError, match="must not inject layer rx"):
+    with pytest.raises(ValueError, match="layer1 rx"):
         compile_with(
-            [{"name": "bad_rx", "alignment_parameter_values": {"ift_layer0_rx_mrad": 0.7, "ift_layer2_rx_mrad": -0.7}}]
+            [{"name": "bad_rx", "alignment_parameter_values": {"ift_layer1_rx_mrad": 0.7}}]
         )
-    with pytest.raises(ValueError, match="must not mix dx and rotation"):
+    with pytest.raises(ValueError, match="exactly one of layer dx, rx, or ry"):
         compile_with(
             [
                 {
@@ -465,6 +467,98 @@ def test_compile_linear_internal_heldout_rejects_dy_station_rx_and_mixed_rotatio
                 }
             ]
         )
+    compiled, _contract = compile_with(
+        [{"name": "closure_relative_rx", "alignment_parameter_values": {"ift_layer0_rx_mrad": 0.7, "ift_layer2_rx_mrad": -0.7}}]
+    )
+    point = compiled["physical_refit_capture_scan"]["rigid_points"][0]
+    assert point["name"] == "iteration_00_closure_relative_rx"
+    assert point["station_transforms"]["0"] == pytest.approx([0.0] * 6)
+    assert point["layer_transforms"]["0"]["0"][3] == pytest.approx(0.0007)
+    assert point["layer_transforms"]["0"]["1"][3] == pytest.approx(0.0)
+    assert point["layer_transforms"]["0"]["2"][3] == pytest.approx(-0.0007)
+
+
+def test_outer_contrast_fits_C_not_layer_labels():
+    specs = [
+        spec
+        for spec in _hierarchy_specs()
+        if spec["scope"] == "layer" and spec["component"] in {"dx_mm", "rx_mrad"}
+    ]
+    values = {spec["name"]: 0.0 for spec in specs}
+    values["ift_layer0_dx_mm"] = 0.12
+    values["ift_layer2_dx_mm"] = -0.12
+    values["ift_layer0_rx_mrad"] = 0.7
+    values["ift_layer2_rx_mrad"] = -0.7
+    reduction = reduce_gauge(specs, choice=CONTRAST_CHOICE)
+    assert set(reduction.names) == {contrast_parameter_name("dx_mm"), contrast_parameter_name("rx_mrad")}
+    assert "ift_layer1_dx_mm" in reduction.dropped_names
+    projected = project_to_gauge(values, reduction, specs)
+    assert projected["C_dx"] == pytest.approx(0.12)
+    assert projected["C_rx"] == pytest.approx(0.7)
+    full = expand_gauged_parameters(projected, reduction, specs)
+    assert full["ift_layer0_dx_mm"] == pytest.approx(0.12)
+    assert full["ift_layer1_dx_mm"] == pytest.approx(0.0)
+    assert full["ift_layer2_dx_mm"] == pytest.approx(-0.12)
+    assert full["ift_layer0_rx_mrad"] == pytest.approx(0.7)
+    assert full["ift_layer1_rx_mrad"] == pytest.approx(0.0)
+    assert full["ift_layer2_rx_mrad"] == pytest.approx(-0.7)
+    split = split_common_and_internal(full, specs)
+    assert split["layer_internal"]["layer_0"]["dx_mm"] == pytest.approx(0.12)
+    assert split["layer_internal"]["layer_2"]["rx_mrad"] == pytest.approx(-0.7)
+    assert split["station_common"]["dx_mm"] == pytest.approx(0.0)
+    assert split["layer_weighted_mean"]["dx_mm"] == pytest.approx(0.0)
+
+
+def test_physics_verdict_three_representations_agree_on_outer_relative():
+    expected = {"layer_0": 0.7, "layer_1": 0.0, "layer_2": -0.7}
+    recovered = {
+        "sum_to_zero": {"layer_0": 0.68, "layer_1": 0.04, "layer_2": -0.72},
+        "reference_layer": {"layer_0": 0.71, "layer_1": -0.02, "layer_2": -0.69},
+        "outer_contrast": {"layer_0": 0.70, "layer_1": 0.0, "layer_2": -0.70},
+    }
+    sources = {
+        "mc24_a": {
+            choice: {"layer_0": 0.69, "layer_1": 0.01, "layer_2": -0.70} for choice in recovered
+        },
+        "mc24_b": {
+            choice: {"layer_0": 0.72, "layer_1": -0.01, "layer_2": -0.71} for choice in recovered
+        },
+    }
+    leakage = {choice: {component: 0.0 for component in FREE_COMPONENTS} for choice in recovered}
+    ranks = {
+        "sum_to_zero": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 40.0},
+        "reference_layer": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 20.0},
+        "outer_contrast": {"full_rank": True, "normal_matrix_rank": 1, "dimension": 1, "normal_matrix_condition_number": 1.0},
+    }
+    verdict = physics_verdict(
+        component="rx_mrad",
+        expected_internals=expected,
+        recovered_by_gauge=recovered,
+        source_internals=sources,
+        station_leakage_by_gauge=leakage,
+        ranks=ranks,
+        residual_ratios={"sum_to_zero": 0.04, "reference_layer": 0.05, "outer_contrast": 0.03},
+        max_condition_number=1.0e4,
+    )
+    assert verdict["passed"] is True
+    assert verdict["source_direction_consistent"] is True
+    assert verdict["gauges_agree"] is True
+    flipped = {
+        "mc24_a": recovered,
+        "mc24_b": {choice: {"layer_0": -0.70, "layer_1": 0.0, "layer_2": 0.70} for choice in recovered},
+    }
+    failed = physics_verdict(
+        component="rx_mrad",
+        expected_internals=expected,
+        recovered_by_gauge=recovered,
+        source_internals=flipped,
+        station_leakage_by_gauge=leakage,
+        ranks=ranks,
+        residual_ratios={"sum_to_zero": 0.04, "reference_layer": 0.05, "outer_contrast": 0.03},
+        max_condition_number=1.0e4,
+    )
+    assert failed["passed"] is False
+    assert failed["source_direction_consistent"] is False
 
 
 def _rank(full_rank=True, condition=80.0, dimension=2):
@@ -560,10 +654,54 @@ def test_physics_verdict_uses_outer_relative_stability_and_station_common_not_ga
     assert verdict["source_stability"]["outer_relative_layer0_minus_layer2"]["abs_spread"] == pytest.approx(0.021)
 
 
+def test_physics_verdict_ignores_frozen_station_reference_layer_as_negative_control():
+    expected = {"layer_0": 0.7, "layer_1": 0.0, "layer_2": -0.7}
+    recovered = {
+        "sum_to_zero": {"layer_0": 0.704, "layer_1": 0.006, "layer_2": -0.710},
+        "outer_contrast": {"layer_0": 0.702, "layer_1": 0.0, "layer_2": -0.702},
+        "reference_layer": {"layer_0": 0.455, "layer_1": -0.025, "layer_2": -0.431},
+    }
+    sources = {
+        "mc24_a": {
+            "sum_to_zero": {"layer_0": 0.690, "layer_1": 0.0, "layer_2": -0.689},
+            "outer_contrast": {"layer_0": 0.694, "layer_1": 0.0, "layer_2": -0.694},
+            "reference_layer": {"layer_0": 0.40, "layer_1": 0.0, "layer_2": -0.40},
+        },
+        "mc24_b": {
+            "sum_to_zero": {"layer_0": 0.717, "layer_1": 0.0, "layer_2": -0.718},
+            "outer_contrast": {"layer_0": 0.717, "layer_1": 0.0, "layer_2": -0.717},
+            "reference_layer": {"layer_0": 0.50, "layer_1": 0.0, "layer_2": -0.48},
+        },
+    }
+    leakage = {choice: {component: 0.0 for component in FREE_COMPONENTS} for choice in recovered}
+    ranks = {
+        "sum_to_zero": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 2.3},
+        "outer_contrast": {"full_rank": True, "normal_matrix_rank": 1, "dimension": 1, "normal_matrix_condition_number": 1.0},
+        "reference_layer": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 4.4},
+    }
+    verdict = physics_verdict(
+        component="rx_mrad",
+        expected_internals=expected,
+        recovered_by_gauge=recovered,
+        source_internals=sources,
+        station_leakage_by_gauge=leakage,
+        ranks=ranks,
+        residual_ratios={"sum_to_zero": 0.018, "outer_contrast": 0.015, "reference_layer": 0.634},
+        max_condition_number=1.0e4,
+    )
+    assert verdict["passed"] is True
+    assert verdict["gauges_agree"] is True
+    assert verdict["residual_improved"] is True
+    assert verdict["admission_representations"] == ["outer_contrast", "sum_to_zero"]
+    assert verdict["negative_control"]["not_a_gauge_cross_check"] is True
+    assert verdict["negative_control"]["agrees_with_zero_common_mode_family"] is False
+
+
 def test_physics_verdict_rejects_station_leakage_and_gauge_disagreement():
     expected = {"layer_0": 0.12, "layer_1": 0.0, "layer_2": -0.12}
     recovered = {
         "sum_to_zero": {"layer_0": 0.12, "layer_1": 0.0, "layer_2": -0.12},
+        "outer_contrast": {"layer_0": 0.01, "layer_1": 0.0, "layer_2": -0.01},
         "reference_layer": {"layer_0": 0.01, "layer_1": 0.0, "layer_2": -0.01},
     }
     sources = {
@@ -572,7 +710,13 @@ def test_physics_verdict_rejects_station_leakage_and_gauge_disagreement():
     }
     leakage = {
         "sum_to_zero": {**{component: 0.0 for component in FREE_COMPONENTS}, "dx_mm": 0.15},
+        "outer_contrast": {**{component: 0.0 for component in FREE_COMPONENTS}, "dx_mm": 0.15},
         "reference_layer": {**{component: 0.0 for component in FREE_COMPONENTS}, "dx_mm": 0.15},
+    }
+    ranks = {
+        "sum_to_zero": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 80.0},
+        "outer_contrast": {"full_rank": True, "normal_matrix_rank": 1, "dimension": 1, "normal_matrix_condition_number": 1.0},
+        "reference_layer": {"full_rank": True, "normal_matrix_rank": 2, "dimension": 2, "normal_matrix_condition_number": 20.0},
     }
     verdict = physics_verdict(
         component="dx_mm",
@@ -580,8 +724,8 @@ def test_physics_verdict_rejects_station_leakage_and_gauge_disagreement():
         recovered_by_gauge=recovered,
         source_internals=sources,
         station_leakage_by_gauge=leakage,
-        ranks=_rank(condition=80.0),
-        residual_ratios={"sum_to_zero": 0.12, "reference_layer": 0.11},
+        ranks=ranks,
+        residual_ratios={"sum_to_zero": 0.12, "outer_contrast": 0.11, "reference_layer": 0.11},
         max_condition_number=1.0e4,
     )
     assert verdict["passed"] is False

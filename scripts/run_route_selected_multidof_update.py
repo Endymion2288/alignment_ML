@@ -27,7 +27,18 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from alignment.capture_criteria import attach_capture_and_prior, load_capture_criteria
+from alignment.calibration_modes import (
+    C_DX as MODE_C_DX,
+    DEFAULT_CONTRACT_RELATIVE,
+    IFT_INTERNAL_MODE,
+    STATION_MODE,
+    evaluate_mode_validity,
+    load_mode_validity_contract,
+    normalize_mode,
+    read_station_framework_capture_success,
+)
 from alignment.layer_hierarchy import (
+    HIERARCHY_FIT_CHOICES,
     IFT_LAYER_IDS,
     expand_gauged_parameters,
     reduce_gauge,
@@ -295,7 +306,7 @@ def _point_parameter_values(
     stations = point.get("injected_station_transforms")
     if not isinstance(stations, Mapping):
         raise ValueError(f"physical point '{point.get('name')}' lacks injected_station_transforms")
-    if any(spec_scope(spec) == "layer" for spec in specs):
+    if any(spec_scope(spec) in {"layer", "contrast"} for spec in specs):
         layers = point.get("injected_layer_transforms")
         if not isinstance(layers, Mapping):
             raise ValueError(f"physical point '{point.get('name')}' lacks injected_layer_transforms")
@@ -368,14 +379,25 @@ def _rms(values: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(array))))
 
 
-def _dx_internals(values: Mapping[str, float], specs: Sequence[Mapping[str, object]]) -> dict[str, object]:
+def _layer_component(specs: Sequence[Mapping[str, object]]) -> str:
+    components = {str(spec["component"]) for spec in specs if spec_scope(spec) == "layer"}
+    if len(components) != 1:
+        raise ValueError("layer-internal route-selected updates require exactly one layer component")
+    return next(iter(components))
+
+
+def _component_internals(
+    values: Mapping[str, float],
+    specs: Sequence[Mapping[str, object]],
+    component: str,
+) -> dict[str, object]:
     split = split_common_and_internal(values, specs)
     internals = {
-        f"layer_{layer}": float(split["layer_internal"][f"layer_{layer}"]["dx_mm"]) for layer in IFT_LAYER_IDS
+        f"layer_{layer}": float(split["layer_internal"][f"layer_{layer}"][component]) for layer in IFT_LAYER_IDS
     }
     return {
-        "layer_internal_dx_mm": internals,
-        "outer_relative_layer0_minus_layer2_mm": float(internals["layer_0"] - internals["layer_2"]),
+        "layer_internal": internals,
+        "outer_relative_layer0_minus_layer2": float(internals["layer_0"] - internals["layer_2"]),
         "station_common": {key: float(value) for key, value in split["station_common"].items()},
         "layer_weighted_mean": {key: float(value) for key, value in split["layer_weighted_mean"].items()},
     }
@@ -415,9 +437,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--gauge",
-        choices=("sum_to_zero", "reference_layer"),
+        choices=HIERARCHY_FIT_CHOICES,
         default=None,
-        help="Explicit IFT layer gauge. Required when floating layer internals; omitted for station-only updates.",
+        help="Explicit IFT layer gauge or outer-contrast basis. Required when floating layer internals.",
     )
     parser.add_argument(
         "--allow-nominal-anchor",
@@ -455,6 +477,50 @@ def main() -> None:
         "--capture-criteria",
         default=None,
         help="Pre-registered dual engineering+pull capture JSON. Validation must not have selected it.",
+    )
+    parser.add_argument(
+        "--calibration-mode",
+        choices=(STATION_MODE, IFT_INTERNAL_MODE, "C_dx"),
+        default=None,
+        help="Exclusive production mode: station or ift_internal. Required to write geometry under the V1 protocol.",
+    )
+    parser.add_argument(
+        "--mode-validity-contract",
+        default=None,
+        help="Frozen mode-validity JSON from workbook 45. Required when --calibration-mode is set.",
+    )
+    parser.add_argument(
+        "--declared-unmodeled-cdx-um",
+        type=float,
+        default=None,
+        help="Potential unmodeled |C_dx| in micrometres for Station Mode (survey/dedicated-cal bound).",
+    )
+    parser.add_argument(
+        "--cdx-fixed-by",
+        choices=("external_geometry", "dedicated_calibration", "isolation_zero"),
+        default=None,
+        help="How IFT internal C_dx was closed before Station Mode.",
+    )
+    parser.add_argument(
+        "--station-capture-artifact",
+        default=None,
+        help="Prior station-mode JSON whose framework capture must be true before C_dx Mode.",
+    )
+    parser.add_argument(
+        "--station-framework-capture-success",
+        choices=("true", "false"),
+        default=None,
+        help="Explicit workbook-36 framework capture result for C_dx Mode (not the same data stage).",
+    )
+    parser.add_argument(
+        "--same-data-stage-as-other-mode",
+        action="store_true",
+        help="Mark a forbidden same-stage station/C_dx iteration. Production must not pass this.",
+    )
+    parser.add_argument(
+        "--require-mode-valid",
+        action="store_true",
+        help="Refuse to finish if the mode-validity contract rejects geometry write.",
     )
     parser.add_argument("--rcond", type=float, default=1.0e-10)
     parser.add_argument("--require-full-rank", action="store_true")
@@ -515,17 +581,38 @@ def main() -> None:
     if scan_mode not in {"station_rigid_multidof", "ift_layer_hierarchy"}:
         raise ValueError("route-selected update requires a station_rigid_multidof or ift_layer_hierarchy scan")
     if scan_mode == "ift_layer_hierarchy" and not args.only_parameters:
-        raise ValueError("layer-internal route-selected updates require --only-parameters")
+        if any(spec_scope(spec) != "contrast" for spec in _specs(plan)):
+            raise ValueError("layer-internal route-selected updates require --only-parameters")
     if scan_mode == "station_rigid_multidof" and args.gauge is not None:
         raise ValueError("station-only route-selected updates do not take --gauge")
     specs = _select_parameter_specs(_specs(plan), args.only_parameters)
+    fit_basis = str(plan.get("fit_basis", ""))
+    from alignment.hierarchical_v1 import is_hierarchical_v1_specs
+
+    hierarchical_v1 = fit_basis == "hierarchical_v1" or is_hierarchical_v1_specs(_specs(plan))
+    if hierarchical_v1:
+        floated_names = [str(spec["name"]) for spec in specs]
+        has_cdx = "C_dx" in floated_names
+        has_station = any(spec_scope(spec) == "station" for spec in specs)
+        if has_cdx and has_station:
+            raise ValueError("hierarchical V1 forbids a joint station+C_dx Newton step")
+        if has_cdx and len(floated_names) != 1:
+            raise ValueError("hierarchical V1 C_dx step floats only C_dx")
     if any(spec_scope(spec) == "layer" and str(spec["component"]) in {"dy_mm", "rz_mrad"} for spec in specs):
         raise ValueError("layer dy/rz stay frozen; omit them from --only-parameters")
+    if any(spec_scope(spec) == "contrast" and str(spec["component"]) not in {"dx_mm", "rx_mrad"} for spec in specs):
+        raise ValueError("2D contrast updates admit only C_dx and C_rx")
     has_layer = any(spec_scope(spec) == "layer" for spec in specs)
+    has_contrast = any(spec_scope(spec) == "contrast" for spec in specs)
+    if has_layer and has_contrast:
+        raise ValueError("do not mix outer-contrast coordinates with layer labels")
     if has_layer and args.gauge is None:
         raise ValueError("layer-internal route-selected updates require --gauge")
     if args.gauge is not None and not has_layer:
         raise ValueError("--gauge is only valid when floating IFT layer internals")
+    if has_contrast and args.gauge is not None:
+        raise ValueError("C_dx/C_rx are already outer-contrast coordinates; do not pass --gauge")
+    has_hierarchy = has_layer or has_contrast
     names = [str(spec["name"]) for spec in specs]
     scales = np.asarray([float(spec["severity_scale"]) for spec in specs], dtype=np.float64)
     movable = [int(value) for value in plan.get("movable_station_ids", ())]
@@ -543,6 +630,19 @@ def main() -> None:
     target_point = points.get(str(args.target_point))
     if anchor_point is None or target_point is None:
         raise ValueError("anchor-point and target-point must be present in the frozen scan plan")
+    calibration_mode = None if args.calibration_mode is None else normalize_mode(args.calibration_mode)
+    mode_contract = None
+    mode_contract_path = None
+    if calibration_mode is not None:
+        from alignment.calibration_modes import assert_exclusive_parameters
+
+        mode_contract_path = (
+            Path(args.mode_validity_contract).expanduser().resolve()
+            if args.mode_validity_contract
+            else Path(__file__).resolve().parents[1] / DEFAULT_CONTRACT_RELATIVE
+        )
+        mode_contract = load_mode_validity_contract(mode_contract_path)
+        assert_exclusive_parameters(calibration_mode, names)
     if (
         anchor_point.get("point_role") == "nominal"
         and not args.allow_nominal_anchor
@@ -754,7 +854,7 @@ def main() -> None:
     if not isinstance(anchor_transforms, Mapping):
         raise ValueError("anchor point lacks injected_station_transforms")
     proposed_layer_transforms = None
-    if has_layer:
+    if has_hierarchy:
         anchor_layers = anchor_point.get("injected_layer_transforms")
         if not isinstance(anchor_layers, Mapping):
             raise ValueError("anchor point lacks injected_layer_transforms")
@@ -857,19 +957,102 @@ def main() -> None:
     recovered_values = {name: float(recovered_delta[index]) for index, name in enumerate(names)}
     hierarchy_audit = None
     hierarchy_capture_success = None
-    if reduction is not None:
-        expected_split = _dx_internals(expected_values, specs)
-        recovered_split = _dx_internals(recovered_values, specs)
-        outer_expected = float(expected_split["outer_relative_layer0_minus_layer2_mm"])
-        outer_recovered = float(recovered_split["outer_relative_layer0_minus_layer2_mm"])
+    if hierarchical_v1:
+        from alignment.five_dof_sampling import five_dof_severity
+        from alignment.hierarchical_v1 import (
+            C_DX,
+            LAYER_LEVEL,
+            STATION_LEVEL,
+            complete_hierarchical_values,
+            layer_transforms_for_cdx,
+            remaining_after_level_step,
+            station_absorption_of_cdx,
+            station_payload_stability,
+        )
+
+        floated_level = LAYER_LEVEL if names == [C_DX] else STATION_LEVEL
+        injected_hierarchical = complete_hierarchical_values(
+            _point_parameter_values(_specs(plan), target_point)
+        )
+        remaining_hierarchical = remaining_after_level_step(
+            injected=injected_hierarchical,
+            recovered=recovered_values,
+            floated_level=floated_level,
+        )
+        remaining_layers = {"0": layer_transforms_for_cdx(remaining_hierarchical[C_DX])}
+        rank_ok = bool(fit.full_rank) and int(fit.normal_matrix_rank) == len(names)
+        pre_rms = _rms(fit.response)
+        post_rms = _rms(fit.residual_response)
+        residual_ok = math.isfinite(pre_rms) and math.isfinite(post_rms) and post_rms <= 0.5 * max(pre_rms, 1.0e-12)
+        leakage_station_absorbs_cdx = None
+        leakage_layer_moves_station = None
+        if floated_level == STATION_LEVEL:
+            leakage_station_absorbs_cdx = station_absorption_of_cdx(
+                injected=injected_hierarchical, recovered_station=recovered_values
+            )
+        else:
+            leakage_layer_moves_station = station_payload_stability(
+                injected_hierarchical, remaining_hierarchical
+            )
+        station_fixed = (
+            floated_level == LAYER_LEVEL
+            and leakage_layer_moves_station is not None
+            and abs(float(leakage_layer_moves_station["max_abs_station_delta"])) <= 1.0e-15
+        )
+        hierarchy_capture_success = bool(rank_ok and residual_ok)
+        if capture_aggregate is not None:
+            hierarchy_capture_success = bool(capture_aggregate["capture_success"] and rank_ok)
+        hierarchy_audit = {
+            "gauge": "outer_contrast",
+            "fit_basis": "hierarchical_v1",
+            "canonical_internal_basis": "outer_contrast",
+            "constraint": (
+                "float station 5-DoF with survey dz prior; C_dx stays at the current geometry"
+                if floated_level == STATION_LEVEL
+                else "float only C_dx; station 5-DoF stays at the current geometry; L0=+C_dx, L1=0, L2=-C_dx"
+            ),
+            "joint_station_cdx_newton": False,
+            "block_coordinate": True,
+            "floated_level": floated_level,
+            "fixed_level": LAYER_LEVEL if floated_level == STATION_LEVEL else STATION_LEVEL,
+            "reduced_parameter_names": list(names),
+            "proposed_next_is_not_remaining": True,
+            "injected_hierarchical_v1": injected_hierarchical,
+            "remaining_hierarchical_v1": remaining_hierarchical,
+            "remaining_layer_transforms": remaining_layers,
+            "recovered": recovered_values,
+            "expected": expected_values,
+            "station_five_dof_severity_injected": five_dof_severity(injected_hierarchical),
+            "station_five_dof_severity_remaining": five_dof_severity(remaining_hierarchical),
+            "leakage_station_absorbs_C_dx": leakage_station_absorbs_cdx,
+            "leakage_layer_moves_station": leakage_layer_moves_station,
+            "station_transforms_unchanged": station_fixed,
+            "full_rank": rank_ok,
+            "normal_matrix_rank": int(fit.normal_matrix_rank),
+            "normal_matrix_condition_number": (
+                None if fit.normal_matrix_condition_number is None else float(fit.normal_matrix_condition_number)
+            ),
+            "prefit_residual_rms": pre_rms,
+            "postfit_residual_rms": post_rms,
+            "post_over_pre_rms": (post_rms / pre_rms) if pre_rms > 0.0 and math.isfinite(pre_rms) else float("nan"),
+            "capture_success": hierarchy_capture_success,
+        }
+    elif reduction is not None:
+        component = _layer_component(specs)
+        expected_split = _component_internals(expected_values, specs, component)
+        recovered_split = _component_internals(recovered_values, specs, component)
+        outer_expected = float(expected_split["outer_relative_layer0_minus_layer2"])
+        outer_recovered = float(recovered_split["outer_relative_layer0_minus_layer2"])
         outer_error = abs(outer_recovered - outer_expected)
         station_fixed = _six_vectors_close(proposed_transforms, dict(anchor_transforms))
-        outer_tol = 0.05
-        internals_tol = 0.05
-        internals = expected_split["layer_internal_dx_mm"]
-        recovered_internals = recovered_split["layer_internal_dx_mm"]
+        outer_tol = 0.05 if component == "dx_mm" else 0.20
+        internals_tol = outer_tol
+        internals = expected_split["layer_internal"]
+        recovered_internals = recovered_split["layer_internal"]
         internals_ok = all(
-            abs(float(recovered_internals[key]) - float(internals[key])) <= internals_tol for key in internals
+            abs(float(recovered_internals[key]) - float(internals[key])) <= internals_tol
+            for key in internals
+            if key != "layer_1"
         )
         rank_ok = bool(fit.full_rank) and int(fit.normal_matrix_rank) == len(reduction.names)
         pre_rms = _rms(fit.response)
@@ -879,14 +1062,15 @@ def main() -> None:
         hierarchy_audit = {
             "gauge": str(args.gauge),
             "constraint": reduction.constraint,
+            "component": component,
             "reduced_parameter_names": list(reduction.names),
             "dropped_parameter_names": list(reduction.dropped_names),
-            "compare_gauge_invariant_internals_not_labels": True,
+            "compare_gauge_invariant_outer_relative_not_labels": True,
             "expected": expected_split,
             "recovered": recovered_split,
-            "outer_relative_error_mm": outer_error,
-            "outer_relative_tolerance_mm": outer_tol,
-            "internal_tolerance_mm": internals_tol,
+            "outer_relative_error": outer_error,
+            "outer_relative_tolerance": outer_tol,
+            "internal_tolerance": internals_tol,
             "per_layer_internal_within_tolerance": internals_ok,
             "station_transforms_unchanged": station_fixed,
             "full_rank": rank_ok,
@@ -895,12 +1079,140 @@ def main() -> None:
             "post_over_pre_rms": (post_rms / pre_rms) if pre_rms > 0.0 and math.isfinite(pre_rms) else float("nan"),
             "capture_success": hierarchy_capture_success,
         }
+    elif has_contrast:
+        from alignment.contrast_sampling import CONTRAST_PARAMETERS
+        from alignment.layer_hierarchy import contrast_layer_six_vectors
+        from alignment.sequential_contrast import remaining_after_block_step
+
+        station_fixed = _six_vectors_close(proposed_transforms, dict(anchor_transforms))
+        layers = None
+        if isinstance(proposed_layer_transforms, Mapping):
+            raw_layers = proposed_layer_transforms.get("0", proposed_layer_transforms.get(0))
+            if isinstance(raw_layers, Mapping):
+                layers = {str(key): list(value) for key, value in raw_layers.items()}
+        expected_layers = contrast_layer_six_vectors(
+            float(recovered_values.get("C_dx", 0.0)),
+            float(recovered_values.get("C_rx", 0.0)),
+        )
+        payload_ok = layers is not None and all(
+            np.allclose(
+                np.asarray(layers.get(str(layer), ()), dtype=np.float64),
+                np.asarray(expected_layers[str(layer)], dtype=np.float64),
+                rtol=0.0,
+                atol=1.0e-12,
+            )
+            for layer in (0, 1, 2)
+        )
+        layer1_zero = layers is not None and np.allclose(
+            np.asarray(layers.get("1", [1.0]), dtype=np.float64), 0.0, rtol=0.0, atol=1.0e-12
+        )
+        rank_ok = bool(fit.full_rank) and int(fit.normal_matrix_rank) == len(names)
+        pre_rms = _rms(fit.response)
+        post_rms = _rms(fit.residual_response)
+        residual_ok = math.isfinite(pre_rms) and math.isfinite(post_rms) and post_rms <= 0.5 * max(pre_rms, 1.0e-12)
+        correlation = None
+        if (
+            correlation_native.shape == (len(names), len(names))
+            and "C_dx" in names
+            and "C_rx" in names
+        ):
+            correlation = float(correlation_native[names.index("C_dx"), names.index("C_rx")])
+        sequential = len(names) == 1
+        floated = names[0] if sequential else None
+        remaining_contrast = None
+        remaining_layers = None
+        injected_contrast = None
+        if sequential:
+            all_contrast = [spec for spec in _specs(plan) if spec_scope(spec) == "contrast"]
+            injected_contrast = _point_parameter_values(all_contrast, target_point)
+            remaining_contrast = remaining_after_block_step(
+                injected=injected_contrast,
+                recovered_floated=float(recovered_values[floated]),
+                floated=floated,
+            )
+            remaining_layers = contrast_layer_six_vectors(
+                remaining_contrast["C_dx"], remaining_contrast["C_rx"]
+            )
+        hierarchy_capture_success = bool(station_fixed and layer1_zero and payload_ok and rank_ok and residual_ok)
+        hierarchy_audit = {
+            "gauge": "outer_contrast",
+            "canonical_internal_basis": "outer_contrast",
+            "constraint": (
+                "station rigid transform frozen; float exactly one of C_dx or C_rx; "
+                "the other stays at the current geometry; L0=+C, L1=0, L2=-C"
+                if sequential
+                else "station rigid transform frozen; fit C_dx and C_rx; L0=+C, L1=0, L2=-C"
+            ),
+            "reduced_parameter_names": list(names),
+            "joint_2d_newton": not sequential,
+            "block_coordinate": sequential,
+            "floated": floated,
+            "fixed": [] if floated is None else [name for name in CONTRAST_PARAMETERS if name != floated],
+            "station_transforms_unchanged": station_fixed,
+            "layer1_frozen": layer1_zero,
+            "payload_expansion_ok": payload_ok,
+            "proposed_next_is_not_remaining": sequential,
+            "injected_contrast": injected_contrast,
+            "remaining_contrast": remaining_contrast,
+            "remaining_layer_transforms": remaining_layers,
+            "posterior_correlation_C_dx_C_rx": correlation,
+            "near_degenerate_abs_correlation_ge_0.9": (
+                None if correlation is None else bool(abs(correlation) >= 0.9)
+            ),
+            "full_rank": rank_ok,
+            "normal_matrix_rank": int(fit.normal_matrix_rank),
+            "normal_matrix_condition_number": (
+                None if fit.normal_matrix_condition_number is None else float(fit.normal_matrix_condition_number)
+            ),
+            "prefit_residual_rms": pre_rms,
+            "postfit_residual_rms": post_rms,
+            "post_over_pre_rms": (post_rms / pre_rms) if pre_rms > 0.0 and math.isfinite(pre_rms) else float("nan"),
+            "expected": expected_values,
+            "recovered": recovered_values,
+            "capture_success": hierarchy_capture_success,
+        }
     if capture_aggregate is not None:
         capture_success = bool(capture_aggregate["capture_success"])
     elif hierarchy_capture_success is not None:
         capture_success = hierarchy_capture_success
     else:
         capture_success = None if tolerance is None else bool(all(row["capture_success"] for row in parameter_rows))
+    mode_validity = None
+    if mode_contract is not None and calibration_mode is not None:
+        target_values = target_point.get("alignment_parameter_values")
+        if not isinstance(target_values, Mapping):
+            target_values = {}
+        if args.declared_unmodeled_cdx_um is not None:
+            unmodeled_um = float(args.declared_unmodeled_cdx_um)
+        elif MODE_C_DX in target_values:
+            unmodeled_um = abs(float(target_values[MODE_C_DX])) * 1.0e3
+        elif scan_mode == "station_rigid_multidof":
+            unmodeled_um = 0.0
+        else:
+            unmodeled_um = None
+        cdx_fixed_by = args.cdx_fixed_by
+        if cdx_fixed_by is None and unmodeled_um == 0.0:
+            cdx_fixed_by = "isolation_zero"
+        station_capture = None
+        if args.station_framework_capture_success is not None:
+            station_capture = args.station_framework_capture_success == "true"
+        elif args.station_capture_artifact is not None:
+            station_capture = read_station_framework_capture_success(
+                Path(args.station_capture_artifact).expanduser().resolve()
+            )
+        mode_validity = evaluate_mode_validity(
+            mode_contract,
+            mode=calibration_mode,
+            floated_parameters=names,
+            unmodeled_abs_C_dx_um=unmodeled_um,
+            cdx_fixed_by=cdx_fixed_by,
+            station_framework_capture_success=station_capture,
+            same_data_stage_as_other_mode=bool(args.same_data_stage_as_other_mode),
+        )
+        mode_validity = {
+            **mode_validity,
+            "contract": str(mode_contract_path),
+        }
     summary: dict[str, object] = {
         "method": "truth_free_route_selected_physical_multidof_local_update",
         "physical_geometry_repropagation": True,
@@ -913,6 +1225,12 @@ def main() -> None:
             None if args.target_scan_root is None else str(Path(args.target_scan_root).expanduser().resolve())
         ),
         "scan_mode": scan_mode,
+        "fit_basis": fit_basis or None,
+        "joint_station_cdx_newton": False if hierarchical_v1 else None,
+        "calibration_mode": calibration_mode,
+        "mode_validity": mode_validity,
+        "geometry_write_allowed": None if mode_validity is None else bool(mode_validity["geometry_write_allowed"]),
+        "residual_reduction_is_not_alignment_success": True,
         "only_parameters": list(names),
         "gauge": None if args.gauge is None else str(args.gauge),
         "allow_nominal_anchor": bool(
@@ -976,6 +1294,13 @@ def main() -> None:
         "proposed_next_parameter_values": proposal_values,
         "proposed_next_station_transforms": proposed_transforms,
         "proposed_next_layer_transforms": proposed_layer_transforms,
+        "remaining_contrast": None if hierarchy_audit is None else hierarchy_audit.get("remaining_contrast"),
+        "remaining_hierarchical_v1": (
+            None if hierarchy_audit is None else hierarchy_audit.get("remaining_hierarchical_v1")
+        ),
+        "proposed_next_is_not_remaining": bool(
+            hierarchy_audit is not None and hierarchy_audit.get("proposed_next_is_not_remaining")
+        ),
         "capture_success": capture_success,
     }
     (output / "route_selected_update.json").write_text(
@@ -989,16 +1314,47 @@ def main() -> None:
         "normal_matrix_condition_number": fit.normal_matrix_condition_number,
         "proposed_next_parameter_values": proposal_values,
         "capture_success": capture_success,
+        "calibration_mode": calibration_mode,
+        "geometry_write_allowed": None if mode_validity is None else bool(mode_validity["geometry_write_allowed"]),
+        "cross_level_contaminated": None if mode_validity is None else bool(mode_validity["cross_level_contaminated"]),
     }
     if hierarchy_audit is not None:
-        printed["hierarchy_internal_audit"] = {
-            "gauge": hierarchy_audit["gauge"],
-            "expected_outer_relative_mm": hierarchy_audit["expected"]["outer_relative_layer0_minus_layer2_mm"],
-            "recovered_outer_relative_mm": hierarchy_audit["recovered"]["outer_relative_layer0_minus_layer2_mm"],
-            "station_transforms_unchanged": hierarchy_audit["station_transforms_unchanged"],
-            "capture_success": hierarchy_audit["capture_success"],
+        expected_audit = hierarchy_audit.get("expected")
+        printed_hierarchy: dict[str, object] = {
+            "gauge": hierarchy_audit.get("gauge"),
+            "station_transforms_unchanged": hierarchy_audit.get("station_transforms_unchanged"),
+            "capture_success": hierarchy_audit.get("capture_success"),
+            "floated_level": hierarchy_audit.get("floated_level"),
+            "remaining_hierarchical_v1": hierarchy_audit.get("remaining_hierarchical_v1"),
+            "post_over_pre_rms": hierarchy_audit.get("post_over_pre_rms"),
         }
+        if isinstance(expected_audit, Mapping) and "outer_relative_layer0_minus_layer2" in expected_audit:
+            printed_hierarchy["expected_outer_relative"] = expected_audit["outer_relative_layer0_minus_layer2"]
+            printed_hierarchy["recovered_outer_relative"] = hierarchy_audit["recovered"][
+                "outer_relative_layer0_minus_layer2"
+            ]
+        else:
+            printed_hierarchy["expected"] = expected_audit
+            printed_hierarchy["recovered"] = hierarchy_audit.get("recovered")
+            printed_hierarchy["posterior_correlation_C_dx_C_rx"] = hierarchy_audit.get(
+                "posterior_correlation_C_dx_C_rx"
+            )
+            printed_hierarchy["near_degenerate_abs_correlation_ge_0.9"] = hierarchy_audit.get(
+                "near_degenerate_abs_correlation_ge_0.9"
+            )
+            printed_hierarchy["post_over_pre_rms"] = hierarchy_audit.get("post_over_pre_rms")
+            printed_hierarchy["joint_2d_newton"] = hierarchy_audit.get("joint_2d_newton")
+            printed_hierarchy["floated"] = hierarchy_audit.get("floated")
+            printed_hierarchy["remaining_contrast"] = hierarchy_audit.get("remaining_contrast")
+        printed["hierarchy_internal_audit"] = printed_hierarchy
     print(json.dumps(_json_ready(printed), indent=2))
+    if args.require_mode_valid and mode_validity is not None and not bool(mode_validity["geometry_write_allowed"]):
+        raise ValueError(
+            "mode-validity contract forbids writing this geometry: "
+            + str(mode_validity.get("status"))
+            + " indicators="
+            + ",".join(mode_validity.get("reject_indicators") or ())
+        )
 
 
 if __name__ == "__main__":

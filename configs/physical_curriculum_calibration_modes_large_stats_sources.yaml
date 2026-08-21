@@ -1,0 +1,90 @@
+# Exclusive calibration-mode large-statistics transfer sources.
+# First-wave extra files only: +10 train / +4 validation.
+# Source-disjoint from the V3 expanded 10+8 corpus and from the
+# sealed 100116/100117 test.  Does not retrain any association model.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  source_selection:
+    production_release: s0013-r0022
+    required_persistence: [SCT_ClusterContainer, SegmentFit, Segments, TruthParticlesAux]
+    admission_rule: complete_physical_refit_and_mode0_acts_export
+    source_split_unit: original_xaod_file
+    planned_refitted_events_per_source: 100
+    transfer_role: extra_source_disjoint_non_sealed
+  sources:
+    - id: mc24_100043_00000_00099
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00000-00099-s0013-r0022-xAOD.root
+    - id: mc24_100043_00100_00199
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00100-00199-s0013-r0022-xAOD.root
+    - id: mc24_100043_00700_00799
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00700-00799-s0013-r0022-xAOD.root
+    - id: mc24_100043_00800_00899
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00800-00899-s0013-r0022-xAOD.root
+    - id: mc24_100043_00900_00999
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00900-00999-s0013-r0022-xAOD.root
+    - id: mc24_100044_00000_00099
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00000-00099-s0013-r0022-xAOD.root
+    - id: mc24_100044_00100_00199
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00100-00199-s0013-r0022-xAOD.root
+    - id: mc24_100044_00700_00799
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00700-00799-s0013-r0022-xAOD.root
+    - id: mc24_100044_00800_00899
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00800-00899-s0013-r0022-xAOD.root
+    - id: mc24_100044_00900_00999
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00900-00999-s0013-r0022-xAOD.root
+    - id: mc24_100047_00200_00249
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00200-00249-s0013-r0022-xAOD.root
+    - id: mc24_100047_00250_00299
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00250-00299-s0013-r0022-xAOD.root
+    - id: mc24_100048_00200_00249
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00200-00249-s0013-r0022-xAOD.root
+    - id: mc24_100048_00250_00299
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00250-00299-s0013-r0022-xAOD.root
+
+  refit:
+    nevents: 100
+    station_ids: [0, 1, 2, 3]
+    reference_station: 0
+    q_over_p_mode: 0
+    min_truth_match_fraction: 0.99
+    chi2_gate: 25.0
+    refinement_iterations: 1
+
+  synthetic_multitrack:
+    source_pooling: within_split_same_payload
+    scale_events_by_pool_sources: true
+    events_per_payload: 120
+    tracks_per_event: 3
+    allow_duplicate_source_tracks: false
+    stations: [0, 1, 2, 3]
+    missing_tracklet_probability: 0.10
+    fake_mean_per_station: 0.0
+    random_easy_fake_mean_per_station: 0.25
+    random_easy_min_chi2: 1000.0
+    hard_negative_mean_per_target_station: 0.50
+    hard_negative_chi2_min: 1.0
+    hard_negative_chi2_max: 1000.0
+    hard_negative_max_trials: 256
+    minimum_truth_match_fraction: 0.99
+    synthetic_run_id_base: 996100
+    seed: 20260821
+    overlay_seed_scope: alignment_iteration_shared_across_payloads
+
+  field_candidate_export:
+    q_over_p_mode: 0
+    target_z_tolerance_mm: 1.0e-6

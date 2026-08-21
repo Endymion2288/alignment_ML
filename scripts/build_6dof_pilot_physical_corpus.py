@@ -59,6 +59,11 @@ def _point_entry(scan_root: Path, point: Mapping[str, Any], station_ids: tuple[i
         expected_station_transforms=(
             dict(point["injected_station_transforms"]) if "injected_station_transforms" in point else None
         ),
+        expected_layer_transforms=(
+            dict(point["injected_layer_transforms"])
+            if isinstance(point.get("injected_layer_transforms"), Mapping)
+            else None
+        ),
     )
     return {
         **dict(point),
@@ -70,6 +75,29 @@ def _point_entry(scan_root: Path, point: Mapping[str, Any], station_ids: tuple[i
         "completion_status": completion_status,
         "completed": completed,
     }
+
+
+def _uid_tracklets_path(scan_root: Path, plan: Mapping[str, Any]) -> Path:
+    """Return tracklets used only to list source event UIDs.
+
+    Alignment-iteration banks normally have a zero-magnitude nominal.  A
+    held-out-only remaining bank does not: every payload is a leftover
+    contrast, and any completed point of that source has the same events.
+    """
+    points = plan.get("points")
+    if not isinstance(points, list) or not points:
+        raise ValueError("scan plan has no points")
+    zeros = [point for point in points if float(point["condition_magnitude"]) == 0.0]
+    if len(zeros) > 1:
+        raise ValueError("scan plan has more than one zero-magnitude payload")
+    if zeros:
+        chosen = zeros[0]
+    else:
+        if not plan.get("held_out_only"):
+            raise ValueError("scan plan lacks a zero-magnitude payload for event UIDs")
+        chosen = points[0]
+    relative = chosen.get("relative_point_dir", Path("points") / str(chosen["name"]))
+    return scan_root / str(relative) / "refit" / "tracklets.root"
 
 
 def build_corpus_manifest(iteration_manifest: Path) -> dict[str, Any]:
@@ -84,10 +112,7 @@ def build_corpus_manifest(iteration_manifest: Path) -> dict[str, Any]:
         plan = _read_json(scan_root / "scan_plan.json")
         station_ids = tuple(int(value) for value in plan["station_ids"])
         points = [_point_entry(scan_root, point, station_ids) for point in plan["points"]]
-        zero_point = next(
-            point for point in plan["points"] if float(point["condition_magnitude"]) == 0.0
-        )
-        zero_tracklets = scan_root / "points" / str(zero_point["name"]) / "refit" / "tracklets.root"
+        uid_tracklets = _uid_tracklets_path(scan_root, plan)
         sources.append(
             {
                 "source_id": source_id,
@@ -95,7 +120,7 @@ def build_corpus_manifest(iteration_manifest: Path) -> dict[str, Any]:
                 "input_xaod": str(source["input_xaod"]),
                 "physical_scan_config": str(source["physical_scan_config"]),
                 "physical_scan_root": str(scan_root),
-                "source_event_uids": _source_event_uids(source_id, zero_tracklets),
+                "source_event_uids": _source_event_uids(source_id, uid_tracklets),
                 "points": points,
             }
         )
@@ -118,7 +143,7 @@ def build_corpus_manifest(iteration_manifest: Path) -> dict[str, Any]:
         "q_over_p_mode": int(iteration.get("q_over_p_mode", 0)),
         "condition_axis": scan_plan_common.get("condition_axis"),
         "payload_bank": {
-            "mode": "station_rigid_multidof",
+            "mode": str(scan_plan_common.get("scan_mode") or "station_rigid_multidof"),
             "alignment_iteration": dict(iteration["alignment_iteration"]),
             "common_scan_plan": dict(scan_plan_common),
         },
