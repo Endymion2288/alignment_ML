@@ -106,6 +106,15 @@ python scripts/prepare_four_station_identifiability_pilot.py \
   --source-id mc24_100044_00300_00399
 ```
 
+Condor 已提交（eossubmit / `bigbird24` / `tomorrow` / 6000 MB）：
+
+- cluster **1000360**
+- 2 jobs（每源一点表 51 点 × 50 事件）
+- `outputs/mc24_four_station_identifiability_pilot_v1/condor/submission.json`
+
+完成后必须检查：`failure.json`、ROOT 可读、content audit、manifest
+completion。损坏的转换 ROOT 先核对 Athena `enhanced_tracklets.root`。
+
 Held-out：`closure_relative`（S1 dx / S2 dy / S3 ry，S0=0 只是坐标图）与
 `closure_relative_plus_common`（同一相对量 + 公共 dx）。只用于事后
 `ΔT_ij` 比较，不在打开结果前改判据。
