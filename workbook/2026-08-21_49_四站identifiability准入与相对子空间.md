@@ -160,6 +160,9 @@ payload 六矢量。容差取 15 维 S0 图 pooled σ 最差站的约 3σ：
 6. 仍然不重训 Transformer，除非出现「truth 边还在、冻结 V2 score/route
    因四站同时错位系统性变差」。
 
+正式 closure 评价见
+`workbook/2026-08-21_50_四站15维相对closure预注册评价.md`。
+
 ## 冻结判定
 
 - 四站无约束 20D：**未准入**
