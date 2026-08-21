@@ -87,6 +87,8 @@ def _plan_signature(plan: Mapping[str, object]) -> dict[str, object]:
         "movable_station_ids",
         "movable_layer_ids",
         "condition_axis",
+        "alignment_formulation",
+        "gauge",
         "alignment_parameter_specs",
         "points",
     )
@@ -104,6 +106,16 @@ def _compile_scan(
         raise ValueError("physical_refit_capture_scan must be a mapping")
     mode = str(raw_scan.get("scan_mode", ""))
     if mode == "station_rigid_multidof":
+        if str(raw_scan.get("alignment_formulation", "")) == "four_station_v1":
+            from scripts.prepare_four_station_identifiability_pilot import (
+                compile_four_station_identifiability_pilot,
+            )
+
+            return compile_four_station_identifiability_pilot(
+                template,
+                iteration=iteration,
+                current_values=current_values,
+            )
         return compile_iteration(template, iteration=iteration, current_values=current_values)
     if mode == "ift_layer_hierarchy":
         if str(raw_scan.get("fit_basis", "")) == "hierarchical_v1":

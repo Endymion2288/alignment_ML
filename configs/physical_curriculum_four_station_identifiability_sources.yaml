@@ -1,0 +1,30 @@
+# Four-station branch source contract.  Paths reuse the already-validated
+# MC24 source-disjoint files, but this file is a new contract: it does not
+# inherit the historical station-0-reference / IFT-only artifacts.
+#
+# Split unit: original xAOD file.  Test remains forbidden.  The identifiability
+# smoke selects a train subset via --source-id; validation is listed so the
+# later closure bank can stay source-disjoint without opening sealed test.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  no_station_is_assumed_correct: true
+
+  sources:
+    - id: mc24_100043_00200_00299
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100043_00600_00699
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00600-00699-s0013-r0022-xAOD.root
+    - id: mc24_100044_00300_00399
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100047_00000_00049
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+    - id: mc24_100048_00000_00049
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root

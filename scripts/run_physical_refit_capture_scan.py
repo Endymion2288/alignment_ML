@@ -154,20 +154,15 @@ def _safe_identifier(value: object, *, label: str) -> str:
     return identifier
 
 
-def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, Any]:
-    """Build a frozen physical multi-DoF station-transform plan.
+def _legacy_station_sets(
+    config: Mapping[str, Any],
+    stations: tuple[int, ...],
+) -> tuple[tuple[int, ...], tuple[int, ...], dict[str, object]]:
+    """Historical IFT-movable / downstream-fixed partition.
 
-    The scan consumes explicit full transforms, rather than altering exported
-    states.  Its first use is IFT ``dx/dy/R_y`` with stations 1--3 fixed, but
-    the parameter schema deliberately covers all station rigid components so
-    later ``dz/Rx/Rz`` admission is evidence-driven rather than a new payload
-    format.  Every enabled degree of freedom needs a pair of pure central
-    finite-difference physical probes; arbitrary joint points are reserved for
-    the curriculum and held-out closure.
+    This path stays the default whenever ``alignment_formulation`` is absent.
+    It still requires a non-empty reference set that remains identically zero.
     """
-    stations = tuple(sorted({int(station) for station in config["station_ids"]}))
-    if len(stations) < 2 or any(station not in (0, 1, 2, 3) for station in stations):
-        raise ValueError("station rigid multi-DoF scans support at least two stations from 0 through 3")
     raw_reference = config.get("reference_station_ids")
     raw_movable = config.get("movable_station_ids")
     if not isinstance(raw_reference, (list, tuple)) or not isinstance(raw_movable, (list, tuple)):
@@ -180,6 +175,113 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
         raise ValueError("reference_station_ids and movable_station_ids must be disjoint and cover station_ids")
     if any(station not in stations for station in (*reference_stations, *movable_stations)):
         raise ValueError("reference or movable station is absent from station_ids")
+    return (
+        reference_stations,
+        movable_stations,
+        {
+            "alignment_formulation": "legacy_ift_vs_fixed_downstream",
+            "gauge": "reference_stations_fixed_at_identity",
+        },
+    )
+
+
+def _four_station_sets(
+    config: Mapping[str, Any],
+    stations: tuple[int, ...],
+) -> tuple[tuple[int, ...], tuple[int, ...], dict[str, object]]:
+    """Opt-in four-station formulation: no station is assumed correct."""
+    from alignment.four_station import (
+        FORMULATION,
+        GAUGE_CHOICES,
+        GAUGE_COMMON_MODE,
+        GAUGE_REFERENCE_STATION,
+        GAUGE_UNCONSTRAINED_FULL,
+        STATION_IDS,
+        formulation_contract,
+    )
+
+    if stations != STATION_IDS:
+        raise ValueError("four_station_v1 requires station_ids [0, 1, 2, 3]")
+    gauge = str(config.get("gauge", ""))
+    if gauge not in GAUGE_CHOICES:
+        raise ValueError(f"four_station_v1 requires gauge in {list(GAUGE_CHOICES)}")
+    raw_reference = config.get("reference_station_ids", [])
+    raw_movable = config.get("movable_station_ids", list(STATION_IDS))
+    if raw_reference is None:
+        raw_reference = []
+    if raw_movable is None:
+        raw_movable = list(STATION_IDS)
+    if not isinstance(raw_reference, (list, tuple)) or not isinstance(raw_movable, (list, tuple)):
+        raise ValueError("four_station_v1 reference/movable station lists must be sequences")
+    reference_stations = tuple(sorted({int(station) for station in raw_reference}))
+    movable_stations = tuple(sorted({int(station) for station in raw_movable}))
+    if gauge == GAUGE_UNCONSTRAINED_FULL:
+        if reference_stations:
+            raise ValueError(
+                "unconstrained_full forbids reference_station_ids; fixing a station is a "
+                "different physical constraint, not a silent default"
+            )
+        if movable_stations != STATION_IDS:
+            raise ValueError("unconstrained_full requires movable_station_ids [0, 1, 2, 3]")
+        contract = formulation_contract(gauge=gauge, include_survey_dz=True)
+    elif gauge == GAUGE_COMMON_MODE:
+        if reference_stations:
+            raise ValueError("common_mode_constraint forbids a privileged reference station")
+        if movable_stations != STATION_IDS:
+            raise ValueError("common_mode_constraint requires movable_station_ids [0, 1, 2, 3]")
+        contract = formulation_contract(gauge=gauge, include_survey_dz=True)
+    else:
+        if len(reference_stations) != 1:
+            raise ValueError("reference_station gauge requires exactly one reference_station_id")
+        expected = formulation_contract(gauge=GAUGE_REFERENCE_STATION, reference_station=reference_stations[0])
+        if movable_stations != tuple(expected["movable_station_ids"]):
+            raise ValueError(
+                "reference_station gauge movable_station_ids must be the complementary three stations"
+            )
+        contract = expected
+    return reference_stations, movable_stations, {
+        "alignment_formulation": FORMULATION,
+        "gauge": gauge,
+        "four_station_contract": {
+            key: contract[key]
+            for key in (
+                "schema_version",
+                "gauge_invariant_observable",
+                "no_station_is_assumed_correct",
+                "n_free_parameters",
+                "survey_dz_prior_sigma_mm",
+            )
+        },
+    }
+
+
+def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a frozen physical multi-DoF station-transform plan.
+
+    The scan consumes explicit full transforms, rather than altering exported
+    states.  Its first use is IFT ``dx/dy/R_y`` with stations 1--3 fixed, but
+    the parameter schema deliberately covers all station rigid components so
+    later ``dz/Rx/Rz`` admission is evidence-driven rather than a new payload
+    format.  Every enabled degree of freedom needs a pair of pure central
+    finite-difference physical probes; arbitrary joint points are reserved for
+    the curriculum and held-out closure.
+
+    The historical non-empty reference set remains the default.  Four-station
+    scans must set ``alignment_formulation: four_station_v1`` explicitly.
+    """
+    stations = tuple(sorted({int(station) for station in config["station_ids"]}))
+    if len(stations) < 2 or any(station not in (0, 1, 2, 3) for station in stations):
+        raise ValueError("station rigid multi-DoF scans support at least two stations from 0 through 3")
+    formulation = str(config.get("alignment_formulation") or "").strip()
+    if formulation in {"", "legacy_ift_vs_fixed_downstream"}:
+        reference_stations, movable_stations, formulation_meta = _legacy_station_sets(config, stations)
+    elif formulation == "four_station_v1":
+        reference_stations, movable_stations, formulation_meta = _four_station_sets(config, stations)
+    else:
+        raise ValueError(
+            f"unsupported alignment_formulation '{formulation}'; "
+            "omit the field for the legacy IFT-vs-fixed-downstream default"
+        )
     axis = str(config.get("condition_axis", "station_rigid_multidof"))
     if not axis:
         raise ValueError("station rigid multi-DoF scans require a non-empty condition_axis")
@@ -476,6 +578,7 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
         "q_over_p_mode": int(config["q_over_p_mode"]),
         "alignment_parameter_specs": specs,
         "points": points,
+        **formulation_meta,
     }
 
 

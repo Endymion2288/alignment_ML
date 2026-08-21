@@ -142,3 +142,5 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [multi-DoF 全局 alignment 闭环（中文）](docs/global_alignment_multidof_loop_cn.md)
 - [项目审查与下一阶段计划（英文）](docs/project_audit_and_next_plan.md)
 - [项目审查与下一阶段计划（中文）](docs/project_audit_and_next_plan_cn.md)
+- [四站 alignment（英文）](docs/four_station_alignment.md)
+- [四站 alignment（中文）](docs/four_station_alignment_cn.md)

@@ -142,6 +142,7 @@ contract and validation limits are linked below.
 - [IFT R_y physical rotation study](docs/ift_ry_physical_rotation.md)
 - [Multi-DoF global alignment loop](docs/global_alignment_multidof_loop.md)
 - [Project audit and next-stage plan](docs/project_audit_and_next_plan.md)
+- [Four-station alignment](docs/four_station_alignment.md)
 - [Chinese input schema and exporter contract](docs/tracklet_export_contract_cn.md)
 - [Chinese data audit](docs/data_audit_cn.md)
 - [Chinese baseline validation](docs/baseline_validation_cn.md)
@@ -162,4 +163,5 @@ contract and validation limits are linked below.
 - [Chinese IFT R_y physical rotation study](docs/ift_ry_physical_rotation_cn.md)
 - [Chinese multi-DoF global alignment loop](docs/global_alignment_multidof_loop_cn.md)
 - [Chinese project audit and next-stage plan](docs/project_audit_and_next_plan_cn.md)
+- [Chinese four-station alignment](docs/four_station_alignment_cn.md)
 - [Chinese README](README_cn.md)
