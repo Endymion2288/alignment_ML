@@ -122,6 +122,16 @@ held-out 的 0.71，集中在注入 5 mrad `ry` 的 2→3 / S3。Score 阈值仍
 association domain shift；现在可以规划四站感知 GPU 重训，但禁止用这两个
 held-out 调阈。
 
+条目 53 开始该 matched retraining pilot。**不**重设计 Transformer。相对
+错位在已准入的 15 维 S0 图中采样，再左乘公共 SE(3) 作为 gauge-control。
+训练仍用 identifiability pilot 已完成的两个 xAOD；validation 用从未进入
+该 pilot 的两个 expanded-contract source
+（`mc24_100047_00050_00099`、`mc24_100048_00050_00099`）。架构、
+`residual_v1`、unit-capacity packing 与 30 epoch 预算保持历史 V2。禁止用
+条目 52 的 held-out overlay 选 threshold / unmatched penalty /
+calibration。在 source-disjoint association 闸通过之前，15 维未知关联
+WLS 保持关闭。
+
 ## 命令
 
 ```bash
@@ -184,4 +194,12 @@ python scripts/run_four_station_route_selected_relative_closure.py \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/unknown_association_relative.json \
   --operating-point configs/physical_refit_four_station_unknown_association.yaml \
   --split train
+```
+
+Matched association retraining（条目 53）。在 validation association 闸通过
+之前，不要从这条路径打开 15 维 WLS：
+
+```bash
+bash scripts/run_four_station_association_retraining.sh prepare
+bash scripts/run_four_station_association_retraining.sh submit
 ```

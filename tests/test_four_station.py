@@ -28,7 +28,13 @@ from alignment.four_station import (
     free_parameter_names,
     identity_station_transforms,
     invert_six_vector,
+    draw_relative_native,
     left_multiply_all,
+    native_values_from_station_transforms,
+    relative_family_payloads,
+    RELATIVE_CURRICULUM_KIND,
+    s0_gauge_transforms_from_relative_native,
+    zero_parameter_values,
     matrix_to_six_vector,
     parameter_name,
     parse_parameter_name,
@@ -521,4 +527,89 @@ def test_four_station_route_selected_contract_keeps_all_stations_and_15d_solve()
             plan,
             only_parameters=free_parameter_names(),
             observation_statistics="physical_edge_deduplicated",
+        )
+
+
+def test_relative_sample_is_15d_s0_chart_then_left_se3_not_20d_then_gauge():
+    rng = np.random.default_rng(20260821)
+    names = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    relative_native = draw_relative_native(rng, translation_mm=0.5, rotation_mrad=5.0)
+    assert set(relative_native) == set(names)
+    assert all(not name.startswith("s0_") for name in relative_native)
+    relative = s0_gauge_transforms_from_relative_native(relative_native)
+    assert relative["0"] == list(IDENTITY_SIX)
+    common = (0.25, -0.10, 0.0, 0.0, 0.002, 0.0)
+    relative, control = relative_family_payloads(relative_native, common)
+    assert relatives_agree(relative, control)
+    assert control["0"][0] == pytest.approx(0.25)
+    assert not np.allclose(control["3"], relative["3"])
+    native = native_values_from_station_transforms(relative)
+    assert native["s0_dx_mm"] == pytest.approx(0.0)
+    assert native["s3_dz_mm"] == pytest.approx(0.0)
+
+
+def test_relative_curriculum_compiles_without_finite_difference_probes():
+    from scripts.config_loader import load_yaml_with_base
+    from scripts.prepare_four_station_relative_curriculum import compile_four_station_relative_curriculum
+
+    template = load_yaml_with_base(
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "physical_refit_four_station_relative_association_curriculum.yaml"
+    )
+    specs = template["physical_refit_capture_scan"]["alignment_parameter_specs"]
+    compiled, contract = compile_four_station_relative_curriculum(
+        template,
+        iteration=0,
+        current_values=zero_parameter_values(specs),
+    )
+    scan = compiled["physical_refit_capture_scan"]
+    assert scan["relative_curriculum"] == RELATIVE_CURRICULUM_KIND
+    assert scan["require_central_finite_difference_probes"] is False
+    plan = _build_plan(scan)
+    names = [point["name"] for point in plan["points"]]
+    assert names[0] == "iteration_00_reference"
+    assert "iteration_00_hard_s3_ry" in names
+    assert "iteration_00_hard_s3_ry_plus_common" in names
+    assert "iteration_00_draw_00" in names
+    assert "iteration_00_draw_00_plus_common" in names
+    assert "iteration_00_draw_01_plus_common" in names
+    assert len(plan["points"]) == 7
+    assert all("fd_" not in name for name in names)
+    hard = next(point for point in plan["points"] if point["name"] == "iteration_00_hard_s3_ry")
+    twin = next(point for point in plan["points"] if point["name"] == "iteration_00_hard_s3_ry_plus_common")
+    assert hard["relative_family"] == "hard_s3_ry"
+    assert twin["gauge_role"] == "left_se3_control"
+    assert hard["injected_station_transforms"]["0"] == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert hard["injected_station_transforms"]["1"][0] == pytest.approx(0.30)
+    assert hard["injected_station_transforms"]["3"][4] == pytest.approx(0.005)
+    assert relatives_agree(hard["injected_station_transforms"], twin["injected_station_transforms"])
+    assert twin["injected_station_transforms"]["0"] != [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert contract["reference_point"] == "iteration_00_reference"
+    assert contract["sampling_reference_station"] == 0
+
+
+def test_skipping_finite_difference_probes_outside_relative_curriculum_is_rejected():
+    scan = _four_station_scan()
+    scan["require_central_finite_difference_probes"] = False
+    with pytest.raises(ValueError, match="outside the 15-DoF relative curriculum"):
+        _build_plan(scan)
+
+
+def test_relative_sampling_refuses_to_leave_the_local_linearization_region():
+    from scripts.config_loader import load_yaml_with_base
+    from scripts.prepare_four_station_relative_curriculum import compile_four_station_relative_curriculum
+
+    template = load_yaml_with_base(
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "physical_refit_four_station_relative_association_curriculum.yaml"
+    )
+    template["physical_refit_capture_scan"]["relative_sampling"]["relative_bounds"]["rotation_mrad"] = 8.0
+    specs = template["physical_refit_capture_scan"]["alignment_parameter_specs"]
+    with pytest.raises(ValueError, match="local region"):
+        compile_four_station_relative_curriculum(
+            template,
+            iteration=0,
+            current_values=zero_parameter_values(specs),
         )

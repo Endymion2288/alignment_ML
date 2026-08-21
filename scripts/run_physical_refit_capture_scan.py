@@ -262,9 +262,11 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
     states.  Its first use is IFT ``dx/dy/R_y`` with stations 1--3 fixed, but
     the parameter schema deliberately covers all station rigid components so
     later ``dz/Rx/Rz`` admission is evidence-driven rather than a new payload
-    format.  Every enabled degree of freedom needs a pair of pure central
-    finite-difference physical probes; arbitrary joint points are reserved for
-    the curriculum and held-out closure.
+    format.      Every enabled degree of freedom needs a pair of pure central
+    finite-difference physical probes unless this is the explicit 15-DoF
+    relative association curriculum, which disables FD probes and writes
+    joint relative plus left-SE(3) gauge-control points instead.  Arbitrary
+    joint points remain reserved for curriculum and held-out closure.
 
     The historical non-empty reference set remains the default.  Four-station
     scans must set ``alignment_formulation: four_station_v1`` explicitly.
@@ -507,12 +509,38 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
                     if raw_point.get("curriculum_stage") is None
                     else {"curriculum_stage": str(raw_point["curriculum_stage"])}
                 ),
+                **{
+                    key: raw_point[key]
+                    for key in (
+                        "relative_family",
+                        "gauge_role",
+                        "sampling_chart",
+                        "sampling_reference_station",
+                        "relative_native_values",
+                        "common_left_se3",
+                        "relative_alignment_delta_t_ij",
+                        "relative_curriculum",
+                    )
+                    if key in raw_point
+                },
             }
         )
     if nominal_count != 1:
         raise ValueError("station rigid multi-DoF scan must contain exactly one nominal all-zero payload")
+    from alignment.four_station import RELATIVE_CURRICULUM_KIND
+
+    relative_curriculum = str(config.get("relative_curriculum", "") or "")
+    if relative_curriculum and relative_curriculum != RELATIVE_CURRICULUM_KIND:
+        raise ValueError(f"unknown four-station relative_curriculum '{relative_curriculum}'")
+    skip_finite_difference_probes = config.get("require_central_finite_difference_probes") is False
+    if skip_finite_difference_probes and relative_curriculum != RELATIVE_CURRICULUM_KIND:
+        raise ValueError("refusing to skip finite-difference probes outside the 15-DoF relative curriculum")
+    if relative_curriculum == RELATIVE_CURRICULUM_KIND and not skip_finite_difference_probes:
+        raise ValueError(
+            "15-DoF relative curriculum must set require_central_finite_difference_probes: false"
+        )
     missing_probes = [name for name, signs in finite_difference.items() if signs != {"positive", "negative"}]
-    if missing_probes:
+    if missing_probes and not skip_finite_difference_probes:
         raise ValueError(
             "station rigid multi-DoF scan requires positive/negative physical probes for: "
             + ", ".join(sorted(missing_probes))

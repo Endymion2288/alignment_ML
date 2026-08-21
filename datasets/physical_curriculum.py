@@ -60,6 +60,7 @@ def condition_axis_label(axis: str) -> str:
         "translation_xy_mm": "injected translation magnitude [mm]",
         "ift_ry_mrad": "injected IFT R_y [mrad]",
         "ift_dx_dy_ry_joint_l2": "injected joint IFT transform severity [normalized]",
+        "four_station_relative_l2": "injected 15-DoF relative four-station condition [unit box]",
     }
     return labels.get(str(axis), f"injected {axis}")
 

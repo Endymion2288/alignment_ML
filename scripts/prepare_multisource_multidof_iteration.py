@@ -107,6 +107,22 @@ def _compile_scan(
     mode = str(raw_scan.get("scan_mode", ""))
     if mode == "station_rigid_multidof":
         if str(raw_scan.get("alignment_formulation", "")) == "four_station_v1":
+            relative_curriculum = str(raw_scan.get("relative_curriculum", "") or "")
+            if relative_curriculum:
+                from alignment.four_station import RELATIVE_CURRICULUM_KIND
+                from scripts.prepare_four_station_relative_curriculum import (
+                    compile_four_station_relative_curriculum,
+                )
+
+                if relative_curriculum != RELATIVE_CURRICULUM_KIND:
+                    raise ValueError(
+                        f"unknown four-station relative_curriculum '{relative_curriculum}'"
+                    )
+                return compile_four_station_relative_curriculum(
+                    template,
+                    iteration=iteration,
+                    current_values=current_values,
+                )
             from scripts.prepare_four_station_identifiability_pilot import (
                 compile_four_station_identifiability_pilot,
             )

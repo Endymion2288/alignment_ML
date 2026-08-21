@@ -46,6 +46,7 @@ SURVEY_COMPONENT = "dz_mm"
 ALL_COMPONENTS: tuple[str, ...] = ("dx_mm", "dy_mm", "dz_mm", "rx_mrad", "ry_mrad", "rz_mrad")
 FORMULATION = "four_station_v1"
 LEGACY_FORMULATION = "legacy_ift_vs_fixed_downstream"
+RELATIVE_CURRICULUM_KIND = "15d_gauge_then_left_se3"
 GAUGE_UNCONSTRAINED_FULL = "unconstrained_full"
 GAUGE_REFERENCE_STATION = "reference_station"
 GAUGE_COMMON_MODE = "common_mode_constraint"
@@ -578,6 +579,117 @@ def require_four_station_route_selected_contract(
     raise ValueError(
         "four_station_v1 only_parameters must be exactly the admitted 15-DoF S0 or S3 relative chart"
     )
+
+
+def native_values_from_station_transforms(
+    transforms: Mapping[int | str, Sequence[float]],
+    *,
+    include_survey_dz: bool = True,
+) -> dict[str, float]:
+    """Read payload six-vectors back into ``s{station}_{component}`` native units."""
+    packed = _as_station_map(transforms)
+    values: dict[str, float] = {}
+    components = ALL_COMPONENTS if include_survey_dz else FREE_COMPONENTS
+    for station in STATION_IDS:
+        for component in components:
+            index, scale = COMPONENT_INDEX_AND_PAYLOAD_SCALE[component]
+            values[parameter_name(station, component)] = float(packed[station][index] * scale)
+    return values
+
+
+def s0_gauge_transforms_from_relative_native(
+    relative_native: Mapping[str, float],
+) -> dict[str, list[float]]:
+    """Write a 15-DoF relative sample in the S0-identity *sampling* chart.
+
+    Station 0 is identity only as a coordinate choice used to generate
+    ``ΔT_ij``.  It is not a physically true reference.  Survey ``dz`` stays
+    zero.  Callers that need a gauge-control payload left-multiply afterwards.
+    """
+    names = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    unknown = set(str(key) for key in relative_native) - set(names)
+    if unknown:
+        raise ValueError("relative sample has unknown names: " + ", ".join(sorted(unknown)))
+    values = {name: float(relative_native.get(name, 0.0)) for name in names}
+    if any(not math.isfinite(value) for value in values.values()):
+        raise ValueError("relative sample must be finite")
+    if any(parse_parameter_name(name)[1] == SURVEY_COMPONENT for name in values):
+        raise ValueError("relative 15-DoF sampling forbids free dz")
+    payload = station_transforms_from_native_values(values)
+    if not np.allclose(payload["0"], IDENTITY_SIX, rtol=0.0, atol=_SE3_ATOL):
+        raise ValueError("S0-gauge sampling must leave station 0 at identity before the common left SE(3)")
+    return payload
+
+
+def draw_relative_native(
+    rng: np.random.Generator,
+    *,
+    translation_mm: float,
+    rotation_mrad: float,
+    hard_overrides: Mapping[str, float] | None = None,
+) -> dict[str, float]:
+    """Sample the admitted 15-DoF relative names; do not draw a 20-D absolute payload."""
+    if translation_mm < 0.0 or rotation_mrad < 0.0:
+        raise ValueError("relative sampling bounds must be non-negative")
+    names = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    values: dict[str, float] = {}
+    for name in names:
+        _station, component = parse_parameter_name(name)
+        if component in {"dx_mm", "dy_mm"}:
+            values[name] = float(rng.uniform(-translation_mm, translation_mm))
+        else:
+            values[name] = float(rng.uniform(-rotation_mrad, rotation_mrad))
+    if hard_overrides:
+        unknown = set(hard_overrides) - set(names)
+        if unknown:
+            raise ValueError("hard relative overrides have unknown names: " + ", ".join(sorted(unknown)))
+        for name, value in hard_overrides.items():
+            if not math.isfinite(float(value)):
+                raise ValueError(f"hard relative override '{name}' must be finite")
+            values[str(name)] = float(value)
+    return values
+
+
+def draw_common_left_se3(
+    rng: np.random.Generator,
+    *,
+    translation_mm: float,
+    rotation_mrad: float,
+) -> tuple[float, float, float, float, float, float]:
+    """Draw a finite common left SE(3) element in payload units (mm, rad)."""
+    if translation_mm < 0.0 or rotation_mrad < 0.0:
+        raise ValueError("common-mode sampling bounds must be non-negative")
+    for _ in range(32):
+        common = (
+            float(rng.uniform(-translation_mm, translation_mm)),
+            float(rng.uniform(-translation_mm, translation_mm)),
+            0.0,
+            float(rng.uniform(-rotation_mrad, rotation_mrad)) / 1.0e3,
+            float(rng.uniform(-rotation_mrad, rotation_mrad)) / 1.0e3,
+            float(rng.uniform(-rotation_mrad, rotation_mrad)) / 1.0e3,
+        )
+        if max(abs(value) for value in common) > 1.0e-9:
+            return common
+    raise RuntimeError("failed to draw a non-identity common left SE(3) element")
+
+
+def relative_family_payloads(
+    relative_native: Mapping[str, float],
+    common_left_se3: Sequence[float],
+) -> tuple[dict[str, list[float]], dict[str, list[float]]]:
+    """Return the S0-gauge relative payload and its left-SE(3) gauge control."""
+    relative = s0_gauge_transforms_from_relative_native(relative_native)
+    control = left_multiply_all(relative, common_left_se3)
+    if not relatives_agree(relative, control):
+        raise RuntimeError("left SE(3) common mode failed to preserve ΔT_ij")
+    if np.allclose(
+        [control[str(station)] for station in STATION_IDS],
+        [relative[str(station)] for station in STATION_IDS],
+        rtol=0.0,
+        atol=_SE3_ATOL,
+    ):
+        raise ValueError("gauge-control payload must differ from the S0-gauge chart")
+    return relative, control
 
 
 def station_transforms_from_native_values(

@@ -147,6 +147,18 @@ retain every complete truth chain (473/473).  15-DoF relative WLS was not
 opened.  The failure class is association domain shift; four-station-aware
 GPU retraining may now be planned, without retuning these held-outs.
 
+Workbook 53 starts that matched retraining pilot.  It does **not** redesign
+the Transformer.  Relative misalignments are sampled in the admitted 15-DoF
+S0 chart, then left-multiplied by a common SE(3) gauge control.  Training
+reuses the two completed identifiability-pilot xAODs; validation uses two
+expanded-contract sources that never entered that pilot
+(`mc24_100047_00050_00099`, `mc24_100048_00050_00099`).  Architecture,
+`residual_v1` features, unit-capacity packing, and the 30-epoch budget stay
+with historical V2.  Threshold / unmatched-penalty / calibration selection
+on the workbook-52 held-out overlays is forbidden.  15-DoF unknown-
+association WLS stays closed until the source-disjoint association gate
+passes.
+
 ## Commands
 
 ```bash
@@ -210,4 +222,12 @@ python scripts/run_four_station_route_selected_relative_closure.py \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/unknown_association_relative.json \
   --operating-point configs/physical_refit_four_station_unknown_association.yaml \
   --split train
+```
+
+Matched association retraining (workbook 53).  Do not open 15-DoF WLS from
+this path until the validation association gate passes:
+
+```bash
+bash scripts/run_four_station_association_retraining.sh prepare
+bash scripts/run_four_station_association_retraining.sh submit
 ```

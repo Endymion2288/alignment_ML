@@ -1,0 +1,25 @@
+# Minimal source-disjoint four-station association-retraining contract.
+# Train reuses the two completed identifiability-pilot xAODs.  Validation
+# takes two expanded-contract sources that never entered that pilot.
+# Sealed test is absent.  This file does not inherit IFT-only artifacts.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  relative_curriculum: 15d_gauge_then_left_se3
+  no_station_is_assumed_correct: true
+
+  sources:
+    - id: mc24_100043_00200_00299
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100044_00300_00399
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100047_00050_00099
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - id: mc24_100048_00050_00099
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
