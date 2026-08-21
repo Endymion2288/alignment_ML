@@ -223,6 +223,27 @@ def _pooled_bank(banks: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return pooled
 
 
+def _subset_bank(bank: Mapping[str, Any], names: Sequence[str]) -> dict[str, Any]:
+    """Keep a column subset of an already-loaded physical FD bank."""
+    requested = tuple(str(name) for name in names)
+    available = tuple(str(name) for name in bank["names"])
+    unknown = [name for name in requested if name not in available]
+    if unknown or len(set(requested)) != len(requested):
+        raise ValueError(f"unknown or duplicated parameter selection: {sorted(set(unknown))}")
+    index = [available.index(name) for name in requested]
+    subset = dict(bank)
+    subset["names"] = requested
+    subset["specs"] = tuple(bank["specs"][position] for position in index)
+    subset["scales"] = np.asarray(bank["scales"], dtype=np.float64)[index]
+    subset["anchor_values"] = np.asarray(bank["anchor_values"], dtype=np.float64)[index]
+    subset["reference_values"] = np.asarray(bank["reference_values"], dtype=np.float64)[index]
+    subset["positive_values"] = np.asarray(bank["positive_values"], dtype=np.float64)[index]
+    subset["negative_values"] = np.asarray(bank["negative_values"], dtype=np.float64)[index]
+    subset["positive_residual"] = np.asarray(bank["positive_residual"], dtype=np.float64)[index]
+    subset["negative_residual"] = np.asarray(bank["negative_residual"], dtype=np.float64)[index]
+    return subset
+
+
 def _weighted_column_norms(fit) -> np.ndarray:
     """sqrt(J_p^T W J_p) per parameter: the diagonal of the native normal matrix."""
     diagonal = np.diag(fit.normal_matrix_native)

@@ -75,6 +75,31 @@ V2 在四站同时错位下仍然稳定，则继续使用；只有「truth 边�
 score/route 系统性退化」时才启动四站感知重训。train/validation 按原始
 xAOD 隔离。密封 test 保持关闭。若训练模型，只允许 GPU。
 
+## 第一阶段结果 — 已准入的相对子空间
+
+两个 train source（各 50 事件，μ−/μ+）完成 51 点物理 FD bank。Condor
+cluster 1000360：每源 51/51，零 `failure.json`，content audit 齐全。
+
+无约束 24 维数值满秩但不可用（scaled condition ~1.6×10⁹）。survey `dz`
+数据 σ 约 43–49 mm。去掉 `dz` 后的 20 维自由图 condition ~8.5×10⁵，仍藏
+着五个整体 common mode（最后奇异值 ~6–12，相对 `rx`/`ry` ~10⁶；站间
+`dx`–`dx` 相关 0.96–0.98）。**24 维与 20 维都不准入为 Newton 坐标。**
+
+参考站 15 维图（求解时丢掉一站的五个径迹约束坐标）满秩，scaled
+condition ~2×10⁴。pooled native σ 对 `dx,dy,rx,ry` 约 0.2 mm / 0.15 mrad，
+`rz` 约 1.2 mrad。再加相对 `dz` 后 condition 回到 ~1.5×10⁸。`dz` 保持
+5 mm survey prior。若 15 维相对 closure 失败，首先丢掉 `rz`。
+
+在单位变换处线性化的 Jacobian 上删列是求解期坐标，并不表示该站物理
+正确，也不等于有限转动后的 `T_i' = T_ref^{-1} T_i` 再线性化。几何只通过
+`ΔT_ij = T_i^{-1} T_j` 比较。左乘 SE(3) common mode 保持该表；分量平均
+相减不保持。
+
+下一驱动是对现有 held-out 跑
+`scripts/run_four_station_relative_closure.py`，capture 已预注册在
+`configs/physical_refit_four_station_relative_closure.yaml`。除非 truth
+边仍在而冻结 score/route 退化，否则不重训 V2。
+
 ## 命令
 
 ```bash
@@ -96,5 +121,22 @@ python scripts/prepare_four_station_identifiability_pilot.py \
 python scripts/audit_four_station_identifiability.py \
   --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/identifiability_audit.json \
+  --split train
+```
+
+准入相对子空间（只读 train）。capture 预注册之后，再在同一 bank 上做
+truth-selected 15 维 closure：
+
+```bash
+python scripts/admit_four_station_relative_subspace.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/admitted_subspace.json \
+  --split train
+
+python scripts/run_four_station_relative_closure.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --observed-point iteration_00_closure_relative \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/relative_closure_relative.json \
+  --operating-point configs/physical_refit_four_station_relative_closure.yaml \
   --split train
 ```

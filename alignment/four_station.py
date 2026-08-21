@@ -497,3 +497,136 @@ def formulation_contract(
             "A chart that writes a different detector-element transform is a different physical constraint.",
         ],
     }
+
+
+REPORTING_SIX_LABELS: tuple[str, ...] = (
+    "dx_mm",
+    "dy_mm",
+    "dz_mm",
+    "rx_mrad",
+    "ry_mrad",
+    "rz_mrad",
+)
+N_RELATIVE_FREE_PARAMETERS = len(FREE_COMPONENTS) * (len(STATION_IDS) - 1)
+
+
+def relative_free_parameter_names(
+    *,
+    gauge: str,
+    reference_station: int | None = None,
+) -> tuple[str, ...]:
+    """Return the solve-time free names for a relative four-station chart.
+
+    ``reference_station`` drops that station's five track-constrained
+    coordinates (15 DoF).  ``common_mode_constraint`` keeps all 20 free
+    names; the left SE(3) common mode is a payload rewrite after the fit,
+    not a silently dropped column.  ``unconstrained_full`` is the FD chart
+    and is not a column-reduced solve.
+    """
+    if gauge == GAUGE_REFERENCE_STATION:
+        reference = require_station_id(reference_station)
+        return tuple(
+            parameter_name(station, component)
+            for station in STATION_IDS
+            if station != reference
+            for component in FREE_COMPONENTS
+        )
+    if gauge == GAUGE_COMMON_MODE:
+        if reference_station is not None:
+            raise ValueError("common_mode_constraint forbids a privileged reference station")
+        return free_parameter_names()
+    raise ValueError(f"gauge '{gauge}' is not a column-reduced four-station solve chart")
+
+
+def station_transforms_from_native_values(
+    values: Mapping[str, float],
+    *,
+    base: Mapping[int | str, Sequence[float]] | None = None,
+) -> dict[str, list[float]]:
+    """Write ``s{station}_{component}`` native values into a four-station payload."""
+    from alignment.physical_jacobian import station_transforms_with_parameter_values
+
+    specs = []
+    for name in values:
+        station, component = parse_parameter_name(name)
+        specs.append(
+            {
+                "name": name,
+                "scope": "station",
+                "station_id": station,
+                "component": component,
+            }
+        )
+    return station_transforms_with_parameter_values(
+        specs,
+        identity_station_transforms() if base is None else base,
+        dict(values),
+    )
+
+
+def six_vector_reporting_units(values: Sequence[float]) -> list[float]:
+    packed = np.asarray(values, dtype=np.float64)
+    if packed.shape != (6,) or not np.isfinite(packed).all():
+        raise ValueError("six-vector must be a finite length-6 payload")
+    return [
+        float(packed[0]),
+        float(packed[1]),
+        float(packed[2]),
+        float(packed[3] * 1.0e3),
+        float(packed[4] * 1.0e3),
+        float(packed[5] * 1.0e3),
+    ]
+
+
+def relative_table_reporting_units(
+    transforms: Mapping[int | str, Sequence[float]],
+) -> dict[str, list[float]]:
+    return {
+        key: six_vector_reporting_units(values)
+        for key, values in relative_alignment_table(transforms).items()
+    }
+
+
+def relative_table_errors(
+    injected: Mapping[int | str, Sequence[float]],
+    recovered: Mapping[int | str, Sequence[float]],
+) -> dict[str, dict[str, float]]:
+    """Signed ``ΔT_ij`` errors in reporting units (mm, mrad)."""
+    left = relative_table_reporting_units(injected)
+    right = relative_table_reporting_units(recovered)
+    errors: dict[str, dict[str, float]] = {}
+    for key, injected_values in left.items():
+        recovered_values = right[key]
+        errors[key] = {
+            label: float(recovered_values[index] - injected_values[index])
+            for index, label in enumerate(REPORTING_SIX_LABELS)
+        }
+    return errors
+
+
+def capture_relative_tables(
+    injected: Mapping[int | str, Sequence[float]],
+    recovered: Mapping[int | str, Sequence[float]],
+    tolerances: Mapping[str, float],
+) -> dict[str, object]:
+    """Compare gauge-invariant relatives against a pre-registered tolerance."""
+    missing = [label for label in REPORTING_SIX_LABELS if label not in tolerances]
+    if missing:
+        raise ValueError(f"capture tolerances lack {missing}")
+    errors = relative_table_errors(injected, recovered)
+    pair_rows = {}
+    success = True
+    for pair, pair_errors in errors.items():
+        captured = {
+            label: bool(abs(pair_errors[label]) <= float(tolerances[label]))
+            for label in REPORTING_SIX_LABELS
+        }
+        pair_rows[pair] = {"signed_error": pair_errors, "captured": captured}
+        success = success and all(captured.values())
+    return {
+        "success": bool(success),
+        "tolerances": {label: float(tolerances[label]) for label in REPORTING_SIX_LABELS},
+        "pairs": pair_rows,
+        "injected_delta_t_ij": relative_table_reporting_units(injected),
+        "recovered_delta_t_ij": relative_table_reporting_units(recovered),
+    }

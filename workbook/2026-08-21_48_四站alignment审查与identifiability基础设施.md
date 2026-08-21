@@ -131,7 +131,5 @@ completion。损坏的转换 ROOT 先核对 Athena `enhanced_tracklets.root`。
 
 ## 下一步
 
-1. 提交上述 2 源 × 51 点物理生产（阶段 4）
-2. `audit_four_station_identifiability.py` 出 rank / SVD / 站对响应 /
-   gauge 不变量
-3. 只根据证据决定准入的相对子空间，再写 physical closure 计划（阶段 5）
+阶段 4 生产与阶段 5 准入见
+`workbook/2026-08-21_49_四站identifiability准入与相对子空间.md`。

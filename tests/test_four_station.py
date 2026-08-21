@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -12,11 +13,13 @@ from alignment.four_station import (
     GAUGE_REFERENCE_STATION,
     GAUGE_UNCONSTRAINED_FULL,
     IDENTITY_SIX,
+    N_RELATIVE_FREE_PARAMETERS,
     STATION_IDS,
     add_common_six_vector,
     apply_additive_common_mode_constraint,
     apply_left_common_mode_constraint,
     apply_reference_station_gauge,
+    capture_relative_tables,
     classify_scaled_singular_vector,
     compose_six_vectors,
     default_parameter_specs,
@@ -30,8 +33,10 @@ from alignment.four_station import (
     parameter_name,
     parse_parameter_name,
     relative_alignment_table,
+    relative_free_parameter_names,
     relatives_agree,
     six_vector_to_matrix,
+    station_transforms_from_native_values,
     survey_parameter_names,
 )
 from alignment.physical_jacobian import station_transforms_with_parameter_values
@@ -386,3 +391,96 @@ def test_singular_vector_labels_common_and_long_baseline_modes():
     long_ry[names.index("s3_ry_mrad")] = -0.7
     labels = classify_scaled_singular_vector(names, long_ry)
     assert "long_baseline_ry_mrad" in labels["labels"]
+
+
+def test_relative_free_names_are_fifteen_and_do_not_privilege_s0():
+    s0 = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    s3 = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=3)
+    assert len(s0) == N_RELATIVE_FREE_PARAMETERS == 15
+    assert len(s3) == 15
+    assert all(not name.startswith("s0_") for name in s0)
+    assert all(not name.startswith("s3_") for name in s3)
+    assert "s0_dx_mm" in s3
+    assert "s3_ry_mrad" in s0
+    assert "s0_dz_mm" not in s0
+    common = relative_free_parameter_names(gauge=GAUGE_COMMON_MODE)
+    assert common == free_parameter_names()
+    with pytest.raises(ValueError, match="not a column-reduced"):
+        relative_free_parameter_names(gauge=GAUGE_UNCONSTRAINED_FULL)
+
+
+def test_relative_delta_t_capture_is_gauge_invariant():
+    injected = {
+        0: (0.25, 0.0, 0.0, 0.0, 0.0, 0.0),
+        1: (0.55, 0.0, 0.0, 0.0, 0.0, 0.0),
+        2: (0.25, -0.20, 0.0, 0.0, 0.0, 0.0),
+        3: (0.25, 0.0, 0.0, 0.0, 0.005, 0.0),
+    }
+    recovered = {
+        "s1_dx_mm": 0.30,
+        "s2_dy_mm": -0.20,
+        "s3_ry_mrad": 5.0,
+    }
+    payload = station_transforms_from_native_values(recovered)
+    tolerances = {
+        "dx_mm": 0.50,
+        "dy_mm": 0.45,
+        "dz_mm": 1.00,
+        "rx_mrad": 0.50,
+        "ry_mrad": 0.50,
+        "rz_mrad": 4.0,
+    }
+    assert capture_relative_tables(injected, payload, tolerances)["success"] is True
+    assert capture_relative_tables(
+        injected, apply_reference_station_gauge(injected, reference_station=3), tolerances
+    )["success"] is True
+    wrong = dict(payload)
+    wrong["3"] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert capture_relative_tables(injected, wrong, tolerances)["success"] is False
+
+
+def test_subset_bank_keeps_aligned_columns():
+    from scripts.audit_6dof_identifiability import _subset_bank
+
+    bank = {
+        "names": ("s0_dx_mm", "s1_dx_mm", "s2_dy_mm"),
+        "specs": (
+            {"name": "s0_dx_mm"},
+            {"name": "s1_dx_mm"},
+            {"name": "s2_dy_mm"},
+        ),
+        "scales": np.asarray([5.0, 5.0, 5.0]),
+        "anchor_values": np.asarray([0.0, 0.0, 0.0]),
+        "reference_values": np.asarray([0.1, 0.2, -0.3]),
+        "positive_values": np.asarray([0.5, 0.5, 0.5]),
+        "negative_values": np.asarray([-0.5, -0.5, -0.5]),
+        "positive_residual": np.zeros((3, 2, 4)),
+        "negative_residual": np.zeros((3, 2, 4)),
+        "anchor_residual": np.zeros((2, 4)),
+    }
+    bank["positive_residual"][1] = 1.0
+    subset = _subset_bank(bank, ("s1_dx_mm", "s2_dy_mm"))
+    assert subset["names"] == ("s1_dx_mm", "s2_dy_mm")
+    assert subset["reference_values"].tolist() == [0.2, -0.3]
+    assert subset["positive_residual"].shape == (2, 2, 4)
+    assert float(subset["positive_residual"][0, 0, 0]) == 1.0
+    with pytest.raises(ValueError, match="unknown or duplicated"):
+        _subset_bank(bank, ("s1_dx_mm", "s1_dx_mm"))
+
+
+def test_relative_closure_operating_point_rejects_unconstrained_20d():
+    from scripts.run_four_station_relative_closure import _load_operating_point
+
+    payload = _load_operating_point(
+        Path("configs/physical_refit_four_station_relative_closure.yaml")
+    )
+    assert payload["unconstrained_20d_admitted"] is False
+    assert payload["n_admitted_free_parameters"] == 15
+    assert set(payload["relative_delta_t_capture_tolerance"]) == {
+        "dx_mm",
+        "dy_mm",
+        "dz_mm",
+        "rx_mrad",
+        "ry_mrad",
+        "rz_mrad",
+    }

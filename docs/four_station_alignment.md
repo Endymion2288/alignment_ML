@@ -86,6 +86,38 @@ keep it.  Retrain only if truth edges still exist but frozen scores/routes
 degrade systematically.  Train/validation stay source-file disjoint.  Sealed
 test stays closed.  GPU-only if a model is ever trained.
 
+## Phase 1 result — admitted relative subspace
+
+Two train sources (50 events each, μ−/μ+) produced a complete 51-point
+physical FD bank.  Condor cluster 1000360: 51/51 points per source, zero
+`failure.json`, all content audits present.
+
+The unconstrained 24-D chart is numerically full rank and unusable
+(scaled condition ~1.6×10⁹).  Survey `dz` data σ is ~43–49 mm.  Dropping
+`dz` leaves a 20-D free chart whose condition (~8.5×10⁵) still hides five
+global common modes (last singular values ~6–12 versus relative `rx`/`ry`
+~10⁶; station `dx`–`dx` correlation 0.96–0.98).  **Neither 24-D nor 20-D
+is admitted as a Newton chart.**
+
+A reference-station 15-DoF chart (five track-constrained coordinates of
+one station dropped at solve time) is full rank with scaled condition
+~2×10⁴.  Pooled native σ is ~0.2 mm / 0.15 mrad for `dx,dy,rx,ry` and
+~1.2 mrad for `rz`.  Adding relative `dz` returns condition ~1.5×10⁸.
+`dz` stays a 5 mm survey prior.  `rz` is the first coordinate to drop if
+15-D relative closure fails.
+
+Column-dropping the Jacobian linearized at the identity is a solve-time
+gauge, not a claim that the reference station is physically correct, and
+it is not the same map as a finite-rotation `T_i' = T_ref^{-1} T_i`
+re-linearization.  Compare recovered geometry only through
+`ΔT_ij = T_i^{-1} T_j`.  Left SE(3) common mode preserves that table;
+componentwise mean subtraction does not.
+
+The next driver is `scripts/run_four_station_relative_closure.py` on the
+existing held-out points, with capture pre-registered in
+`configs/physical_refit_four_station_relative_closure.yaml`.  Do not
+retrain V2 unless truth edges remain while frozen scores/routes degrade.
+
 ## Commands
 
 ```bash
@@ -108,5 +140,22 @@ completion before any scientific claim.  Then:
 python scripts/audit_four_station_identifiability.py \
   --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/identifiability_audit.json \
+  --split train
+```
+
+Admit the relative subspace (train only) and then, after capture is
+pre-registered, run truth-selected 15-DoF closure on the existing bank:
+
+```bash
+python scripts/admit_four_station_relative_subspace.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/admitted_subspace.json \
+  --split train
+
+python scripts/run_four_station_relative_closure.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --observed-point iteration_00_closure_relative \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/relative_closure_relative.json \
+  --operating-point configs/physical_refit_four_station_relative_closure.yaml \
   --split train
 ```

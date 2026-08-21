@@ -1,0 +1,36 @@
+# Pre-registered train-only operating point for four-station relative closure.
+# Frozen from the 2-source unconstrained_full FD identifiability map BEFORE
+# evaluating a dedicated truth-selected closure.  Validation is not opened.
+# Primary capture is gauge-invariant ΔT_ij, not native payload coordinates.
+alignment_formulation: four_station_v1
+admitted_subspace: reference_station_15dof
+n_admitted_free_parameters: 15
+survey_dz: prior_only
+survey_dz_prior_sigma_mm: 5.0
+unconstrained_20d_admitted: false
+rz_flag: weakest_of_15_drop_first_if_relative_closure_fails
+gauges_to_compare:
+  - {gauge: reference_station, reference_station: 0}
+  - {gauge: reference_station, reference_station: 3}
+primary_observable: DeltaT_ij = T_i^{-1} T_j
+association: truth_fixed_for_identifiability
+q_over_p_mode: 0
+split: train
+forbidden_splits: [test]
+coordinate_surrogate: false
+max_scaled_condition: 1.0e6
+relative_delta_t_capture_tolerance:
+  dx_mm: 0.50
+  dy_mm: 0.45
+  dz_mm: 1.00
+  rx_mrad: 0.50
+  ry_mrad: 0.50
+  rz_mrad: 4.0
+notes:
+  - Tolerances are ~3σ of the worst 15-DoF S0-gauge native sigma on the
+    2-source FD smoke (dx 0.29 mm, dy 0.15 mm, rx/ry 0.16 mrad, rz 1.3 mrad).
+  - Native-parameter capture against an ungauged payload is not a criterion
+    when the held-out point contains a global common mode.
+  - S0 and S3 charts must agree on ΔT_ij; left SE(3) common-mode rewrite of
+    the recovered payload must preserve that table.
+  - This file must not be edited after a closure evaluation has been opened.
