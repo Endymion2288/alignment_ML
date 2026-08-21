@@ -128,7 +128,10 @@ def summarize(
     association_dir: Path,
     synthetic_manifest: Path,
     payload_id: str,
+    split: str = "train",
 ) -> dict[str, object]:
+    if split == "test":
+        raise ValueError("refusing to open the sealed test split")
     summary = _read_json(association_dir / "association_summary.json")
     if summary.get("test_opened") is not False or summary.get("architecture_or_threshold_tuning") is not False:
         raise ValueError("association output is not frozen from test/tuning")
@@ -137,7 +140,7 @@ def summarize(
     _, samples, manifest = load_synthetic_curriculum_manifest(
         synthetic_manifest,
         require_all_splits=False,
-        allowed_splits=("train",),
+        allowed_splits=(split,),
     )
     if manifest.get("q_over_p_mode") not in (0, None) and int(manifest.get("q_over_p_mode", 0)) != 0:
         raise ValueError("four-station association diagnostics require mode 0")
@@ -295,6 +298,7 @@ def main() -> None:
         association_dir=Path(args.association_dir).expanduser().resolve(),
         synthetic_manifest=Path(args.synthetic_manifest).expanduser().resolve(),
         payload_id=str(args.payload_id),
+        split=str(args.split),
     )
     output = Path(args.output_json).expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -159,6 +159,16 @@ on the workbook-52 held-out overlays is forbidden.  15-DoF unknown-
 association WLS stays closed until the source-disjoint association gate
 passes.
 
+Workbook 54 ran that pilot.  Condor cluster 1000434 finished 28/28 physical
+points.  On the new source-disjoint validation overlay, frozen historical V2
+still fails vs-nominal (hard `s3_ry` efficiency drop 0.13; gauge twins of the
+same `ΔT_ij` disagree).  Matched retraining restores 2→3 / S3 (hard 2→3
+0.51 → 0.86) and passes the gauge-invariance audit.  The pre-registered
+complete-track efficiency drop ≤0.10 still fails on one payload
+(`draw_00_plus_common`, drop 0.104).  15-DoF unknown-association WLS stays
+closed.  The 2→3 collapse was mainly historical domain shift, not a missing
+relative-geometry inductive bias; the checkpoint is not frozen for WLS.
+
 ## Commands
 
 ```bash

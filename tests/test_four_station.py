@@ -613,3 +613,67 @@ def test_relative_sampling_refuses_to_leave_the_local_linearization_region():
             iteration=0,
             current_values=zero_parameter_values(specs),
         )
+
+
+def test_matched_association_evaluator_groups_gauge_twins_and_refuses_workbook_52_payloads():
+    from scripts.evaluate_four_station_matched_association import (
+        FORBIDDEN_PAYLOADS,
+        _families_from_plan,
+        _gates,
+        _gauge_audit,
+    )
+
+    families = _families_from_plan(
+        {
+            "points": [
+                {"name": "iteration_00_reference", "relative_family": "nominal", "gauge_role": "identity"},
+                {"name": "iteration_00_hard_s3_ry", "relative_family": "hard_s3_ry", "gauge_role": "s0_sampling_chart"},
+                {
+                    "name": "iteration_00_hard_s3_ry_plus_common",
+                    "relative_family": "hard_s3_ry",
+                    "gauge_role": "left_se3_control",
+                },
+            ]
+        }
+    )
+    assert families == {"hard_s3_ry": ("iteration_00_hard_s3_ry", "iteration_00_hard_s3_ry_plus_common")}
+    mapped = _gates(
+        {
+            "raw_complete_truth_chain_recall_min": 0.9,
+            "adjacent_truth_edge_recall_min": 0.9,
+            "complete_track_efficiency_drop_vs_nominal_max": 0.1,
+            "complete_track_purity_drop_vs_nominal_max": 0.05,
+            "track_fake_rate_increase_vs_nominal_max": 0.05,
+        }
+    )
+    assert mapped["vs_nominal_efficiency_drop_max"] == 0.1
+    assert "iteration_00_closure_relative" in FORBIDDEN_PAYLOADS
+    reports = {
+        "iteration_00_hard_s3_ry": {
+            "selected_route": {
+                "complete_track_efficiency": 0.80,
+                "complete_track_purity": 0.96,
+                "track_fake_rate": 0.03,
+            },
+            "by_adjacent_station_pair": {"2->3": {"association": {"association_efficiency": 0.70}}},
+        },
+        "iteration_00_hard_s3_ry_plus_common": {
+            "selected_route": {
+                "complete_track_efficiency": 0.81,
+                "complete_track_purity": 0.95,
+                "track_fake_rate": 0.04,
+            },
+            "by_adjacent_station_pair": {"2->3": {"association": {"association_efficiency": 0.72}}},
+        },
+    }
+    audit = _gauge_audit(
+        reports,
+        families,
+        {
+            "complete_track_efficiency_twin_abs_diff_max": 0.05,
+            "complete_track_purity_twin_abs_diff_max": 0.05,
+            "track_fake_rate_twin_abs_diff_max": 0.05,
+            "adjacent_23_efficiency_twin_abs_diff_max": 0.08,
+        },
+    )
+    assert audit["ok"] is True

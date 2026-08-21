@@ -132,6 +132,15 @@ held-out 调阈。
 calibration。在 source-disjoint association 闸通过之前，15 维未知关联
 WLS 保持关闭。
 
+条目 54 跑完该 pilot。Condor cluster 1000434 完成 28/28 物理点。新的
+source-disjoint validation overlay 上，冻结历史 V2 仍未过 vs-nominal
+（hard `s3_ry` efficiency 下降 0.13；同一 `ΔT_ij` 的 gauge twin 不一致）。
+Matched retraining 恢复了 2→3 / S3（hard 2→3 0.51 → 0.86），并通过
+gauge-invariance audit。预注册 complete-track efficiency 下降 ≤0.10 仍在
+一个 payload 上失败（`draw_00_plus_common`，下降 0.104）。15 维未知关联
+WLS 保持关闭。2→3 崩塌主要是历史分布失配，不是完全缺少相对几何归纳偏置；
+该 checkpoint 不冻结进 WLS。
+
 ## 命令
 
 ```bash

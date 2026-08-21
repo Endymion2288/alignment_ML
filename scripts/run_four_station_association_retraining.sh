@@ -69,9 +69,30 @@ overlay)
   ;;
 
 control-frozen-v2)
-  echo "Run frozen historical V2 on the new overlay with the frozen OP." >&2
-  echo "Do not pass workbook-52 overlay paths.  Split must be train or validation." >&2
-  exit 2
+  MAN="$OUT/overlay_synthetic_v1/synthetic_corpus_manifest.json"
+  FROZEN="$FROZEN_V2"
+  for payload in \
+    iteration_00_reference \
+    iteration_00_hard_s3_ry \
+    iteration_00_hard_s3_ry_plus_common \
+    iteration_00_draw_00 \
+    iteration_00_draw_00_plus_common \
+    iteration_00_draw_01 \
+    iteration_00_draw_01_plus_common
+  do
+    python scripts/run_frozen_association_backbone.py --backbone v2 --q-over-p-mode 0 \
+      --split validation --device auto \
+      --synthetic-manifest "$MAN" \
+      --frozen-output "$FROZEN" \
+      --payload-id "$payload" \
+      --output-dir "$OUT/frozen_v2_control/$payload"
+    python scripts/summarize_four_station_frozen_association.py \
+      --association-dir "$OUT/frozen_v2_control/$payload" \
+      --synthetic-manifest "$MAN" \
+      --payload-id "$payload" \
+      --split validation \
+      --output-json "$OUT/frozen_v2_control/${payload}_diagnostics.json"
+  done
   ;;
 
 train-v2)
@@ -83,9 +104,26 @@ train-v2)
   ;;
 
 assess)
-  echo "Association gates live in configs/physical_four_station_association_retraining_gates.yaml." >&2
-  echo "Do not open 15-DoF unknown-association WLS until those gates pass." >&2
-  exit 2
+  MAN="$OUT/overlay_synthetic_v1/synthetic_corpus_manifest.json"
+  python scripts/evaluate_four_station_matched_association.py \
+    --gates configs/physical_four_station_association_retraining_gates.yaml \
+    --iteration-manifest "$OUT/iteration_manifest.json" \
+    --split validation \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_reference_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_hard_s3_ry_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_hard_s3_ry_plus_common_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_draw_00_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_draw_00_plus_common_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_draw_01_diagnostics.json" \
+    --frozen-diagnostic-json "$OUT/frozen_v2_control/iteration_00_draw_01_plus_common_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_reference_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_hard_s3_ry_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_hard_s3_ry_plus_common_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_draw_00_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_draw_00_plus_common_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_draw_01_diagnostics.json" \
+    --retrained-diagnostic-json "$OUT/retrained_v2_validation/iteration_00_draw_01_plus_common_diagnostics.json" \
+    --output-json "$OUT/association_gate_decision.json"
   ;;
 
 *)
