@@ -136,6 +136,17 @@ forbidden.  Association is scored on the identity physical ROOT files
 `configs/physical_refit_four_station_unknown_association.yaml`
 (workbook 51).  Residual reduction is DQ only.
 
+Frozen V2 unknown-association diagnostics on this bank (workbook 52) did
+**not** pass the pre-registered vs-nominal association gates.  The identity
+physical graph keeps truth chains and frozen scores, but overlay is the
+frozen operating-point domain.  On that overlay, raw candidate-chain recall
+is 1.0 and 1→2 / 2→3 selected edges are present, yet complete-track
+efficiency falls from 0.90 at nominal to 0.71 on both held-outs, concentrated
+on the 2→3 / S3 edge under the injected 5 mrad `ry`.  Score thresholds still
+retain every complete truth chain (473/473).  15-DoF relative WLS was not
+opened.  The failure class is association domain shift; four-station-aware
+GPU retraining may now be planned, without retuning these held-outs.
+
 ## Commands
 
 ```bash

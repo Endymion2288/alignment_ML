@@ -113,6 +113,15 @@ Association 直接打在 identity 物理 ROOT 上（无 overlay）。闸门预�
 `configs/physical_refit_four_station_unknown_association.yaml`（条目 51）。
 残差下降只作为 DQ。
 
+本 bank 上的冻结 V2 未知关联诊断（条目 52）**未过**预注册 vs-nominal
+association 闸。Identity 物理图仍保留 truth chain 与冻结 score，但冻结
+operating point 的域是 overlay。Overlay 上 raw chain recall 为 1.0，选中边
+含 1→2 / 2→3，但 complete-track efficiency 从 nominal 0.90 降到两个
+held-out 的 0.71，集中在注入 5 mrad `ry` 的 2→3 / S3。Score 阈值仍留住
+全部完整 truth chain（473/473）。未打开 15 维相对 WLS。失败层级是
+association domain shift；现在可以规划四站感知 GPU 重训，但禁止用这两个
+held-out 调阈。
+
 ## 命令
 
 ```bash

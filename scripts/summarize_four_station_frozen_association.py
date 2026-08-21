@@ -46,7 +46,7 @@ def _selected_edge_audit(path: Path) -> dict[str, object]:
         reader = csv.DictReader(handle)
         if reader.fieldnames is None:
             raise ValueError(f"selected-edge CSV has no header: {path}")
-        rows = [dict(row) for row in reader]
+        rows = [dict(row) for row in reader if row.get("source_station_id")]
     pair_counts: Counter[str] = Counter()
     station_counts: Counter[int] = Counter()
     physical_keys = []
@@ -139,11 +139,12 @@ def summarize(
         require_all_splits=False,
         allowed_splits=("train",),
     )
-    if manifest.get("identity_physical_bank") is not True:
-        raise ValueError("four-station association diagnostics require the identity physical bank")
+    if manifest.get("q_over_p_mode") not in (0, None) and int(manifest.get("q_over_p_mode", 0)) != 0:
+        raise ValueError("four-station association diagnostics require mode 0")
+    overlay = bool(manifest.get("synthetic_multitrack")) or manifest.get("identity_physical_bank") is not True
     payload_samples = [sample for sample in samples if sample.payload_id == payload_id]
     if not payload_samples:
-        raise ValueError(f"identity manifest has no payload '{payload_id}'")
+        raise ValueError(f"manifest has no payload '{payload_id}'")
     evaluation = summary.get("truth_labelled_mc_evaluation")
     if not isinstance(evaluation, Mapping):
         raise ValueError("association summary lacks truth-labelled MC evaluation")
@@ -174,7 +175,8 @@ def summarize(
         "route_solver": summary.get("route_solver"),
         "test_data_accessed": False,
         "architecture_or_threshold_tuning": False,
-        "overlay": False,
+        "overlay": bool(overlay),
+        "identity_physical_bank": manifest.get("identity_physical_bank") is True,
     }
 
 
@@ -248,11 +250,25 @@ def assess(reports: Mapping[str, Mapping[str, Any]], gates: Mapping[str, Any]) -
             "unique_physical_edges": selected["unique_physical_edges"],
         }
         assoc_ok = assoc_ok and four_station_edges
+        if int(selected["selected_field_edges"] or 0) < 1:
+            assoc_ok = False
+            payload_assoc_ok = False
+            rows[name]["association_vs_nominal_ok"] = False
+            rows[name]["empty_selected_routes"] = True
     failure_class = None
     if not raw_ok:
         failure_class = "candidate_or_propagation"
     elif not assoc_ok:
         failure_class = "association_domain_shift"
+    score_retained = {
+        name: {
+            "complete_truth_chains": report["selected_route"].get("complete_truth_chains"),
+            "score_retained_complete_truth_chains": report["selected_route"].get(
+                "score_retained_complete_truth_chains"
+            ),
+        }
+        for name, report in reports.items()
+    }
     return {
         "raw_candidate_graph_complete": raw_ok,
         "frozen_v2_association_stable_vs_nominal": assoc_ok,
@@ -260,6 +276,7 @@ def assess(reports: Mapping[str, Mapping[str, Any]], gates: Mapping[str, Any]) -
         "failure_class": failure_class,
         "payloads": rows,
         "gates": dict(gates),
+        "score_threshold_retention": score_retained,
         "retrain_transformer": bool(raw_ok and not assoc_ok),
     }
 
