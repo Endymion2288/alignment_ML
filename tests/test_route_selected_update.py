@@ -100,3 +100,41 @@ def test_field_edge_observations_keep_movable_source_and_align_by_edge_provenanc
     assert np.allclose(residuals[0][0], [1.0, -0.2, 0.003, -0.004])
     assert covariances[0].shape == (1, 4, 4)
     assert overlap["anchor_common_fraction"] == 1.0
+
+
+def test_four_station_movable_keeps_downstream_selected_edges(tmp_path):
+    path = tmp_path / "four_station_field.csv"
+    zero_one = _field_row(payload_id="anchor", residual_x=1.0, signature="r01")
+    one_two = _field_row(payload_id="anchor", residual_x=2.0, signature="r12")
+    one_two["source_station_id"] = "1"
+    one_two["target_station_id"] = "2"
+    two_three = _field_row(payload_id="anchor", residual_x=3.0, signature="r23")
+    two_three["source_station_id"] = "2"
+    two_three["target_station_id"] = "3"
+    _write(path, [zero_one, one_two, two_three])
+
+    ift_only = read_route_selected_field_edge_observations(path, movable_station_ids=(0,))
+    assert {obs.target_station_id for obs in ift_only.values()} == {1}
+    four = read_route_selected_field_edge_observations(path, movable_station_ids=(0, 1, 2, 3))
+    pairs = {(obs.source_station_id, obs.target_station_id) for obs in four.values()}
+    assert pairs == {(0, 1), (1, 2), (2, 3)}
+
+
+def test_physical_identity_origin_falls_back_to_run_event_tracklet():
+    from types import SimpleNamespace
+
+    from alignment.route_selected_update import _tracklet_origin
+
+    event = SimpleNamespace(
+        run_id=100043,
+        event_id=7,
+        tracklet_id=np.asarray([3, 8]),
+        origin_run_id=None,
+        origin_event_id=None,
+        origin_tracklet_id=None,
+    )
+    assert _tracklet_origin(event, 1) == (100043, 7, 8)
+    event.origin_run_id = np.asarray([9, 9])
+    event.origin_event_id = np.asarray([1, 2])
+    event.origin_tracklet_id = np.asarray([4, 5])
+    assert _tracklet_origin(event, 1) == (9, 2, 5)

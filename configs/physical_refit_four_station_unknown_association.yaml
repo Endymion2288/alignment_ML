@@ -1,0 +1,49 @@
+# Frozen unknown-association operating point for four-station relative closure.
+# Pre-registered on train-only identity physical payloads BEFORE opening
+# held-out association or route-selected ΔT_ij results.  Do not retune
+# thresholds, unmatched penalty, or capture after this file is committed.
+alignment_formulation: four_station_v1
+q_over_p_mode: 0
+overlay: identity_physical_bank
+observation_statistics: physical_edge_deduplicated
+admitted_subspace: reference_station_15dof
+unconstrained_20d_admitted: false
+survey_dz: prior_only
+frozen_v2:
+  root: /eos/home-x/xcheng/FASER/alignment_ML/outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+  checkpoint: route_aware_transformer_v2.pt
+  checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+  thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+  unmatched_penalty: -1.0
+  retune_forbidden: true
+payloads:
+  - iteration_00_reference
+  - iteration_00_closure_relative
+  - iteration_00_closure_relative_plus_common
+association_gates:
+  raw_complete_truth_chain_recall_min: 0.90
+  raw_adjacent_truth_edge_recall_min: 0.90
+  vs_nominal_efficiency_drop_max: 0.10
+  vs_nominal_purity_drop_max: 0.05
+  vs_nominal_fake_rate_increase_max: 0.05
+notes:
+  - Compare held-out association only against this bank's own nominal payload.
+  - Raw candidate-graph collapse is a propagation/candidate failure, not a V2 failure.
+  - Truth edges present plus V2 score/route collapse vs nominal is the only retrain trigger.
+  - Association-stable ΔT_ij failure is an alignment/linearization issue.
+relative_delta_t_capture_tolerance:
+  dx_mm: 0.50
+  dy_mm: 0.45
+  dz_mm: 1.00
+  rx_mrad: 0.50
+  ry_mrad: 0.50
+  rz_mrad: 4.0
+max_scaled_condition: 1.0e6
+gauges_to_compare:
+  - {gauge: reference_station, reference_station: 0}
+  - {gauge: reference_station, reference_station: 3}
+forbidden_splits: [test]
+coordinate_surrogate: false

@@ -103,8 +103,15 @@ condition ~2×10⁴。pooled native σ 对 `dx,dy,rx,ry` 约 0.2 mm / 0.15 mrad�
 本 identifiability bank 上的 truth-selected 15 维 closure 已按该预注册
 `ΔT_ij` 合同通过（两个 held-out、两种参考站图；见条目 50）。公共 dx
 不进入相对几何。S3 删列图在 5 mrad 有限转动上大约用掉一半 `rz` 容差；
-那是线性化/坐标图失配，不是 S0 物理正确。下一步仍是冻结 V2 的未知关联
-闭合，不重训。
+那是线性化/坐标图失配，不是 S0 物理正确。
+
+未知关联闭环仍用同一 bank、同一 `ΔT_ij` 合同：不重训 V2、不扩 Athena
+生产、不用两个 held-out 调阈。观测过滤必须保持
+`movable_station_ids = [0, 1, 2, 3]`；缩成 station 0 会静默丢掉 1→2 / 2→3。
+15 维删列只是求解期坐标，不是某一站物理真值。无约束 20 维仍不准入。
+Association 直接打在 identity 物理 ROOT 上（无 overlay）。闸门预注册在
+`configs/physical_refit_four_station_unknown_association.yaml`（条目 51）。
+残差下降只作为 DQ。
 
 ## 命令
 
@@ -144,5 +151,28 @@ python scripts/run_four_station_relative_closure.py \
   --observed-point iteration_00_closure_relative \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/relative_closure_relative.json \
   --operating-point configs/physical_refit_four_station_relative_closure.yaml \
+  --split train
+```
+
+未知关联（冻结 V2、identity 物理 bank、15 维相对 WLS）：
+
+```bash
+python scripts/prepare_four_station_identity_association_manifest.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/identity_association_manifest.json
+
+python scripts/run_frozen_association_backbone.py --backbone v2 --q-over-p-mode 0 \
+  --split train --device auto \
+  --synthetic-manifest outputs/mc24_four_station_identifiability_pilot_v1/identity_association_manifest.json \
+  --frozen-output /eos/home-x/xcheng/FASER/alignment_ML/outputs/mc24_v3_expanded_trainval_v2_bce_control_v1 \
+  --payload-id iteration_00_reference \
+  --output-dir outputs/mc24_four_station_identifiability_pilot_v1/frozen_v2/iteration_00_reference
+
+python scripts/run_four_station_route_selected_relative_closure.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --observed-point iteration_00_closure_relative \
+  --anchor-association-output outputs/mc24_four_station_identifiability_pilot_v1/frozen_v2/iteration_00_reference \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/unknown_association_relative.json \
+  --operating-point configs/physical_refit_four_station_unknown_association.yaml \
   --split train
 ```

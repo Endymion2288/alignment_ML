@@ -35,6 +35,7 @@ from alignment.four_station import (
     relative_alignment_table,
     relative_free_parameter_names,
     relatives_agree,
+    require_four_station_route_selected_contract,
     six_vector_to_matrix,
     station_transforms_from_native_values,
     survey_parameter_names,
@@ -484,3 +485,40 @@ def test_relative_closure_operating_point_rejects_unconstrained_20d():
         "ry_mrad",
         "rz_mrad",
     }
+
+
+def test_four_station_route_selected_contract_keeps_all_stations_and_15d_solve():
+    plan = {
+        "alignment_formulation": FORMULATION,
+        "q_over_p_mode": 0,
+        "movable_station_ids": [0, 1, 2, 3],
+        "reference_station_ids": [],
+    }
+    s0 = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    assert require_four_station_route_selected_contract(
+        plan, only_parameters=s0, observation_statistics="physical_edge_deduplicated"
+    ) == s0
+    shuffled = tuple(reversed(s0))
+    assert require_four_station_route_selected_contract(
+        plan, only_parameters=shuffled, observation_statistics="physical_edge_deduplicated"
+    ) == s0
+    with pytest.raises(ValueError, match="forbids unconstrained"):
+        require_four_station_route_selected_contract(
+            plan, only_parameters=None, observation_statistics="physical_edge_deduplicated"
+        )
+    with pytest.raises(ValueError, match="physical_edge_deduplicated"):
+        require_four_station_route_selected_contract(
+            plan, only_parameters=s0, observation_statistics="replica_weighted"
+        )
+    with pytest.raises(ValueError, match="silently discard"):
+        require_four_station_route_selected_contract(
+            {**plan, "movable_station_ids": [0]},
+            only_parameters=s0,
+            observation_statistics="physical_edge_deduplicated",
+        )
+    with pytest.raises(ValueError, match="15-DoF"):
+        require_four_station_route_selected_contract(
+            plan,
+            only_parameters=free_parameter_names(),
+            observation_statistics="physical_edge_deduplicated",
+        )

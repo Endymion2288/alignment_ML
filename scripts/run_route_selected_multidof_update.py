@@ -618,6 +618,19 @@ def main() -> None:
     movable = [int(value) for value in plan.get("movable_station_ids", ())]
     if not movable:
         raise ValueError("physical scan has no movable station")
+    if str(plan.get("alignment_formulation", "")) == "four_station_v1":
+        from alignment.four_station import require_four_station_route_selected_contract
+
+        names = list(
+            require_four_station_route_selected_contract(
+                plan,
+                only_parameters=args.only_parameters,
+                observation_statistics=str(args.observation_statistics),
+            )
+        )
+        specs = _select_parameter_specs(_specs(plan), names)
+        scales = np.asarray([float(spec["severity_scale"]) for spec in specs], dtype=np.float64)
+        movable = [0, 1, 2, 3]
     points = _points(plan)
     if args.target_scan_root is not None:
         target_plan = _read_json(Path(args.target_scan_root).expanduser().resolve() / "scan_plan.json")

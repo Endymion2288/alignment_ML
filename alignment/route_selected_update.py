@@ -80,6 +80,20 @@ def _integer(row: Mapping[str, str], field: str) -> int:
     return value
 
 
+def _tracklet_origin(event, row: int) -> tuple[int, int, int]:
+    """Return overlay origin when present, else the physical tracklet identity."""
+    origin_run = getattr(event, "origin_run_id", None)
+    origin_event = getattr(event, "origin_event_id", None)
+    origin_tracklet = getattr(event, "origin_tracklet_id", None)
+    if origin_run is not None and origin_event is not None and origin_tracklet is not None:
+        return (
+            int(origin_run[row]),
+            int(origin_event[row]),
+            int(origin_tracklet[row]),
+        )
+    return (int(event.run_id), int(event.event_id), int(event.tracklet_id[row]))
+
+
 def _covariance(row: Mapping[str, str]) -> np.ndarray:
     values = {label: _float(row, f"combined_cov_{label}") for label in _COVARIANCE_LABELS}
     matrix = np.asarray(
@@ -302,15 +316,8 @@ def read_anchor_selected_field_edge_observations(
     # embedding of every origin and pair endpoints in any shared event.
     origin_embeddings: dict[tuple[int, int, int], list[tuple[int, int]]] = {}
     for event_index, event in enumerate(events):
-        if event.origin_run_id is None or event.origin_event_id is None or event.origin_tracklet_id is None:
-            raise ValueError("payload synthetic tracklets lack origin provenance fields")
         for row in range(int(event.station_id.shape[0])):
-            origin = (
-                int(event.origin_run_id[row]),
-                int(event.origin_event_id[row]),
-                int(event.origin_tracklet_id[row]),
-            )
-            origin_embeddings.setdefault(origin, []).append((event_index, row))
+            origin_embeddings.setdefault(_tracklet_origin(event, row), []).append((event_index, row))
 
     event_pair_candidates: dict[tuple[int, int, int], dict[tuple[int, int], object]] = {}
 

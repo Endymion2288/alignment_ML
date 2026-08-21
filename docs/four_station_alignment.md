@@ -123,8 +123,18 @@ pre-registered `ΔT_ij` contract for both held-out points and both
 reference-station charts (workbook 50).  A common dx does not enter the
 relatives.  The S3 column-dropped chart spends about half of the `rz`
 tolerance on a 5 mrad finite rotation; that is linearization/chart
-mismatch, not a reason to treat S0 as physically true.  Unknown-association
-closure with frozen V2 is the next measurement, still without retraining.
+mismatch, not a reason to treat S0 as physically true.
+
+Unknown-association closure uses the same bank and the same `ΔT_ij`
+contract.  It does **not** retrain V2, expand Athena production, or retune
+thresholds on the two held-outs.  Observation filtering must keep
+`movable_station_ids = [0, 1, 2, 3]`; dropping to station 0 would silently
+discard 1→2 and 2→3 edges.  The 15-DoF reduction is solve-time only: it is
+not a physically true reference station.  Unconstrained 20-D remains
+forbidden.  Association is scored on the identity physical ROOT files
+(no overlay).  Pre-registered gates live in
+`configs/physical_refit_four_station_unknown_association.yaml`
+(workbook 51).  Residual reduction is DQ only.
 
 ## Commands
 
@@ -165,5 +175,28 @@ python scripts/run_four_station_relative_closure.py \
   --observed-point iteration_00_closure_relative \
   --output-json outputs/mc24_four_station_identifiability_pilot_v1/relative_closure_relative.json \
   --operating-point configs/physical_refit_four_station_relative_closure.yaml \
+  --split train
+```
+
+Unknown-association (frozen V2, identity physical bank, 15-DoF relative WLS):
+
+```bash
+python scripts/prepare_four_station_identity_association_manifest.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/identity_association_manifest.json
+
+python scripts/run_frozen_association_backbone.py --backbone v2 --q-over-p-mode 0 \
+  --split train --device auto \
+  --synthetic-manifest outputs/mc24_four_station_identifiability_pilot_v1/identity_association_manifest.json \
+  --frozen-output /eos/home-x/xcheng/FASER/alignment_ML/outputs/mc24_v3_expanded_trainval_v2_bce_control_v1 \
+  --payload-id iteration_00_reference \
+  --output-dir outputs/mc24_four_station_identifiability_pilot_v1/frozen_v2/iteration_00_reference
+
+python scripts/run_four_station_route_selected_relative_closure.py \
+  --iteration-manifest outputs/mc24_four_station_identifiability_pilot_v1/iteration_manifest.json \
+  --observed-point iteration_00_closure_relative \
+  --anchor-association-output outputs/mc24_four_station_identifiability_pilot_v1/frozen_v2/iteration_00_reference \
+  --output-json outputs/mc24_four_station_identifiability_pilot_v1/unknown_association_relative.json \
+  --operating-point configs/physical_refit_four_station_unknown_association.yaml \
   --split train
 ```

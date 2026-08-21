@@ -538,6 +538,48 @@ def relative_free_parameter_names(
     raise ValueError(f"gauge '{gauge}' is not a column-reduced four-station solve chart")
 
 
+def require_four_station_route_selected_contract(
+    plan: Mapping[str, object],
+    *,
+    only_parameters: Sequence[str] | None,
+    observation_statistics: str,
+) -> tuple[str, ...]:
+    """Lock unknown-association updates onto the admitted 15-DoF relative chart.
+
+    Observation filtering must keep all four stations movable.  The 15-DoF
+    reduction is a solve-time coordinate choice, not a reason to drop 1-2 or
+    2-3 physical edges or to treat one station as physically true.
+    """
+    if str(plan.get("alignment_formulation", "")) != FORMULATION:
+        raise ValueError("plan is not four_station_v1")
+    if int(plan.get("q_over_p_mode", -1)) != 0:
+        raise ValueError("four_station_v1 route-selected update requires mode 0")
+    movable = tuple(int(station) for station in plan.get("movable_station_ids", ()))
+    if movable != STATION_IDS:
+        raise ValueError(
+            "four_station_v1 observation filtering requires movable_station_ids [0, 1, 2, 3]; "
+            "an IFT-only movable set would silently discard 1-2 and 2-3 physical edges"
+        )
+    if str(observation_statistics) != "physical_edge_deduplicated":
+        raise ValueError("four_station_v1 requires physical_edge_deduplicated observation statistics")
+    if not only_parameters:
+        raise ValueError(
+            "four_station_v1 forbids unconstrained 20/24-D Newton; pass the admitted 15-DoF relative chart"
+        )
+    requested = tuple(str(name) for name in only_parameters)
+    if len(set(requested)) != len(requested):
+        raise ValueError("duplicated four-station only_parameters")
+    s0 = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=0)
+    s3 = relative_free_parameter_names(gauge=GAUGE_REFERENCE_STATION, reference_station=3)
+    if set(requested) == set(s0):
+        return s0
+    if set(requested) == set(s3):
+        return s3
+    raise ValueError(
+        "four_station_v1 only_parameters must be exactly the admitted 15-DoF S0 or S3 relative chart"
+    )
+
+
 def station_transforms_from_native_values(
     values: Mapping[str, float],
     *,
