@@ -100,6 +100,12 @@ condition ~2×10⁴。pooled native σ 对 `dx,dy,rx,ry` 约 0.2 mm / 0.15 mrad�
 `configs/physical_refit_four_station_relative_closure.yaml`。除非 truth
 边仍在而冻结 score/route 退化，否则不重训 V2。
 
+本 identifiability bank 上的 truth-selected 15 维 closure 已按该预注册
+`ΔT_ij` 合同通过（两个 held-out、两种参考站图；见条目 50）。公共 dx
+不进入相对几何。S3 删列图在 5 mrad 有限转动上大约用掉一半 `rz` 容差；
+那是线性化/坐标图失配，不是 S0 物理正确。下一步仍是冻结 V2 的未知关联
+闭合，不重训。
+
 ## 命令
 
 ```bash

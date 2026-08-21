@@ -118,6 +118,14 @@ existing held-out points, with capture pre-registered in
 `configs/physical_refit_four_station_relative_closure.yaml`.  Do not
 retrain V2 unless truth edges remain while frozen scores/routes degrade.
 
+Truth-selected 15-DoF closure on this identifiability bank passed that
+pre-registered `ΔT_ij` contract for both held-out points and both
+reference-station charts (workbook 50).  A common dx does not enter the
+relatives.  The S3 column-dropped chart spends about half of the `rz`
+tolerance on a 5 mrad finite rotation; that is linearization/chart
+mismatch, not a reason to treat S0 as physically true.  Unknown-association
+closure with frozen V2 is the next measurement, still without retraining.
+
 ## Commands
 
 ```bash
