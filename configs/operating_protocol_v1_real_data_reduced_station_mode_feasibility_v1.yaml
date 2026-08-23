@@ -1,0 +1,107 @@
+# Reduced Station calibration mode feasibility audit.
+# Analysis only.  Does not write geometry.  Does not start C_dx Mode.
+# Does not change frozen V2, route policy, thresholds, or unmatched penalty.
+# Track-driven calibration never floats dz; written/survey dz stays 0.
+
+schema_version: faser-operating-protocol-v1-real-data-reduced-station-mode-feasibility
+frozen: true
+do_not_enter_cdx_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_reregister_capture_or_A: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+cdx_mode_blocked: true
+schur_projection_production: false
+residual_reduction_is_not_alignment_success: true
+mc_truth_used: false
+q_over_p_mode: 0
+do_not_open_sealed_test: true
+do_not_emit_cdx_payload: true
+analysis_only: true
+track_driven_dz: false
+survey_dz_mm: 0.0
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+self_nulling_root: outputs/operating_protocol_v1_real_data_station_mode_self_nulling_fullscale_v1
+failure_audit_root: outputs/operating_protocol_v1_real_data_station_mode_failure_audit_v1
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+
+cdx_fixed_by: external_geometry
+observation_kind: anchor_selected_field_edge
+observation_statistics: physical_edge_deduplicated
+
+blind_roles:
+  "14973": calibration
+  "14974": calibration
+  "14975": holdout
+  "14976": holdout
+  "14977": held_out_dq
+verdict_uses_roles:
+  - calibration
+verdict_excludes_roles:
+  - holdout
+  - held_out_dq
+
+full_segment_sources:
+  "14973":
+    source_id: data24_r14973_00007_skip49500_n84988
+    nevents: 84988
+  "14974":
+    source_id: data24_r14974_00005_skip74400_n60886
+    nevents: 60886
+  "14975":
+    source_id: data24_r14975_00005_skip21600_n111781
+    nevents: 111781
+  "14976":
+    source_id: data24_r14976_00004_skip95500_n40562
+    nevents: 40562
+  "14977":
+    source_id: data24_r14977_00005_skip135900_n01687
+    nevents: 1687
+
+target_condition_number: 10000.0
+max_condition_rel_spread: 0.50
+max_a_subspace_projection: 0.15
+max_run_to_run_nsigma: 5.0
+max_transfer_chi2_ratio: 1.10
+cannot_rescue_dx_ry_by_more_events_or_looser_thresholds: true
+
+predeclared_modes:
+  three_dof_dy_rx_rz:
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_rz_mrad
+  four_dof_dx_fixed:
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+  four_dof_ry_fixed:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_rz_mrad
+  five_dof_no_dz:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc

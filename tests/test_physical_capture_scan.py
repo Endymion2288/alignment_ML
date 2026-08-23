@@ -109,3 +109,37 @@ def test_refit_resume_rejects_partial_root_header(tmp_path):
     partial.write_bytes(b"root\x00partial-output")
 
     assert _has_ntuple_tree(partial) is False
+
+
+def test_real_data_ntuple_command_disables_ckf_track_filter(tmp_path):
+    from scripts.run_physical_refit_capture_scan import _ntuple_maker_command
+
+    xaod = tmp_path / "in.root"
+    payload = tmp_path / "payload"
+    outfile = tmp_path / "out.root"
+    xaod.write_text("", encoding="utf-8")
+    payload.mkdir()
+    data_cmd = _ntuple_maker_command(
+        input_xaod=xaod,
+        payload_dir=payload,
+        outfile=outfile,
+        nevents=100,
+        skip_events=21600,
+        is_mc=False,
+    )
+    mc_cmd = _ntuple_maker_command(
+        input_xaod=xaod,
+        payload_dir=payload,
+        outfile=outfile,
+        nevents=100,
+        skip_events=0,
+        is_mc=True,
+    )
+    assert "--NoTrackFilt" in data_cmd
+    assert "--no_stable" in data_cmd
+    assert "--skip-events 21600" in data_cmd
+    assert "--isMC" not in data_cmd
+    assert "--isMC" in mc_cmd
+    assert "--NoTrackFilt" not in mc_cmd
+    assert "--no_stable" not in mc_cmd
+    assert "--skip-events" not in mc_cmd

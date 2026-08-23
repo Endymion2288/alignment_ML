@@ -217,6 +217,7 @@ def _load_anchor_selected_payload_bank(
     anchor_table: Path,
     covariance_calibration: Any = None,
     q_over_p_mode: int = 0,
+    require_mc_labels: bool = True,
 ):
     """Load one payload's candidate graph and re-measure the anchor's route set in it."""
     config_path = path / "resolved_config.json"
@@ -242,6 +243,7 @@ def _load_anchor_selected_payload_bank(
         movable_station_ids=movable,
         covariance_calibration=covariance_calibration,
         q_over_p_mode=q_over_p_mode,
+        require_mc_labels=require_mc_labels,
     )
     summary = {
         "payload_sample": str(path),
@@ -424,8 +426,21 @@ def main() -> None:
     )
     parser.add_argument("--anchor-point", required=True)
     parser.add_argument("--anchor-association-output", required=True)
-    parser.add_argument("--target-point", required=True)
-    parser.add_argument("--target-association-output", required=True)
+    parser.add_argument("--target-point", default=None)
+    parser.add_argument("--target-association-output", default=None)
+    parser.add_argument(
+        "--self-nulling-update",
+        action="store_true",
+        help=(
+            "Real-data Gauss-Newton: drive current residuals toward zero.  Forbids a "
+            "known target payload and does not interpret capture vs an injected truth."
+        ),
+    )
+    parser.add_argument(
+        "--allow-real-data",
+        action="store_true",
+        help="Load identity real-data samples without MC truth labels.",
+    )
     parser.add_argument("--positive-association-output", action="append", default=None, metavar="PARAMETER:PATH")
     parser.add_argument("--negative-association-output", action="append", default=None, metavar="PARAMETER:PATH")
     parser.add_argument("--output-dir", required=True)
@@ -563,6 +578,15 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.self_nulling_update:
+        if args.target_point or args.target_association_output:
+            parser.error("--self-nulling-update forbids --target-point / --target-association-output")
+        args.allow_nominal_anchor = True
+        args.allow_real_data = True
+    elif not args.target_point or not args.target_association_output:
+        parser.error("provide --target-point and --target-association-output, or --self-nulling-update")
+    if args.self_nulling_update and args.observation_kind != "anchor_selected_field_edge":
+        parser.error("--self-nulling-update requires --observation-kind anchor_selected_field_edge")
     if args.capture_criteria is not None and args.capture_tolerance is not None:
         parser.error("provide only one of --capture-criteria or --capture-tolerance")
     if not math.isfinite(args.damping) or not 0.0 < args.damping <= 1.0:
@@ -627,7 +651,13 @@ def main() -> None:
             raise ValueError("target scan is not a physical hierarchy or station-rigid scan")
         points.update(_points(target_plan))
     anchor_point = points.get(str(args.anchor_point))
-    target_point = points.get(str(args.target_point))
+    if args.self_nulling_update:
+        target_point = dict(anchor_point) if isinstance(anchor_point, Mapping) else None
+        if target_point is not None:
+            target_point["name"] = str(args.anchor_point)
+            target_point["point_role"] = "self_nulling_zero_residual"
+    else:
+        target_point = points.get(str(args.target_point))
     if anchor_point is None or target_point is None:
         raise ValueError("anchor-point and target-point must be present in the frozen scan plan")
     calibration_mode = None if args.calibration_mode is None else normalize_mode(args.calibration_mode)
@@ -690,6 +720,7 @@ def main() -> None:
                 anchor_table=anchor_table,
                 covariance_calibration=covariance_calibration,
                 q_over_p_mode=int(args.q_over_p_mode),
+                require_mc_labels=not args.allow_real_data,
             )
 
         if args.anchor_payload_sample is not None:
@@ -700,9 +731,12 @@ def main() -> None:
             _anchor_sample_summary, anchor_bank = _payload_bank(
                 Path(args.anchor_payload_sample).expanduser().resolve(), str(args.anchor_point)
             )
-        target_summary, target_bank = _payload_bank(
-            Path(args.target_association_output).expanduser().resolve(), str(args.target_point)
-        )
+        if args.self_nulling_update:
+            target_summary, target_bank = None, None
+        else:
+            target_summary, target_bank = _payload_bank(
+                Path(args.target_association_output).expanduser().resolve(), str(args.target_point)
+            )
         positive_summaries = {}
         negative_summaries = {}
         positive_banks = {}
@@ -746,7 +780,8 @@ def main() -> None:
     banks = [anchor_bank]
     for name in names:
         banks.extend((positive_banks[name], negative_banks[name]))
-    banks.append(target_bank)
+    if not args.self_nulling_update:
+        banks.append(target_bank)
     keys, residuals, covariances, overlap = align_route_selected_observations(banks)
     physical_edge_keys = [anchor_bank[key].physical_edge_key for key in keys]
     keys, residuals, covariances, observation_statistics_audit = apply_observation_statistics(
@@ -780,9 +815,14 @@ def main() -> None:
         }
     positive_residual = np.asarray([residuals[1 + 2 * index] for index in range(len(names))])
     negative_residual = np.asarray([residuals[2 + 2 * index] for index in range(len(names))])
-    target_residual = residuals[-1]
     anchor_values = _point_parameter_values(specs, anchor_point)
-    target_values = _point_parameter_values(specs, target_point)
+    if args.self_nulling_update:
+        target_residual = np.zeros_like(anchor_residual)
+        target_bank = anchor_bank
+        target_values = dict(anchor_values)
+    else:
+        target_residual = residuals[-1]
+        target_values = _point_parameter_values(specs, target_point)
     positive_values = [
         _point_parameter_values(specs, points[positive_points[name]])[name] for name in names
     ]
@@ -894,18 +934,31 @@ def main() -> None:
             }
         )
     sigmas = [row["recovered_sigma"] for row in parameter_rows]
-    parameter_rows, capture_aggregate, prior_rows = attach_capture_and_prior(
-        parameter_rows,
-        names=names,
-        errors=[float(value) for value in delta_error],
-        fit_sigmas=sigmas,
-        criteria=criteria,
-        normal_matrix_native=(
-            unconstrained_fit.normal_matrix_native if unconstrained_fit is not None else fit.normal_matrix_native
-        ),
-        covariance_native=covariance_native,
-        prior_sigma_native=prior,
-    )
+    if args.self_nulling_update:
+        capture_aggregate = {
+            "applicable": False,
+            "reason": "real_data_self_nulling_has_no_injected_target",
+            "residual_reduction_is_not_alignment_success": True,
+        }
+        prior_rows = []
+        for row in parameter_rows:
+            row["capture_success"] = None
+            row["expected_delta_to_target"] = None
+            row["local_delta_error"] = None
+            row["target_value"] = None
+    else:
+        parameter_rows, capture_aggregate, prior_rows = attach_capture_and_prior(
+            parameter_rows,
+            names=names,
+            errors=[float(value) for value in delta_error],
+            fit_sigmas=sigmas,
+            criteria=criteria,
+            normal_matrix_native=(
+                unconstrained_fit.normal_matrix_native if unconstrained_fit is not None else fit.normal_matrix_native
+            ),
+            covariance_native=covariance_native,
+            prior_sigma_native=prior,
+        )
     observation_rows: list[dict[str, object]] = []
     for row_index, key in enumerate(keys):
         sample, run_id, event_id, signature, *_ = key
@@ -1124,7 +1177,9 @@ def main() -> None:
         injected_contrast = None
         if sequential:
             all_contrast = [spec for spec in _specs(plan) if spec_scope(spec) == "contrast"]
-            injected_contrast = _point_parameter_values(all_contrast, target_point)
+            injected_contrast = dict(_point_parameter_values(all_contrast, target_point))
+            for name in CONTRAST_PARAMETERS:
+                injected_contrast.setdefault(name, 0.0)
             remaining_contrast = remaining_after_block_step(
                 injected=injected_contrast,
                 recovered_floated=float(recovered_values[floated]),
@@ -1171,7 +1226,9 @@ def main() -> None:
             "recovered": recovered_values,
             "capture_success": hierarchy_capture_success,
         }
-    if capture_aggregate is not None:
+    if args.self_nulling_update:
+        capture_success = None
+    elif capture_aggregate is not None and "capture_success" in capture_aggregate:
         capture_success = bool(capture_aggregate["capture_success"])
     elif hierarchy_capture_success is not None:
         capture_success = hierarchy_capture_success
@@ -1229,8 +1286,13 @@ def main() -> None:
         "joint_station_cdx_newton": False if hierarchical_v1 else None,
         "calibration_mode": calibration_mode,
         "mode_validity": mode_validity,
-        "geometry_write_allowed": None if mode_validity is None else bool(mode_validity["geometry_write_allowed"]),
+        "geometry_write_allowed": False if args.self_nulling_update else (
+            None if mode_validity is None else bool(mode_validity["geometry_write_allowed"])
+        ),
         "residual_reduction_is_not_alignment_success": True,
+        "self_nulling_update": bool(args.self_nulling_update),
+        "official_conditions_db_write": False,
+        "real_data": bool(args.allow_real_data or args.self_nulling_update),
         "only_parameters": list(names),
         "gauge": None if args.gauge is None else str(args.gauge),
         "allow_nominal_anchor": bool(
@@ -1347,6 +1409,19 @@ def main() -> None:
             printed_hierarchy["floated"] = hierarchy_audit.get("floated")
             printed_hierarchy["remaining_contrast"] = hierarchy_audit.get("remaining_contrast")
         printed["hierarchy_internal_audit"] = printed_hierarchy
+    fit_for_arrays = unconstrained_fit if unconstrained_fit is not None else fit
+    prior_native = fit_for_arrays.prior_sigma_native
+    np.savez_compressed(
+        output / "fit_arrays.npz",
+        parameter_names=np.asarray(list(names)),
+        recovered_parameters=np.asarray(recovered_delta, dtype=np.float64),
+        normal_matrix_native=np.asarray(fit_for_arrays.normal_matrix_native, dtype=np.float64),
+        right_hand_side_native=np.asarray(fit_for_arrays.right_hand_side_native, dtype=np.float64),
+        prior_sigma_native=np.asarray(
+            np.full(len(names), np.nan, dtype=np.float64) if prior_native is None else prior_native,
+            dtype=np.float64,
+        ),
+    )
     print(json.dumps(_json_ready(printed), indent=2))
     if args.require_mode_valid and mode_validity is not None and not bool(mode_validity["geometry_write_allowed"]):
         raise ValueError(

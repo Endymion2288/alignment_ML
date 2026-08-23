@@ -332,6 +332,15 @@ def main() -> None:
     parser.add_argument("--v1-ablation", default="geometry_aware_full_context")
     parser.add_argument("--split", choices=("train", "validation"), default="validation")
     parser.add_argument(
+        "--allow-real-data",
+        action="store_true",
+        help=(
+            "Load identity real-data samples without MC truth labels.  Truth-labelled "
+            "efficiency/purity metrics are omitted.  Frozen V2 weights, calibration, "
+            "and route policy are unchanged."
+        ),
+    )
+    parser.add_argument(
         "--payload-id",
         action="append",
         default=None,
@@ -478,6 +487,7 @@ def main() -> None:
         feature_set="residual_v1",
         max_events_per_sample=args.max_events_per_sample,
         q_over_p_mode=int(args.q_over_p_mode),
+        require_mc_labels=not args.allow_real_data,
     )
     artifact = frozen["artifact"]
     bundle = build_transformer_graph_bundle(candidate_sets, context_mode=artifact.context_mode)
@@ -499,6 +509,7 @@ def main() -> None:
             artifact.edge_standardizer,
             device=args.device,
             batch_size=args.batch_size,
+            require_mc_labels=not args.allow_real_data,
         )
         raw_scores = list(prediction.edge_scores)
     calibrated = apply_frozen_transformer_calibration(bundle.adjacent_sets, raw_scores, frozen["calibration"])
@@ -510,12 +521,14 @@ def main() -> None:
     )
     # Evaluation remains MC truth-labelled, but route selection and global
     # track fitting above are deliberately truth-free.
-    route_evaluation = evaluate_adjacent_route_assignment_sets(
-        bundle.adjacent_sets,
-        calibrated,
-        frozen["route"],
-        calibration_bins=args.calibration_bins,
-    )
+    route_evaluation = None
+    if not args.allow_real_data:
+        route_evaluation = evaluate_adjacent_route_assignment_sets(
+            bundle.adjacent_sets,
+            calibrated,
+            frozen["route"],
+            calibration_bins=args.calibration_bins,
+        )
     route_rows: list[dict[str, object]] = []
     fit_rows: list[dict[str, object]] = []
     leave_one_out_rows: list[dict[str, object]] = []
@@ -709,12 +722,20 @@ def main() -> None:
             "rejected_routes": straight_fit_rejected_routes,
             "alignment_objective": False,
         },
-        "truth_labelled_mc_evaluation": route_evaluation,
-        "raw_candidate_score_metrics": candidate_score_metrics(
-            bundle.adjacent_sets, raw_scores, args.calibration_bins
+        "truth_labelled_mc_evaluation": (
+            {"omitted": True, "reason": "real_data_no_mc_truth"}
+            if args.allow_real_data
+            else route_evaluation
         ),
-        "frozen_calibrated_score_metrics": candidate_score_metrics(
-            bundle.adjacent_sets, calibrated, args.calibration_bins
+        "raw_candidate_score_metrics": (
+            {"omitted": True, "reason": "real_data_no_mc_truth"}
+            if args.allow_real_data
+            else candidate_score_metrics(bundle.adjacent_sets, raw_scores, args.calibration_bins)
+        ),
+        "frozen_calibrated_score_metrics": (
+            {"omitted": True, "reason": "real_data_no_mc_truth"}
+            if args.allow_real_data
+            else candidate_score_metrics(bundle.adjacent_sets, calibrated, args.calibration_bins)
         ),
     }
     _write_json(output / "association_summary.json", summary)

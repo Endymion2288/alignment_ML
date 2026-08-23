@@ -1,0 +1,38 @@
+# Pre-frozen Operating Protocol V1 real-data candidate-graph DQ gate.
+# Registered before this campaign's Station Mode decision.  It does not
+# change V2 weights, score thresholds, unmatched penalty, occupancy
+# windows, capture, or the mode-validity contract.
+#
+# "Graph" for Station Mode is the frozen-V2 selected adjacent graph.
+# The physical all-pairs Acts graph is reported and must also be non-empty.
+
+schema_version: faser-operating-protocol-v1-real-data-candidate-graph-dq-gate
+frozen: true
+do_not_retune_v2: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_change_occupancy_window: true
+do_not_change_capture_or_contract: true
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc
+
+requirements:
+  physical_all_pairs_nonempty: true
+  selected_edges_nonempty: true
+  selected_routes_nonempty: true
+  values_finite: true
+  # A priori majority / near-majority cuts.  Not fitted on these five windows.
+  max_event_share_of_physical_candidates: 0.50
+  max_top2_event_share_of_physical_candidates: 0.80
+  max_event_share_of_selected_routes: 0.50
+  calibration_percentile_overlap:
+    - residual_x_mm
+    - pull_x
+    - chi2
+    - dz

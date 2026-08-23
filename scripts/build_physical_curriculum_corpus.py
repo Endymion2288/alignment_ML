@@ -645,6 +645,7 @@ def _physical_point_completion(
     expected_offsets_xy_mm: Mapping[str, object] | None,
     expected_station_transforms: Mapping[str, object] | None = None,
     expected_layer_transforms: Mapping[str, object] | None = None,
+    require_mc_labels: bool = True,
 ) -> tuple[bool, str]:
     """Accept only a physically complete and audited refit/Acts point.
 
@@ -689,8 +690,11 @@ def _physical_point_completion(
         return False, f"invalid_content_audit:{type(error).__name__}"
     if not isinstance(audit, Mapping):
         return False, "invalid_content_audit:root_not_mapping"
-    if audit.get("has_mc_labels") is not True:
-        return False, "content_audit_missing_mc_labels"
+    if require_mc_labels:
+        if audit.get("has_mc_labels") is not True:
+            return False, "content_audit_missing_mc_labels"
+    elif audit.get("has_mc_labels") is True:
+        return False, "real_data_content_audit_has_mc_labels"
     try:
         audited_tracklets = Path(str(audit["input"])).expanduser().resolve()
     except (KeyError, TypeError, ValueError):

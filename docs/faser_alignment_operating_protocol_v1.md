@@ -124,7 +124,11 @@ No truth closure. Per-mode data-quality observables:
 - post-refit geometry consistency
 
 Workbook 03 still blocks unverified 2022 data0 IFT re-export provenance.
-Real-data admission remains conditional on that chain.
+The V1 dry-run admits 2024 r0022 reconstructed xAOD only, with a frozen
+calibration / holdout / held-out-DQ split. See
+[the real-data dry-run](operating_protocol_v1_real_data_dryrun.md).
+Real-data admission remains conditional on that chain.  This dry-run does
+not write the official conditions database.
 
 ## Close method development
 

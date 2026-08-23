@@ -927,7 +927,14 @@ def main() -> None:
     parser.add_argument("--skip-remaining", action="store_true")
     parser.add_argument("--skip-route-selected", action="store_true")
     parser.add_argument("--skip-truth-selected", action="store_true")
+    parser.add_argument(
+        "--targets",
+        nargs="+",
+        default=None,
+        help="Observed target points used only to attach a residual. A is formed from axial FD.",
+    )
     args = parser.parse_args()
+    targets = tuple(args.targets) if args.targets else TARGETS
     output = Path(args.output_dir).expanduser().resolve()
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(output)
@@ -982,7 +989,7 @@ def main() -> None:
                     for item in _source_entries(iteration if observed_manifest is None else observed_manifest)
                     if str(item.get("split")) == split
                 }
-                for target in TARGETS:
+                for target in targets:
                     print(f"truth {split} {geometry_name} {target}", flush=True)
                     banks = [
                         attach_truth_target(fd_cache[str(entry["source_id"])], observed_entries[str(entry["source_id"])], target)
@@ -1026,7 +1033,7 @@ def main() -> None:
             )
             for geometry_name, _obs, synth_root, _sr_t, _sr_v in geometries:
                 target_scan = remaining_scan[geometry_name][split]
-                for target in TARGETS:
+                for target in targets:
                     print(f"route {split} {geometry_name} {target}", flush=True)
                     bank = attach_route_target(
                         cache,

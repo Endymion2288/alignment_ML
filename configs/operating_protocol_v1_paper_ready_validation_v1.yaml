@@ -1,0 +1,45 @@
+# Publication-level analysis of the already-frozen Operating Protocol V1
+# real-data closure.  Read-only.  Does not reopen any alignment mode.
+
+schema_version: faser-operating-protocol-v1-paper-ready-validation
+frozen: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_retrain_v2: true
+do_not_reestimate_alarm_thresholds: true
+do_not_search_geometry_write_subset: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_decrease_label: DQ observable
+
+closure_root: outputs/operating_protocol_v1_final_real_data_closure_v1
+final_report: outputs/operating_protocol_v1_final_real_data_closure_v1/operating_protocol_v1_final_report.json
+evidence_matrix: outputs/operating_protocol_v1_final_real_data_closure_v1/real_data_evidence_matrix.json
+reproducibility_manifest: outputs/operating_protocol_v1_final_real_data_closure_v1/reproducibility_manifest.json
+unlock_criteria: outputs/operating_protocol_v1_final_real_data_closure_v1/operating_protocol_v2_unlock_criteria.json
+chart_data: outputs/operating_protocol_v1_final_real_data_closure_v1/chart_data/chart_data.json
+
+decision_flow:
+  - id: mc_transfer
+    status: PASS
+    label: MC transfer PASS
+  - id: real_data_association
+    status: PASS
+    label: real-data association PASS
+  - id: station_calibration
+    status: REJECT
+    label: Station calibration REJECT
+  - id: reduced_calibration
+    status: REJECT
+    label: reduced calibration REJECT
+  - id: residual_dq_monitoring
+    status: PASS
+    label: residual/DQ monitoring PASS

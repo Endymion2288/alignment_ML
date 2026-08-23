@@ -1,0 +1,254 @@
+{
+  "alignment_drift_candidate": false,
+  "alignment_payload_from_self_nulling_residuals": false,
+  "cdx_mode_allowed": false,
+  "created_utc": "2026-08-23T13:20:07.261376+00:00",
+  "decision_flow": "MC transfer PASS \u2192 real-data association PASS \u2192 Station calibration REJECT \u2192 reduced calibration REJECT \u2192 residual/DQ monitoring PASS",
+  "do_not_search_geometry_write_subset": true,
+  "frozen_v2_checkpoint_sha256": "0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27",
+  "geometry_write_allowed": false,
+  "implied_cdx_is_not_a_measurement": true,
+  "layers": [
+    {
+      "decision_flow_node": "real-data association PASS",
+      "does_not_prove": "That a recoverable association graph is a solvable station alignment problem, or that residual decrease is closure.",
+      "id": "frozen_v2_association_transfer",
+      "layer": 1,
+      "proves": "Frozen V2 association is transferable from MC to 2024 r0022 data.  The empty 100-event selected graph is statistics-limited, and full-segment route acceptance recovers.",
+      "status": "PASS",
+      "title": "Frozen V2 association transfers from MC to real data"
+    },
+    {
+      "decision_flow_node": "Station calibration REJECT / reduced calibration REJECT",
+      "does_not_prove": "A numerical value of C_dx, a transferable station correction, or that a chi-squared drop proves the geometry has been corrected.",
+      "id": "association_is_not_alignment",
+      "layer": 2,
+      "proves": "The real-data Station Jacobian has a gauge-like dz weak direction.  The 14974 5-DoF weak direction coincides with the frozen C_dx\u2192station leakage direction A.  Reduced {dy,rx,rz} is Fisher-identifiable but does not transfer between independent calibration runs.  Geometry write is rejected by identifiability and cross-level ambiguity, not by a conservative threshold.",
+      "status": "REJECT_GEOMETRY_WRITE",
+      "title": "Association usable is not alignment solvable"
+    },
+    {
+      "decision_flow_node": "residual/DQ monitoring PASS",
+      "does_not_prove": "A geometry update, a survey trigger, or that monitoring residuals can be inverted into an alignment payload.",
+      "id": "residual_dq_monitoring",
+      "layer": 3,
+      "proves": "Under current official geometry, frozen V2 residual/DQ monitoring is stable on independent r0022 runs.  The seven new runs are nominal.  There is no persistent dy/rx drift.  Run 14977 is insufficient statistics, not an alignment anomaly.",
+      "status": "PASS",
+      "title": "Current-geometry frozen-V2 residual/DQ monitoring is stable"
+    }
+  ],
+  "limitations": [
+    "Complete four-station routes remain rare; the Station solve is dominated by 2- and 3-station routes.",
+    "No independent survey or external station constraint is available in this corpus to fix dx/ry/dz.",
+    "True |C_dx| on these real runs is not measured; only the MC isolation budget 1.5\u20131.7 \u00b5m is known.",
+    "Time order uses LHC fill, then run, then skip.  This corpus has no unix timestamp in occupancy.",
+    "14977 is too short for alignment DQ and is kept only as a statistics-control example.",
+    "The sealed test split 100116/100117 is never opened.",
+    "Workbook 03 still blocks unverified 2022 data0 IFT PHYS/xAOD re-export."
+  ],
+  "protocol_version": "operating_protocol_v1",
+  "read_only": true,
+  "real_data_operating_mode": "residual_dq_monitoring_only",
+  "residual_decrease_label": "DQ observable",
+  "residual_reduction_is_not_alignment_success": true,
+  "schema_version": "faser-operating-protocol-v1-paper-ready-validation-claims",
+  "source_closure_root": "outputs/operating_protocol_v1_final_real_data_closure_v1",
+  "station_calibration_mode_available": false,
+  "supported_claims": [
+    {
+      "claim": "On source-disjoint MC, exclusive Station and IFT-Internal modes both independently close.  Frozen A is not updated.",
+      "id": "mc_transfer_pass",
+      "layer": 1
+    },
+    {
+      "claim": "At 100 events the selected graph is empty while the all-pairs candidate graph is not.  Full remaining segments recover selected-route counts 121/109/156/63/2 on 14973\u201314977, and 233/193/114/77/74/91/32 on the seven independent expansion runs.",
+      "id": "real_data_association_statistics_limited_then_recovered",
+      "layer": 1
+    },
+    {
+      "claim": "The six-DoF Station Jacobian has a near-null direction that is almost pure dz (gauge-like).  More events of the same topology do not lift that direction.",
+      "id": "station_jacobian_dz_gauge",
+      "layer": 2
+    },
+    {
+      "claim": "After dropping survey dz, the 14974 five-DoF weak direction is almost pure dx and has cosine 0.994 with frozen A.  This is cross-level leakage geometry, not a C_dx measurement.",
+      "id": "weak_direction_aligns_with_A",
+      "layer": 2
+    },
+    {
+      "claim": "Reduced {dy,rx,rz} is full rank (cond. 73/86) and nearly orthogonal to A, but the self-nulling correction changes sign and magnitude between 14973 and 14974 (max ~258\u03c3).  Linearized 14974\u219214973 chi-squared ratio ~16 is a DQ observable only.",
+      "id": "reduced_mode_not_transferable",
+      "layer": 2
+    },
+    {
+      "claim": "Not writing geometry is a validated scientific conclusion: the observed real-data topology cannot isolate a transferable station update from C_dx leakage.  It is not an unfinished analysis and is not caused by an overly tight alarm threshold.",
+      "id": "geometry_write_rejected_by_physics",
+      "layer": 2
+    },
+    {
+      "claim": "Seven independent r0022 runs are all nominal_monitoring under the frozen protocol.  Isolation |robust z| stays well below 3.  alignment_drift_candidate remains false.",
+      "id": "monitoring_nominal_on_independent_runs",
+      "layer": 3
+    },
+    {
+      "claim": "Run 14977 has two selected routes and is classified insufficient_statistics_for_alignment_dq, not an alignment anomaly and not a detector-condition change.",
+      "id": "low_stats_is_insufficient_not_anomaly",
+      "layer": 3
+    }
+  ],
+  "unlock_criteria": {
+    "alignment_payload_from_self_nulling_residuals": false,
+    "cdx_mode_allowed": false,
+    "currently_met": false,
+    "does_not_write_geometry_in_this_package": true,
+    "geometry_reopen_prerequisites": {
+      "cdx_mode_allowed": false,
+      "do_not_extract_alignment_payload_from_self_nulling": true,
+      "geometry_write_allowed": false,
+      "required_any_of": [
+        {
+          "id": "external_station_constraints_and_cdx_budget",
+          "independent_C_dx_within_operating_band_um": [
+            1.5,
+            1.7
+          ],
+          "independent_survey_or_external_station_constraints_fix": [
+            "ift_dx_mm",
+            "ift_ry_mrad",
+            "ift_dz_mm"
+          ]
+        },
+        {
+          "id": "new_independent_real_data_topology",
+          "must_empirically_demonstrate_cross_run_transferable_subspace": true,
+          "new_independent_real_data_topology_or_track_sample": true
+        }
+      ],
+      "station_calibration_mode_available": false,
+      "until_then": "Do not extract any alignment payload from the current self-nulling residuals.  Continue residual/DQ monitoring only."
+    },
+    "geometry_write_allowed": false,
+    "opens": "operating_protocol_v2",
+    "required_any_of": [
+      {
+        "all_of": [
+          {
+            "independent_survey_or_external_station_constraints_fix": [
+              "ift_dx_mm",
+              "ift_ry_mrad",
+              "ift_dz_mm"
+            ]
+          },
+          {
+            "independent_real_C_dx_abs_within_operating_band_um": [
+              1.5,
+              1.7
+            ]
+          }
+        ],
+        "id": "external_station_constraints_and_cdx_budget",
+        "met": false,
+        "note": "Survey or other external station constraints must fix dx/ry/dz, and an independent measurement must prove that the true |C_dx| sits inside the 1.5-1.7 \u00b5m isolation budget."
+      },
+      {
+        "all_of": [
+          {
+            "new_independent_real_data_topology_or_track_sample": true
+          },
+          {
+            "empirically_demonstrates_cross_run_transferable_calibration_subspace": true
+          }
+        ],
+        "id": "new_independent_real_data_topology",
+        "met": false,
+        "note": "A new independent real-data track topology must empirically demonstrate a calibration subspace that transfers across runs."
+      }
+    ],
+    "schema_version": "faser-operating-protocol-v1-final-real-data-closure-unlock",
+    "station_calibration_mode_available": false,
+    "until_then": {
+      "alignment_payload_from_self_nulling_residuals": false,
+      "cdx_mode_allowed": false,
+      "code_path": [
+        "current_official_geometry",
+        "frozen_v2",
+        "residual_dq_monitoring"
+      ],
+      "geometry_write_allowed": false,
+      "real_data_operating_mode": "residual_dq_monitoring_only",
+      "station_calibration_mode_available": false,
+      "text": "Do not extract any alignment payload from the current self-nulling residuals.  Continue residual/DQ monitoring only."
+    }
+  },
+  "unlock_evaluation": {
+    "alignment_payload_from_self_nulling_residuals": false,
+    "currently_met": false,
+    "geometry_write_allowed": false,
+    "matched": {
+      "external_station_constraints_and_cdx_budget": false,
+      "new_independent_real_data_topology": false
+    },
+    "opens_operating_protocol_v2": false,
+    "until_then_if_unmet": {
+      "alignment_payload_from_self_nulling_residuals": false,
+      "cdx_mode_allowed": false,
+      "code_path": [
+        "current_official_geometry",
+        "frozen_v2",
+        "residual_dq_monitoring"
+      ],
+      "geometry_write_allowed": false,
+      "real_data_operating_mode": "residual_dq_monitoring_only",
+      "station_calibration_mode_available": false,
+      "text": "Do not extract any alignment payload from the current self-nulling residuals.  Continue residual/DQ monitoring only."
+    }
+  },
+  "unsupported_claims": [
+    {
+      "claim": "The present real-data sample supports a station geometry write.",
+      "id": "no_real_data_station_geometry_update"
+    },
+    {
+      "claim": "Implied |C_dx| from a self-nulling station solve can be quoted as the true layer contrast.",
+      "id": "no_cdx_measurement"
+    },
+    {
+      "claim": "A residual or linearized chi-squared decrease can be read as proof that the station geometry has been corrected.",
+      "id": "no_residual_as_closure"
+    },
+    {
+      "claim": "Because {dy,rx,rz} is Fisher-identifiable it may be written as a reduced station correction.",
+      "id": "no_reduced_mode_payload"
+    },
+    {
+      "claim": "A future alignment_drift_candidate may be inverted into a geometry payload without new external constraints.",
+      "id": "no_drift_to_geometry"
+    },
+    {
+      "claim": "The 100-event empty selected graph requires retuning V2 thresholds or unmatched penalty.",
+      "id": "no_v2_retune_needed"
+    },
+    {
+      "claim": "A quieter subset of the same r0022 topology can rescue geometry_write_allowed.",
+      "id": "no_subset_rescue"
+    }
+  ],
+  "why_not_writing_geometry_is_a_result": {
+    "geometry_write_allowed": false,
+    "not_caused_by": [
+      "an overly conservative alarm threshold",
+      "an unfinished software path",
+      "failure to search a quieter event subset"
+    ],
+    "real_data_operating_mode": "residual_dq_monitoring_only",
+    "reasons": [
+      "Association recovery at full-segment scale shows the graph is usable, so the failure is not empty data or a broken V2.",
+      "The six-DoF Jacobian is empirically degenerate along dz.",
+      "The remaining five-DoF weak direction on 14974 coincides with frozen A, so a track-driven station update is cross-level contaminated.",
+      "The only Fisher-safe reduced subspace {dy,rx,rz} does not transfer between independent calibration runs.",
+      "Modes that still float dx or ry exceed the 1.5\u20131.7 \u00b5m isolation budget; more events cannot rescue that leakage.",
+      "Independent monitoring runs stay nominal at current official geometry, so there is no empirical need to force a write."
+    ],
+    "statement": "Not writing geometry is a real-data scientific result, not an unfinished state."
+  }
+}

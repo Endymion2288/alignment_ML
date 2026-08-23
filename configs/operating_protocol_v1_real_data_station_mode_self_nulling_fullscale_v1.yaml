@@ -1,0 +1,101 @@
+# Operating Protocol V1 real-data Station Mode self-nulling dry-run
+# on full-segment selected routes.  Transfer / DQ only.
+#
+# Does not change frozen V2, route policy, thresholds, unmatched penalty,
+# occupancy windows, capture, A, or the mode-validity contract.
+# Does not write official conditions.  Does not start C_dx Mode.
+# Does not run joint Newton.  Does not add DoF.
+
+schema_version: faser-operating-protocol-v1-real-data-station-mode-self-nulling-fullscale
+frozen: true
+do_not_enter_cdx_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_reregister_capture_or_A: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+station_mode_allowed_if_route_dq_passes: true
+cdx_mode_blocked: true
+residual_reduction_is_not_alignment_success: true
+mc_truth_used: false
+q_over_p_mode: 0
+observation_statistics: physical_edge_deduplicated
+observation_kind: anchor_selected_field_edge
+self_nulling_update: true
+calibration_only_geometry_estimation: true
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+station_capture: outputs/mc24_ift_5dof_survey_dz_capture_criteria_train_v1/capture_criteria.json
+cdx_capture: outputs/mc24_ift_layer_contrast_2d_capture_criteria_train_v1/capture_criteria.json
+covariance_calibration: outputs/mc24_multidof_ift_pull_calibration_train_v1/mode0_covariance_calibration_train_frozen.json
+candidate_graph_dq_gate: configs/operating_protocol_v1_real_data_candidate_graph_dq_gate.yaml
+scaling_report: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/route_acceptance_scaling_report.json
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+frozen_windows: outputs/operating_protocol_v1_real_data_occupancy_preflight_v1/frozen_windows.json
+
+cdx_fixed_by: external_geometry
+geometry_tag: FASERNU-04
+conditions_tag: OFLCOND-FASER-06
+reconstruction_tag: r0022
+
+blind_roles:
+  "14973": calibration
+  "14974": calibration
+  "14975": holdout
+  "14976": holdout
+  "14977": held_out_dq
+verdict_uses_roles:
+  - calibration
+verdict_excludes_roles:
+  - holdout
+  - held_out_dq
+
+full_segment_sources:
+  "14973":
+    source_id: data24_r14973_00007_skip49500_n84988
+    segment: "00007"
+    skip_events: 49500
+    nevents: 84988
+  "14974":
+    source_id: data24_r14974_00005_skip74400_n60886
+    segment: "00005"
+    skip_events: 74400
+    nevents: 60886
+  "14975":
+    source_id: data24_r14975_00005_skip21600_n111781
+    segment: "00005"
+    skip_events: 21600
+    nevents: 111781
+  "14976":
+    source_id: data24_r14976_00004_skip95500_n40562
+    segment: "00004"
+    skip_events: 95500
+    nevents: 40562
+  "14977":
+    source_id: data24_r14977_00005_skip135900_n01687
+    segment: "00005"
+    skip_events: 135900
+    nevents: 1687
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc
+
+# Truth-free stand-in for the requested route-quality audit.
+# Never named "purity": real data has no MC labels.
+max_event_share_of_selected_routes: 0.50
+min_selected_routes_calibration: 1
+min_all_pairs_candidates: 50

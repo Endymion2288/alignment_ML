@@ -13,8 +13,12 @@ import json
 import math
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
+
+MC_COOL_INSTANCE = "OFLP200"
+DATA_COOL_INSTANCE = "CONDBR3"
 
 
 def parse_offset(value: str) -> tuple[int, float, float]:
@@ -83,6 +87,41 @@ def parse_layer_transform(
     if len(components) != 6 or not all(math.isfinite(component) for component in components):
         raise argparse.ArgumentTypeError("layer transform components must be finite")
     return station, layer, components
+
+
+def _cool_database_exists(sqlite_path: Path, instance: str) -> bool:
+    from PyCool import cool
+
+    db_svc = cool.DatabaseSvcFactory.databaseService()
+    try:
+        database = db_svc.openDatabase(
+            f"sqlite://;schema={sqlite_path};dbname={instance}", True
+        )
+    except Exception:
+        return False
+    database.closeDatabase()
+    return True
+
+
+def _replicate_cool_instance(sqlite_path: Path, source: str, dest: str) -> None:
+    """Copy a COOL instance so MC (OFLP200) and data (CONDBR3) jobs can both read it."""
+    if _cool_database_exists(sqlite_path, dest):
+        return
+    source_str = f"sqlite://;schema={sqlite_path};dbname={source}"
+    dest_str = f"sqlite://;schema={sqlite_path};dbname={dest}"
+    result = subprocess.run(
+        ["AtlCoolCopy", source_str, dest_str, "-create"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode:
+        raise RuntimeError(
+            f"AtlCoolCopy {source}->{dest} failed ({result.returncode}): "
+            f"{result.stdout}{result.stderr}"
+        )
+    if not _cool_database_exists(sqlite_path, dest):
+        raise RuntimeError(f"AtlCoolCopy did not create {dest} in {sqlite_path}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -198,7 +237,8 @@ def main() -> int:
     except ImportError as error:
         raise SystemExit(
             "Calypso Python modules are unavailable. Source "
-            "alignment_ML/scripts/setup_environment.sh calypso first."
+            "alignment_ML/scripts/setup_environment.sh calypso first "
+            f"({type(error).__name__}: {error})."
         ) from error
 
     Configurable.configurableRun3Behavior = True
@@ -238,6 +278,9 @@ def main() -> int:
     missing = [path for path in (sqlite_path, pool_path, catalog_path) if not path.is_file()]
     if missing:
         raise RuntimeError(f"payload writer completed but artifacts are missing: {missing}")
+    # WriteAlignment emits OFLP200.  Real-data ntuple jobs use CONDBR3, and
+    # IOVDbSvc.getSqliteContent opens the sqlite file with the job instance.
+    _replicate_cool_instance(sqlite_path, MC_COOL_INSTANCE, DATA_COOL_INSTANCE)
 
     manifest = {
         "geometry": args.geometry,
@@ -262,6 +305,7 @@ def main() -> int:
         },
         "alignment_constants": alignment_constants,
         "sqlite": str(sqlite_path),
+        "sqlite_cool_instances": [MC_COOL_INSTANCE, DATA_COOL_INSTANCE],
         "pool": str(pool_path),
         "pool_catalog": str(catalog_path),
     }

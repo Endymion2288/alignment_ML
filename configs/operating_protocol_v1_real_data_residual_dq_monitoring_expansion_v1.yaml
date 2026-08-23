@@ -1,0 +1,126 @@
+# Expansion of the frozen entry-52 residual/DQ monitoring protocol.
+# Does not reopen Station or C_dx calibration.  Does not retune alarms
+# or re-estimate the 14973/14974 reference scale.
+
+schema_version: faser-operating-protocol-v1-real-data-residual-dq-monitoring-expansion
+frozen: true
+parent_decision: real_data_residual_dq_monitoring_only
+do_not_enter_cdx_mode: true
+do_not_construct_station_calibration_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_repick_window_from_residual: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+do_not_reestimate_reference_scale: true
+do_not_reestimate_alarm_thresholds: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_blocked: true
+cdx_mode_allowed: false
+schur_projection_production: false
+residual_reduction_is_not_alignment_success: true
+cannot_convert_drift_to_geometry: true
+do_not_extract_alignment_payload_from_self_nulling: true
+mc_truth_used: false
+q_over_p_mode: 0
+do_not_open_sealed_test: true
+analysis_only: true
+current_geometry_only: true
+survey_dz_mm: 0.0
+track_driven_dz: false
+rz_direct_track_residual: false
+dz_track_driven_observable: false
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+window_rule: configs/operating_protocol_v1_real_data_occupancy_window_rule.yaml
+parent_monitoring_root: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_v1
+parent_run_level_report: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_v1/run_level_dq_report.json
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+self_nulling_root: outputs/operating_protocol_v1_real_data_station_mode_self_nulling_fullscale_v1
+station_template: configs/physical_refit_station_mode_real_data_dryrun.yaml
+
+cdx_fixed_by: external_geometry
+observation_kind: anchor_selected_field_edge
+observation_statistics: physical_edge_deduplicated
+geometry_tag: FASERNU-04
+conditions_tag: OFLCOND-FASER-06
+reconstruction_tag: r0022
+
+athena_flags:
+  NoTrackFilt: true
+  no_stable: true
+
+occupancy_preflight:
+  start_segment: "00000"
+  first_wave_last_segment: "00007"
+  role: monitoring
+  residual_blind: true
+
+# Copied verbatim from entry 52.  Do not retune.
+min_selected_routes_for_alignment_dq: 10
+max_event_share_of_selected_routes: 0.50
+min_all_pairs_candidates: 50
+robust_z_detector_condition: 5.0
+robust_z_drift: 3.0
+min_nonreference_runs_for_repeatable_drift: 2
+
+calibration_reference_runs:
+  - 14973
+  - 14974
+
+parent_full_segment_sources:
+  "14973":
+    source_id: data24_r14973_00007_skip49500_n84988
+    nevents: 84988
+    role: calibration_reference
+  "14974":
+    source_id: data24_r14974_00005_skip74400_n60886
+    nevents: 60886
+    role: calibration_reference
+  "14975":
+    source_id: data24_r14975_00005_skip21600_n111781
+    nevents: 111781
+    role: monitoring
+  "14976":
+    source_id: data24_r14976_00004_skip95500_n40562
+    nevents: 40562
+    role: monitoring
+  "14977":
+    source_id: data24_r14977_00005_skip135900_n01687
+    nevents: 1687
+    role: monitoring
+
+expansion_runs:
+  - 14971
+  - 14972
+  - 14980
+  - 14981
+  - 14985
+  - 14989
+  - 15007
+
+isolation_observables:
+  dy: residual_y_mm
+  rx: residual_ty
+cross_level_sensitive_observables:
+  dx: residual_x_mm
+  ry: residual_tx
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc

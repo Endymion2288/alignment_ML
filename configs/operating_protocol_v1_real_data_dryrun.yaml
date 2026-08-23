@@ -1,0 +1,80 @@
+# Operating Protocol V1 real-data dry-run.  Transfer / DQ only.
+# Does not write the official conditions database.
+#
+# Frozen: mode-0, V2 ungated, physical_edge_deduplicated, Station 5-DoF +
+# dz=5 mm survey prior, IFT-Internal 1-D C_dx, capture criteria, mode-validity
+# contract, leakage operator A + 10% gate.
+#
+# Blind split is frozen here, before looking at residuals.
+
+operating_protocol_v1_real_data_dryrun:
+  schema_version: faser-operating-protocol-v1-real-data-dryrun
+  official_conditions_db_write: false
+  mc_truth_used: false
+  sealed_test_opened: false
+  retrain_v2: false
+  reregister_capture_or_A: false
+  joint_station_cdx_newton: false
+  same_data_stage_iteration: false
+  new_layer_or_module_dof: false
+  residual_reduction_is_not_alignment_success: true
+  q_over_p_mode: 0
+  observation_statistics: physical_edge_deduplicated
+  observation_kind: anchor_selected_field_edge
+  frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+  frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+  mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+  station_capture: outputs/mc24_ift_5dof_survey_dz_capture_criteria_train_v1/capture_criteria.json
+  cdx_capture: outputs/mc24_ift_layer_contrast_2d_capture_criteria_train_v1/capture_criteria.json
+  covariance_calibration: outputs/mc24_multidof_ift_pull_calibration_train_v1/mode0_covariance_calibration_train_frozen.json
+  geometry_tag: FASERNU-04
+  conditions_tag: OFLCOND-FASER-06
+  reconstruction_tag: r0022
+  geom_selector: TI12Data04
+  cdx_fixed_by: external_geometry
+  workbook_03_gate:
+    blocked_2022_data0_ift_reexport: true
+    admitted_family: 2024_r0022_xaod_cluster_refit
+    note: >
+      Workbook 03 blocked 2022 data0 IFT PHYS/xAOD re-export because event IDs
+      1...100 did not match PHYS and local segments were empty.  This dry-run
+      uses 2024 r0022 reconstructed xAOD with persisted SCT_ClusterContainer
+      and the real /Tracker/Align -> SegmentFitRefit chain.  Legacy PHYS is
+      provenance auxiliary only, never the alignment input.
+
+  data_filters:
+    stable_beams: true
+    track_filter: true
+    blinding: true
+    unblind: false
+    grl: not_applied_2024_list_absent_from_workspace
+    trigger_filter: false
+
+  nevents: 100
+  xaod_segment: "00000"
+
+  # Adjacent 2024 IFT physics runs.  Calibration may produce candidate
+  # geometry; holdout evaluates a frozen candidate; held_out_dq never enters
+  # geometry estimation.
+  blocks:
+    - run: 14973
+      role: calibration
+      split: train
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014973/Faser-Physics-014973-00000-r0022-xAOD.root
+    - run: 14974
+      role: calibration
+      split: train
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014974/Faser-Physics-014974-00000-r0022-xAOD.root
+    - run: 14975
+      role: holdout
+      split: validation
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014975/Faser-Physics-014975-00000-r0022-xAOD.root
+      phys_auxiliary: /eos/experiment/faser/phys/2024_ift/dev/014975/Faser-Physics-014975-00000-00049-PHYS.root
+    - run: 14976
+      role: holdout
+      split: validation
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014976/Faser-Physics-014976-00000-r0022-xAOD.root
+    - run: 14977
+      role: held_out_dq
+      split: validation
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014977/Faser-Physics-014977-00000-r0022-xAOD.root

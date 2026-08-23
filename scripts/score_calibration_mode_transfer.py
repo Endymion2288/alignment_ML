@@ -130,6 +130,16 @@ def main() -> None:
     parser.add_argument("--cdx-train", required=True)
     parser.add_argument("--cdx-validation", default=None)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument(
+        "--corpus",
+        default="current_v3_expanded_source_disjoint_isolation",
+        help="Label written into transfer_report.json. Use large_stats_extra_source_disjoint for this campaign.",
+    )
+    parser.add_argument(
+        "--extra-sources-pending",
+        action="store_true",
+        help="Mark that extra 100043/044/047/048 physical banks are still missing.",
+    )
     args = parser.parse_args()
     contract_path = (
         Path(args.contract).expanduser().resolve()
@@ -159,19 +169,19 @@ def main() -> None:
         "retrain": False,
         "test_data_accessed": False,
         "residual_reduction_is_not_alignment_success": True,
-        "corpus": "current_v3_expanded_source_disjoint_isolation",
+        "corpus": str(args.corpus),
         "station_mode": {"train": station_train, "validation": station_val},
         "ift_internal_mode": {"train": cdx_train, "validation": cdx_val},
         "both_modes_independent_closure": bool(
             station_train["independent_closure"]
             and station_val["independent_closure"]
             and cdx_train["independent_closure"]
+            and (cdx_val is None or cdx_val["independent_closure"])
         ),
-        "large_statistics_extra_sources_pending": True,
+        "large_statistics_extra_sources_pending": bool(args.extra_sources_pending),
         "note": (
             "This scores already-closed isolation banks with frozen inference. "
-            "Extra 100043/044/047/048 files still need the physical chain before "
-            "a larger source-disjoint transfer. Do not mix the two modes."
+            "Do not mix the two exclusive modes or retune V2, capture, or A."
         ),
     }
     (output / "transfer_report.json").write_text(
@@ -186,7 +196,7 @@ def main() -> None:
         "station_train_unique_edges": station_train["unique_physical_edges"],
         "cdx_train_unique_edges": cdx_train["unique_physical_edges"],
         "both_modes_independent_closure": report["both_modes_independent_closure"],
-        "large_statistics_extra_sources_pending": True,
+        "large_statistics_extra_sources_pending": bool(args.extra_sources_pending),
     }
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True, allow_nan=False) + "\n")
     print(json.dumps(summary, indent=2))

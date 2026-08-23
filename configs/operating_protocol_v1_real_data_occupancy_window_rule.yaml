@@ -1,0 +1,59 @@
+# Frozen residual-blind window-selection rule for Operating Protocol V1
+# real-data dry-run occupancy preflight.
+#
+# This file is the pre-registered rule.  It must be frozen before inspecting
+# 14973-14977 occupancy, residuals, V2 scores, or fit quality.  Do not lower
+# these minima if a segment is sparse, and do not retune V2 or capture.
+#
+# Minima are taken from the already-completed MC 100-event physical scale
+# (~376 tracklets, ~99 events with tracklets, ~92-96 per station) and then
+# set conservatively for a 100-event real-data dry-run.  They are not taken
+# from 14973-14977 occupancy.
+
+operating_protocol_v1_real_data_occupancy_window_rule:
+  schema_version: faser-operating-protocol-v1-real-data-occupancy-window-rule
+  residual_blind: true
+  frozen_before_occupancy_inspection: true
+  geometry: official_current
+  alignment_perturbation: false
+  v2_scoring: false
+  residual_inspection: false
+  tracklet_source: current_geometry_segmentfit_refit
+  cluster_source: sct_cluster_container
+  window:
+    nevents: 100
+    skip_events_start: 0
+    skip_events_stride: 100
+  selection_order: first_contiguous_window_in_skip_events_order
+  minima:
+    n_events_with_clusters: 16
+    n_events_with_tracklets: 16
+    total_tracklets: 32
+    n_events_with_four_station_tracklets: 8
+  selection_inputs_allowed:
+    - n_events_with_clusters
+    - n_events_with_tracklets
+    - total_tracklets
+    - n_events_with_four_station_tracklets
+    - skip_events
+    - segment_index
+  selection_inputs_forbidden:
+    - residual
+    - v2_score
+    - fit_chi2
+    - alignment_parameter
+    - candidate_graph_quality
+    - route_chi2
+  segment_policy:
+    start_segment: "00000"
+    reconstruction_tag: r0022
+    on_segment_failure: next_r0022_xaod_segment_by_filename_index
+    rank_windows_by_occupancy: false
+  blind_roles:
+    "14973": calibration
+    "14974": calibration
+    "14975": holdout
+    "14976": holdout
+    "14977": held_out_dq
+  insufficient_status: insufficient_real_data_occupancy
+  do_not_lower_minima_or_change_v2: true

@@ -228,6 +228,7 @@ def read_anchor_selected_field_edge_observations(
     movable_station_ids: Sequence[int],
     covariance_calibration: Any = None,
     q_over_p_mode: int = 0,
+    require_mc_labels: bool = True,
 ) -> tuple[dict[tuple[object, ...], RouteSelectedObservation], dict[str, object]]:
     """Measure anchor-selected route edges inside one other physical payload.
 
@@ -290,7 +291,10 @@ def read_anchor_selected_field_edge_observations(
                 )
             )
 
-    events = load_events(Path(synthetic_tracklets_path).expanduser().resolve(), require_mc_labels=True)
+    events = load_events(
+        Path(synthetic_tracklets_path).expanduser().resolve(),
+        require_mc_labels=require_mc_labels,
+    )
     records = load_propagation_records(Path(field_candidates_path).expanduser().resolve())
     if covariance_calibration is not None:
         from alignment.covariance_calibration import apply_to_records

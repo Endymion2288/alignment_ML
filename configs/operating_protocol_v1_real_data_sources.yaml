@@ -1,0 +1,42 @@
+# Condor/source bookkeeping for Operating Protocol V1 real-data Station Mode.
+# Splits are corpus machinery only.  Geometry estimation uses
+# operating_protocol_role, never MC labels.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  real_data: true
+  require_mc_labels: false
+  source_selection:
+    production_release: r0022
+    required_persistence: [SCT_ClusterContainer, SegmentFit, Segments]
+    admission_rule: workbook_03_provenance_and_complete_physical_refit_mode0_acts
+    source_split_unit: run_time_block_first_xaod_segment
+    planned_refitted_events_per_source: 100
+    transfer_role: operating_protocol_v1_real_data_dryrun
+  sources:
+    - id: data24_r14973_00000
+      split: train
+      operating_protocol_role: calibration
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014973/Faser-Physics-014973-00000-r0022-xAOD.root
+    - id: data24_r14974_00000
+      split: train
+      operating_protocol_role: calibration
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014974/Faser-Physics-014974-00000-r0022-xAOD.root
+    - id: data24_r14975_00000
+      split: validation
+      operating_protocol_role: holdout
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014975/Faser-Physics-014975-00000-r0022-xAOD.root
+    - id: data24_r14976_00000
+      split: validation
+      operating_protocol_role: holdout
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014976/Faser-Physics-014976-00000-r0022-xAOD.root
+    - id: data24_r14977_00000
+      split: validation
+      operating_protocol_role: held_out_dq
+      input_xaod: /eos/experiment/faser/rec/2024/r0022/014977/Faser-Physics-014977-00000-r0022-xAOD.root
+  refit:
+    nevents: 100
+    station_ids: [0, 1, 2, 3]
+    q_over_p_mode: 0
+    chi2_gate: 25.0
+    is_mc: false

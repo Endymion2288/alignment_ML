@@ -410,11 +410,17 @@ def _build_station_rigid_multidof_plan(config: Mapping[str, Any]) -> dict[str, A
     if nominal_count != 1:
         raise ValueError("station rigid multi-DoF scan must contain exactly one nominal all-zero payload")
     missing_probes = [name for name, signs in finite_difference.items() if signs != {"positive", "negative"}]
-    if missing_probes:
+    if missing_probes and not bool(config.get("current_geometry_only", False)):
         raise ValueError(
             "station rigid multi-DoF scan requires positive/negative physical probes for: "
             + ", ".join(sorted(missing_probes))
         )
+    if bool(config.get("current_geometry_only", False)):
+        if nominal_count != 1:
+            raise ValueError("current-geometry-only scans require exactly one nominal payload")
+        extra = [point["name"] for point in points if point.get("finite_difference_for") is not None]
+        if extra:
+            raise ValueError("current-geometry-only scans must not include finite-difference probes")
     # Iterative alignment probes are centred on a non-zero current payload.
     # Validate the full central-difference stencil only after all point names
     # are available; it must vary exactly one named parameter around one
@@ -1089,6 +1095,7 @@ def _run_shell(
         log.write("# command\n")
         log.write(command)
         log.write("\n\n# output\n")
+        log.flush()
         result = subprocess.run(
             ["bash", "-lc", command],
             cwd=cwd,
@@ -1104,13 +1111,17 @@ def _run_shell(
 def _calypso_command(command: str) -> str:
     # The driver is often launched from LCG_110_cuda for its YAML/plotting
     # dependencies.  Do not let that Python 3.13 stack leak into Athena's
-    # Python 3.9/LCG_104d process.  Stale Athena setup markers inherited from a
+    # Python 3.9/LCG_104d process.  Stale setup markers inherited from a
     # polluted submit/login shell (e.g. via Condor `getenv = True`) make the
-    # Athena/AthenaExternals setup scripts return early without exporting their
-    # PYTHONPATH, so clear them together with the Python paths.
+    # Athena / AthenaExternals / Calypso InstallArea setup scripts return early
+    # without exporting PYTHONPATH.  Cluster 1000432 failed payload writes
+    # because Calypso_SET_UP was left set after a submit-side calypso build.
     clean_environment = (
         "unset PYTHONPATH LD_LIBRARY_PATH ROOTSYS ROOT_INCLUDE_PATH PYTHONHOME"
-        " Athena_SET_UP AthenaExternals_SET_UP"
+        " Athena_SET_UP Athena_EXTONLY_SET_UP Athena_RELONLY_SET_UP"
+        " AthenaExternals_SET_UP AthenaExternals_EXTONLY_SET_UP"
+        " AthenaExternals_RELONLY_SET_UP"
+        " Calypso_SET_UP Calypso_EXTONLY_SET_UP Calypso_RELONLY_SET_UP"
     )
     return f"{clean_environment}\nsource {_quote(SETUP_SCRIPT)} calypso\n{command}"
 
@@ -1129,6 +1140,22 @@ def _write_failure(point_dir: Path, phase: str, error: Exception) -> None:
     (point_dir / "failure.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+def _audit_has_positive_tracklets(path: Path) -> bool:
+    """Empty ROOT + return code 0 is not a completed physical point."""
+    if not path.is_file():
+        return False
+    try:
+        audit = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(audit, dict):
+        return False
+    try:
+        return int(audit.get("events", 0)) > 0 and int(audit.get("tracklets", 0)) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _is_complete(path: Path) -> bool:
@@ -1185,6 +1212,55 @@ def _baseline_refit_dir(
     if bool(plan.get("held_out_only", False)) and not run_alignment_closure:
         return scan_root / "_unused_held_out_only_baseline" / "refit"
     raise ValueError("scan plan lacks a zero-magnitude baseline point")
+
+
+def _ntuple_maker_command(
+    *,
+    input_xaod: Path,
+    payload_dir: Path,
+    outfile: Path,
+    nevents: int,
+    skip_events: int,
+    is_mc: bool,
+) -> str:
+    """Build the Calypso ntuple command for one physical-scan point.
+
+    Real-data occupancy windows are selected on current-geometry SegmentFit
+    refit tracklets.  NtupleDumper's default ``DoTrackFilter`` keeps only
+    events with a CKF long track, and default ``StableOnly`` requires
+    ``FaserLHCData.stableBeams()``.  2024 r0022 xAOD used here has SegmentFit
+    occupancy but ``stableBeams()`` false on every scanned event, so both
+    defaults empty the ntuple.  Alignment export therefore passes
+    ``--NoTrackFilt --no_stable``.  Blinding stays on.  MC still uses
+    ``--isMC``, which skips the real-data filter block.
+    """
+    maker = [
+        "faser_ntuple_maker.py",
+        _quote(input_xaod),
+    ]
+    if is_mc:
+        maker.append("--isMC")
+    else:
+        maker.append("--NoTrackFilt")
+        maker.append("--no_stable")
+    maker.extend(
+        [
+            "--useIFT",
+            f"--nevents {int(nevents)}",
+            *(
+                [f"--skip-events {int(skip_events)}"]
+                if int(skip_events or 0) > 0
+                else []
+            ),
+            "--export-tracklets",
+            "--export-tracklet-propagation",
+            "--refit-segments",
+            f"--tracker-align-sqlite {_quote(payload_dir / 'tracker_alignment.sqlite')}",
+            f"--tracker-align-pool-catalog {_quote(payload_dir / 'PoolFileCatalog.xml')}",
+            f"--outfile {_quote(outfile)}",
+        ]
+    )
+    return " ".join(maker)
 
 
 def _run_point(
@@ -1259,20 +1335,13 @@ def _run_point(
             refit_dir.mkdir(parents=True, exist_ok=True)
             _discard_incomplete_refit(enhanced)
             input_xaod = Path(str(config["input_xaod"])).expanduser().resolve()
-            command = " ".join(
-                [
-                    "faser_ntuple_maker.py",
-                    _quote(input_xaod),
-                    "--isMC",
-                    "--useIFT",
-                    f"--nevents {int(config['nevents'])}",
-                    "--export-tracklets",
-                    "--export-tracklet-propagation",
-                    "--refit-segments",
-                    f"--tracker-align-sqlite {_quote(payload_dir / 'tracker_alignment.sqlite')}",
-                    f"--tracker-align-pool-catalog {_quote(payload_dir / 'PoolFileCatalog.xml')}",
-                    f"--outfile {_quote(enhanced)}",
-                ]
+            command = _ntuple_maker_command(
+                input_xaod=input_xaod,
+                payload_dir=payload_dir,
+                outfile=enhanced,
+                nevents=int(config["nevents"]),
+                skip_events=int(config.get("skip_events", 0) or 0),
+                is_mc=bool(config.get("is_mc", True)),
             )
             _run_shell(
                 _calypso_command(command), point_dir / "logs" / "refit.log", dry_run, cwd=point_dir
@@ -1287,7 +1356,11 @@ def _run_point(
                             _quote(enhanced),
                             "--output",
                             _quote(tracklets),
-                            "--include-truth",
+                            *(
+                                ["--include-truth"]
+                                if bool(config.get("include_truth", bool(config.get("is_mc", True))))
+                                else []
+                            ),
                         ]
                     ),
                     " ".join(
@@ -1304,7 +1377,11 @@ def _run_point(
                             _quote(tracklets),
                             "--output",
                             _quote(audit),
-                            "--require-mc-labels",
+                            *(
+                                ["--require-mc-labels"]
+                                if bool(config.get("require_mc_labels", bool(config.get("is_mc", True))))
+                                else []
+                            ),
                         ]
                     ),
                 ]
@@ -1355,6 +1432,11 @@ def _run_point(
                 )
             )
             _run_shell(_ml_command(command), point_dir / "logs" / "closure.log", dry_run)
+        if not dry_run and not _audit_has_positive_tracklets(audit):
+            phase = "content_audit"
+            raise RuntimeError(
+                "content_audit_empty: n_tracklets must be > 0; empty ROOT is not success"
+            )
     except Exception as error:
         if not dry_run:
             _write_failure(point_dir, phase=locals().get("phase", "unknown"), error=error)
@@ -1394,6 +1476,16 @@ def main() -> None:
     config = _load_config(config_path)
     if int(config.get("q_over_p_mode", -1)) != 0:
         raise ValueError("physical V1 capture scans must use q_over_p_mode=0")
+    is_mc = bool(config.get("is_mc", True))
+    include_truth = bool(config.get("include_truth", is_mc))
+    require_mc_labels = bool(config.get("require_mc_labels", is_mc))
+    if not is_mc and (include_truth or require_mc_labels):
+        raise ValueError("real-data physical scans must not include or require MC labels")
+    if is_mc and not include_truth:
+        raise ValueError("MC physical scans must export MC labels")
+    config["is_mc"] = is_mc
+    config["include_truth"] = include_truth
+    config["require_mc_labels"] = require_mc_labels
     if not Path(str(config["input_xaod"])).expanduser().is_file():
         raise FileNotFoundError(f"input xAOD is unavailable: {config['input_xaod']}")
     plan = _build_plan(config)

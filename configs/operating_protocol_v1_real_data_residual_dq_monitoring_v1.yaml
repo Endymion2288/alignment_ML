@@ -1,0 +1,117 @@
+# Production-like residual/DQ monitoring protocol.
+# Current official geometry only.  No FD probes, no Newton, no payload write.
+# Does not construct a Station calibration mode.  Does not start C_dx Mode.
+
+schema_version: faser-operating-protocol-v1-real-data-residual-dq-monitoring
+frozen: true
+do_not_enter_cdx_mode: true
+do_not_construct_station_calibration_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_blocked: true
+cdx_mode_allowed: false
+schur_projection_production: false
+residual_reduction_is_not_alignment_success: true
+cannot_convert_drift_to_geometry: true
+do_not_extract_alignment_payload_from_self_nulling: true
+mc_truth_used: false
+q_over_p_mode: 0
+do_not_open_sealed_test: true
+analysis_only: true
+current_geometry_only: true
+survey_dz_mm: 0.0
+track_driven_dz: false
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+self_nulling_root: outputs/operating_protocol_v1_real_data_station_mode_self_nulling_fullscale_v1
+reduced_mode_root: outputs/operating_protocol_v1_real_data_reduced_station_mode_feasibility_v1
+
+cdx_fixed_by: external_geometry
+observation_kind: anchor_selected_field_edge
+observation_statistics: physical_edge_deduplicated
+geometry_tag: FASERNU-04
+conditions_tag: OFLCOND-FASER-06
+reconstruction_tag: r0022
+
+blind_roles:
+  "14973": calibration_reference
+  "14974": calibration_reference
+  "14975": monitoring
+  "14976": monitoring
+  "14977": monitoring
+verdict_uses_roles:
+  - calibration_reference
+  - monitoring
+verdict_excludes_roles: []
+
+full_segment_sources:
+  "14973":
+    source_id: data24_r14973_00007_skip49500_n84988
+    nevents: 84988
+  "14974":
+    source_id: data24_r14974_00005_skip74400_n60886
+    nevents: 60886
+  "14975":
+    source_id: data24_r14975_00005_skip21600_n111781
+    nevents: 111781
+  "14976":
+    source_id: data24_r14976_00004_skip95500_n40562
+    nevents: 40562
+  "14977":
+    source_id: data24_r14977_00005_skip135900_n01687
+    nevents: 1687
+
+calibration_reference_runs:
+  - 14973
+  - 14974
+
+# Residual-channel mapping.  dz is never a track-driven observable.
+isolation_observables:
+  dy: residual_y_mm
+  rx: residual_ty
+cross_level_sensitive_observables:
+  dx: residual_x_mm
+  ry: residual_tx
+rz_direct_track_residual: false
+dz_track_driven_observable: false
+
+# Pre-registered alarm thresholds.  Do not retune from the monitoring sample.
+min_selected_routes_for_alignment_dq: 10
+max_event_share_of_selected_routes: 0.50
+min_all_pairs_candidates: 50
+robust_z_detector_condition: 5.0
+robust_z_drift: 3.0
+min_nonreference_runs_for_repeatable_drift: 2
+
+expansion_candidates_not_yet_associated:
+  - 14971
+  - 14972
+  - 14980
+  - 14981
+  - 14985
+  - 14989
+  - 15007
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc

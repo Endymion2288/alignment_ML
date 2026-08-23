@@ -49,6 +49,7 @@ def build_candidate_sets(
     feature_set: str = "residual_v1",
     max_events_per_sample: int | None = None,
     q_over_p_mode: int = 0,
+    require_mc_labels: bool = True,
 ) -> list[CandidateSet]:
     """Load only same-payload synthetic/Acts pairs and build physical candidates."""
     pairs = tuple((int(source), int(target)) for source, target in station_pairs)
@@ -62,11 +63,13 @@ def build_candidate_sets(
     for sample in samples:
         events = load_events(
             sample.synthetic_tracklets,
-            require_mc_labels=True,
+            require_mc_labels=require_mc_labels,
             max_events=max_events_per_sample,
         )
         records = load_propagation_records(sample.field_candidates)
         for event in events:
+            if require_mc_labels is False and event.truth_particle_id is not None:
+                raise ValueError("real-data candidate construction received MC truth labels")
             for source_station, target_station in pairs:
                 candidates = tuple(
                     build_field_candidates(
@@ -79,7 +82,10 @@ def build_candidate_sets(
                         target_z_tolerance_mm=target_z_tolerance_mm,
                     )
                 )
-                labels = candidate_labels(event, candidates)
+                if require_mc_labels:
+                    labels = candidate_labels(event, candidates)
+                else:
+                    labels = np.zeros(len(candidates), dtype=bool)
                 result.append(
                     CandidateSet(
                         sample=sample,

@@ -1,0 +1,73 @@
+# Real-data V2 frozen route acceptance scaling study V1.
+# Registered before expanding the entry-48 100-event windows.
+# This study does not change V2, thresholds, unmatched penalty, route
+# logic, occupancy selection, capture, or the mode-validity contract.
+# It does not enter Station Mode or C_dx Mode.
+
+schema_version: faser-operating-protocol-v1-real-data-v2-route-acceptance-scaling
+frozen: true
+do_not_enter_alignment: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_change_route_logic: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_occupancy_selection: true
+geometry_write_allowed: false
+station_mode_blocked: true
+cdx_mode_blocked: true
+use_residual: false
+generate_geometry_payload: false
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+q_over_p_mode: 0
+observation_statistics: physical_edge_deduplicated
+athena_flags:
+  NoTrackFilt: true
+  no_stable: true
+occupancy_selection:
+  frozen_windows: outputs/operating_protocol_v1_real_data_occupancy_preflight_v1/frozen_windows.json
+  keep_segment_and_skip_events: true
+  expand_nevents_only: true
+
+blind_roles:
+  "14973": calibration
+  "14974": calibration
+  "14975": holdout
+  "14976": holdout
+  "14977": held_out_dq
+verdict_uses_roles:
+  - calibration
+verdict_excludes_roles:
+  - holdout
+  - held_out_dq
+
+scales:
+  - name: n100
+    requested_nevents: 100
+    reuse_existing: true
+  - name: n1000
+    requested_nevents: 1000
+    reuse_existing: false
+  - name: n10000
+    requested_nevents: 10000
+    reuse_existing: false
+  - name: full
+    requested_nevents: full_segment_remaining
+    reuse_existing: false
+
+# Read-only MC 100-event transfer reference from the already-frozen
+# occupancy-window rule.  Not a new cut and not used to retune V2.
+mc_transfer_100_event_tracklets: 376
+tracklet_significantly_below_mc_fraction: 0.5
+stable_complete_route_min: 1
+max_event_share_of_selected_routes: 0.50
+many_all_pairs_candidates: 50

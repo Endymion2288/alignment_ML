@@ -1,0 +1,85 @@
+# Operating Protocol V1 real-data Station Mode failure characterization.
+# Analysis only.  Does not write geometry.  Does not start C_dx Mode.
+# Does not change frozen V2, route policy, thresholds, or unmatched penalty.
+# Does not use the Schur production estimator.  Does not add DoF.
+
+schema_version: faser-operating-protocol-v1-real-data-station-mode-failure-audit
+frozen: true
+do_not_enter_cdx_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_reregister_capture_or_A: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+cdx_mode_blocked: true
+schur_projection_production: false
+residual_reduction_is_not_alignment_success: true
+mc_truth_used: false
+q_over_p_mode: 0
+do_not_open_sealed_test: true
+do_not_emit_cdx_payload: true
+analysis_only: true
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+self_nulling_root: outputs/operating_protocol_v1_real_data_station_mode_self_nulling_fullscale_v1
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+scaling_report: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/route_acceptance_scaling_report.json
+
+cdx_fixed_by: external_geometry
+observation_kind: anchor_selected_field_edge
+observation_statistics: physical_edge_deduplicated
+
+blind_roles:
+  "14973": calibration
+  "14974": calibration
+  "14975": holdout
+  "14976": holdout
+  "14977": held_out_dq
+verdict_uses_roles:
+  - calibration
+verdict_excludes_roles:
+  - holdout
+  - held_out_dq
+
+full_segment_sources:
+  "14973":
+    source_id: data24_r14973_00007_skip49500_n84988
+    nevents: 84988
+  "14974":
+    source_id: data24_r14974_00005_skip74400_n60886
+    nevents: 60886
+  "14975":
+    source_id: data24_r14975_00005_skip21600_n111781
+    nevents: 111781
+  "14976":
+    source_id: data24_r14976_00004_skip95500_n40562
+    nevents: 40562
+  "14977":
+    source_id: data24_r14977_00005_skip135900_n01687
+    nevents: 1687
+
+# Same admission gate as the MC 6-DoF identifiability audit.
+target_condition_number: 10000.0
+near_degenerate_abs_component: 0.5
+a_alignment_threshold: 0.90
+# Above these, more complete-track statistics is not a practical next step.
+practical_complete_routes_max: 200
+practical_events_max: 500000
+survey_prior_sigma_ift_dz_mm: 5.0
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc

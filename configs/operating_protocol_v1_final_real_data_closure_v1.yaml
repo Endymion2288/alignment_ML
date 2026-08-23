@@ -1,0 +1,110 @@
+# Operating Protocol V1 final real-data closure and reproducibility freeze.
+# Assembles entries 47-53.  Does not reopen Station, reduced Station, or C_dx.
+# Does not retune V2, occupancy, alarms, A, or the reference residual scale.
+
+schema_version: faser-operating-protocol-v1-final-real-data-closure
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+do_not_enter_cdx_mode: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_change_thresholds: true
+do_not_change_unmatched_penalty: true
+do_not_retrain_v2: true
+do_not_restandardize: true
+do_not_change_route_policy: true
+do_not_change_occupancy_selection: true
+do_not_repick_window_from_residual: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+do_not_reestimate_reference_scale: true
+do_not_reestimate_alarm_thresholds: true
+do_not_retune_A: true
+joint_station_cdx_newton: false
+new_layer_or_module_dof: false
+official_conditions_db_write: false
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_blocked: true
+cdx_mode_allowed: false
+schur_projection_production: false
+residual_reduction_is_not_alignment_success: true
+cannot_convert_drift_to_geometry: true
+do_not_extract_alignment_payload_from_self_nulling: true
+mc_truth_used: false
+q_over_p_mode: 0
+do_not_open_sealed_test: true
+analysis_only: true
+current_geometry_only: true
+survey_dz_mm: 0.0
+track_driven_dz: false
+rz_direct_track_residual: false
+dz_track_driven_observable: false
+alignment_payload_from_self_nulling_residuals: false
+
+frozen_v2: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1
+frozen_v2_checkpoint: outputs/mc24_v3_expanded_trainval_v2_bce_control_v1/route_aware_transformer_v2.pt
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+frozen_v2_thresholds: 0.001
+frozen_v2_unmatched_penalty: -1.0
+observation_kind: anchor_selected_field_edge
+observation_statistics: physical_edge_deduplicated
+geometry_tag: FASERNU-04
+conditions_tag: OFLCOND-FASER-06
+reconstruction_tag: r0022
+cdx_fixed_by: external_geometry
+
+window_rule: configs/operating_protocol_v1_real_data_occupancy_window_rule.yaml
+mode_validity_contract: outputs/mc24_ift_calibration_mode_validity_contract_v1/mode_validity_contract.json
+mc_transfer_root: outputs/mc24_ift_calibration_mode_transfer_large_stats_v1
+occupancy_preflight_root: outputs/operating_protocol_v1_real_data_occupancy_preflight_v1
+scaling_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+self_nulling_root: outputs/operating_protocol_v1_real_data_station_mode_self_nulling_fullscale_v1
+failure_audit_root: outputs/operating_protocol_v1_real_data_station_mode_failure_audit_v1
+reduced_mode_root: outputs/operating_protocol_v1_real_data_reduced_station_mode_feasibility_v1
+monitoring_root: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_v1
+expansion_root: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1
+
+parent_run_level_report: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_v1/run_level_dq_report.json
+
+athena_flags:
+  NoTrackFilt: true
+  no_stable: true
+
+occupancy_minima:
+  n_events_with_clusters: 16
+  n_events_with_tracklets: 16
+  total_tracklets: 32
+  n_events_with_four_station_tracklets: 8
+
+calibration_reference_runs:
+  - 14973
+  - 14974
+
+# Copied verbatim from entry 52.  Do not retune.
+min_selected_routes_for_alignment_dq: 10
+max_event_share_of_selected_routes: 0.50
+min_all_pairs_candidates: 50
+robust_z_detector_condition: 5.0
+robust_z_drift: 3.0
+min_nonreference_runs_for_repeatable_drift: 2
+
+isolation_observables:
+  dy: residual_y_mm
+  rx: residual_ty
+cross_level_sensitive_observables:
+  dx: residual_x_mm
+  ry: residual_tx
+
+residual_decrease_label: DQ observable
+
+truth_metrics_forbidden:
+  - efficiency
+  - purity
+  - fake
+  - auc
+  - average_precision
+  - ap
+  - roc

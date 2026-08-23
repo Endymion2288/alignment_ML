@@ -109,8 +109,10 @@ source/run 稳定性、association efficiency/purity/fake、正规矩阵条件�
 - route multiplicity
 - 重拟合后 geometry consistency
 
-条目 03 对 2022 data0 IFT 重导出 provenance 仍未放行。真实数据准入仍取决于
-该物理链。
+条目 03 对 2022 data0 IFT 重导出 provenance 仍未放行。V1 dry-run 只准入
+2024 r0022 重建 xAOD，并冻结 calibration / holdout / held-out-DQ 分割。见
+[真实数据 dry-run](operating_protocol_v1_real_data_dryrun_cn.md)。真实数据
+准入仍取决于该物理链。本 dry-run 不写入官方 conditions 数据库。
 
 ## 结束方法开发
 

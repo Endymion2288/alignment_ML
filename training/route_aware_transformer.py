@@ -163,7 +163,11 @@ def _empty_route_table() -> RouteCandidateTable:
     )
 
 
-def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandidateTable:
+def enumerate_complete_route_candidates(
+    graph: TransformerGraph,
+    *,
+    require_mc_labels: bool = True,
+) -> RouteCandidateTable:
     """Materialize only complete chains already present in physical adjacencies.
 
     The graph must be ``full_event`` so local node indices are original event
@@ -176,8 +180,11 @@ def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandida
     expected_station_ids = np.asarray(graph.event.station_id, dtype=np.int64)
     if not np.array_equal(graph.station_ids, expected_station_ids):
         raise ValueError("route candidates require full-event station ordering")
-    if graph.event.truth_particle_id is None:
-        raise ValueError("route-aware V2 training requires MC truth particle IDs")
+    if require_mc_labels:
+        if graph.event.truth_particle_id is None:
+            raise ValueError("route-aware V2 training requires MC truth particle IDs")
+    elif graph.event.truth_particle_id is not None:
+        raise ValueError("real-data route enumeration received MC truth labels")
     pair_ids = _adjacent_pair_ids()
     maps: list[dict[int, list[tuple[int, int]]]] = [dict(), dict(), dict()]
     for row, (source, target, pair_id) in enumerate(
@@ -208,9 +215,13 @@ def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandida
         return _empty_route_table()
     nodes = np.asarray(node_rows, dtype=np.int64)
     edges = np.asarray(edge_rows, dtype=np.int64)
-    truth = np.asarray(graph.event.truth_particle_id, dtype=np.int64)[nodes]
-    labels = np.all(truth >= 0, axis=1) & np.all(truth == truth[:, :1], axis=1)
-    fake_endpoint = np.any(truth < 0, axis=1)
+    if require_mc_labels:
+        truth = np.asarray(graph.event.truth_particle_id, dtype=np.int64)[nodes]
+        labels = np.all(truth >= 0, axis=1) & np.all(truth == truth[:, :1], axis=1)
+        fake_endpoint = np.any(truth < 0, axis=1)
+    else:
+        labels = np.zeros(nodes.shape[0], dtype=bool)
+        fake_endpoint = np.zeros(nodes.shape[0], dtype=bool)
     roles = graph.event.synthetic_role
     hard_negative = np.zeros(nodes.shape[0], dtype=bool)
     if roles is not None:
@@ -253,6 +264,8 @@ def route_candidate_table_summary(tables: Iterable[RouteCandidateTable]) -> dict
 
 def materialize_route_candidate_tables(
     graphs: Sequence[TransformerGraph],
+    *,
+    require_mc_labels: bool = True,
 ) -> dict[int, RouteCandidateTable]:
     """Cache immutable physical route chains once per train/validation graph.
 
@@ -266,7 +279,7 @@ def materialize_route_candidate_tables(
         key = id(graph)
         if key in result:  # pragma: no cover - graph bundles are unique by construction
             raise ValueError("route candidate cache received a duplicate graph object")
-        result[key] = enumerate_complete_route_candidates(graph)
+        result[key] = enumerate_complete_route_candidates(graph, require_mc_labels=require_mc_labels)
     return result
 
 
@@ -276,6 +289,8 @@ def _make_route_batch(
     edge_standardizer: FeatureStandardizer,
     device: torch.device,
     route_tables: Mapping[int, RouteCandidateTable] | None = None,
+    *,
+    require_mc_labels: bool = True,
 ) -> _RouteTensorBatch:
     """Attach graph-local route candidates to one existing sparse graph batch."""
     base = _make_batch(graphs, node_standardizer, edge_standardizer, device)
@@ -288,7 +303,7 @@ def _make_route_batch(
     route_hard: list[np.ndarray] = []
     for graph in graphs:
         table = (
-            enumerate_complete_route_candidates(graph)
+            enumerate_complete_route_candidates(graph, require_mc_labels=require_mc_labels)
             if route_tables is None
             else route_tables[id(graph)]
         )
@@ -594,6 +609,7 @@ def predict_route_aware_scores(
     device: str | torch.device = "auto",
     batch_size: int = 8,
     route_tables: Mapping[int, RouteCandidateTable] | None = None,
+    require_mc_labels: bool = True,
 ) -> RouteAwarePrediction:
     """Run V2 on physical graphs and reconstruct all original adjacent rows."""
     if bundle.context_mode != "full_event":
@@ -602,7 +618,9 @@ def predict_route_aware_scores(
         raise ValueError("V2 prediction batch_size must be positive")
     resolved_device = resolve_device(str(device)) if not isinstance(device, torch.device) else device
     resolved_tables = (
-        materialize_route_candidate_tables(bundle.graphs) if route_tables is None else route_tables
+        materialize_route_candidate_tables(bundle.graphs, require_mc_labels=require_mc_labels)
+        if route_tables is None
+        else route_tables
     )
     if set(resolved_tables) != {id(graph) for graph in bundle.graphs}:
         raise ValueError("V2 route table cache does not match the supplied physical graph bundle")

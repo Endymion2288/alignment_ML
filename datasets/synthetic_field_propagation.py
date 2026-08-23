@@ -142,6 +142,7 @@ def write_synthetic_field_candidate_root(
     destination: str | Path,
     q_over_p_mode: int = 0,
     target_z_tolerance_mm: float = 1.0e-6,
+    require_mc_labels: bool = True,
 ) -> SyntheticFieldCandidateSummary:
     """Fan out exact source Acts predictions to compatible synthetic targets.
 
@@ -157,7 +158,9 @@ def write_synthetic_field_candidate_root(
     synthetic_path = Path(synthetic_tracklets).expanduser().resolve()
     source_path = Path(source_propagations).expanduser().resolve()
     output_path = Path(destination).expanduser().resolve()
-    events = load_events(synthetic_path, require_mc_labels=True)
+    events = load_events(synthetic_path, require_mc_labels=require_mc_labels)
+    if require_mc_labels is False and any(event.truth_particle_id is not None for event in events):
+        raise ValueError("real-data field-candidate export received MC truth labels")
     records = load_propagation_records(source_path)
     prediction_index = _source_prediction_index(records, q_over_p_mode=q_over_p_mode)
     columns = _empty_columns()
