@@ -395,3 +395,37 @@ sources; workbook-56 transfer is diagnostic only):
 ```bash
 bash scripts/run_four_station_training_diversity_audit.sh
 ```
+
+Workbook 64 trains the frozen workbook-62 objective on the authorized
+six-source set (keep the two current train files; add
+`100043_00300`, `100044_00200`, `100047_00100`, `100048_00100`).
+Do not retune loss, weights, reduction, margin, threshold, penalty,
+Platt, candidate builder, solver, or architecture.  Do not enlarge
+the envelope or substitute V3 identity / synthetic repeats.  The
+final gate is the reserved blind pair `100047_00350` /
+`100048_00350`, compared to that bank's own nominal.  If it passes,
+reclassify the workbook-62 failure as
+`training_domain_coverage_limitation_resolved_by_source_diversity`
+and open route-selected 15-DoF `ΔT_ij` WLS.  If it fails with the
+same left-SE(3) common-transform truth-utility drop, stop the V2
+mainline; the next discussion is architecture-level relative /
+gauge-equivariant representation.
+
+```bash
+bash scripts/run_four_station_source_diversity_training.sh audit-new-sources
+bash scripts/run_four_station_source_diversity_training.sh audit-blind-unused
+bash scripts/run_four_station_source_diversity_training.sh prepare-train
+bash scripts/run_four_station_source_diversity_training.sh submit-train
+bash scripts/run_four_station_source_diversity_training.sh assemble-train
+bash scripts/run_four_station_source_diversity_training.sh merge-train
+bash scripts/run_four_station_source_diversity_training.sh overlay-train
+bash scripts/run_four_station_source_diversity_training.sh coverage-sanity
+bash scripts/run_four_station_source_diversity_training.sh train
+bash scripts/run_four_station_source_diversity_training.sh prepare-blind
+bash scripts/run_four_station_source_diversity_training.sh submit-blind
+bash scripts/run_four_station_source_diversity_training.sh assemble-blind
+bash scripts/run_four_station_source_diversity_training.sh overlay-blind
+bash scripts/run_four_station_source_diversity_training.sh infer-blind
+bash scripts/run_four_station_source_diversity_training.sh mechanism-blind
+bash scripts/run_four_station_source_diversity_training.sh assess
+```

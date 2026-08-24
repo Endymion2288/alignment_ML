@@ -1,11 +1,11 @@
-# Workbook 63: frozen workbook-62 objective on expanded source-disjoint
-# training sources.  Inert until workbook 63 authorizes the expansion.
-# If authorized, the only allowed change is the training-source list.
-# Loss, weights, reduction, margin, thresholds, unmatched penalty,
-# Platt, architecture, and gates stay exactly at workbook 62.
+# Workbook 64: frozen workbook-62 objective on the authorized
+# source-disjoint six-source train bank.  The only allowed change is
+# the training-source list.  Loss, weights, reduction, margin,
+# thresholds, unmatched penalty, Platt, architecture, and gates stay
+# exactly at workbook 62.
 schema_version: faser-four-station-source-diversity-training-v1
 control_id: retrained_v2_source_disjoint_diversity_v1
-workbook: 63
+workbook: 64
 parent_control_id: retrained_v2_hard_aware_max_reduction_v1
 parent_checkpoint_sha256: a46a35bd28eb294fe307590d4f12595f6d3bfaa8dc64aea0bf7418543605e1ef
 authorization_required: workbook63_decision.authorize_new_training_sources
@@ -66,6 +66,7 @@ objective:
     method: max_over_complete_truth_routes_in_event
   loss_weight_algorithm:
     method: copy_frozen_workbook59_aux_weights
+    source_checkpoint_sha256: 6565d028e01e561105d4ce467d10d5c82e5a2435daad6a69c47a07920defb5dc
     packing_route_competition_weight: 0.07061055340401011
     dustbin_aware_route_margin_weight: 0.05
     gauge_twin_consistency_weight: 1.0
@@ -103,26 +104,39 @@ final_gate:
   sources:
     - mc24_100047_00350_00399
     - mc24_100048_00350_00399
-  never_used_in_workbooks_48_62: true
+  never_used_in_workbooks_48_63_training_diagnostic_op_or_source_audit: true
   not_used_in_workbook63_scoring: true
   workbook56_transfer_role: development_diagnostic_only
-  gates_unchanged:
-    nominal_complete_track_purity_min: 0.95
-    nominal_track_fake_rate_max: 0.05
-    complete_track_efficiency_drop_vs_nominal_max: 0.10
-    complete_track_purity_drop_vs_nominal_max: 0.05
-    track_fake_rate_increase_vs_nominal_max: 0.05
-    gauge_twin: true
-    adjacent_23_and_s3_stability: true
+  workbook53_55_development_role: mechanism_history_comparison_only
+  compare_against: this_bank_nominal
   do_not_retune_after_seeing_blind: true
 
+gates:
+  raw_complete_truth_chain_recall_min: 0.90
+  adjacent_truth_edge_recall_min: 0.90
+  nominal_complete_track_purity_min: 0.95
+  nominal_track_fake_rate_max: 0.05
+  complete_track_efficiency_drop_vs_nominal_max: 0.10
+  complete_track_purity_drop_vs_nominal_max: 0.05
+  track_fake_rate_increase_vs_nominal_max: 0.05
+  require_adjacent_pair_and_s3_report: true
+  gauge_invariance_audit:
+    same_delta_t_ij_required: true
+    complete_track_efficiency_twin_abs_diff_max: 0.05
+    complete_track_purity_twin_abs_diff_max: 0.05
+    track_fake_rate_twin_abs_diff_max: 0.05
+    adjacent_23_efficiency_twin_abs_diff_max: 0.08
+
 if_blind_passes:
-  reclassify_workbook62_failure_as: training_domain_coverage
+  reclassify_workbook62_failure_as: training_domain_coverage_limitation_resolved_by_source_diversity
+  freeze_checkpoint_calibration_operating_convention: true
   open_15d_route_selected_delta_t_ij_wls: true
   capture_contract: workbook_49_50_frozen
 
 if_blind_fails_same_common_se3_truth_utility_drop:
-  next: discuss_architecture_level_relative_gauge_equivariant_representation
+  next: stop_v2_mainline_and_discuss_architecture_level_relative_gauge_equivariant_representation
+  do_not_add_more_same_family_sources: true
+  do_not_reweight_or_retune_operating_point: true
   do_not_retune_v2_loss_or_operating_point: true
   continue_to_15d_relative_wls: false
 

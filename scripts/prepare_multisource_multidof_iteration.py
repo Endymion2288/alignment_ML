@@ -30,10 +30,11 @@ from scripts.run_physical_refit_capture_scan import _build_plan
 SCHEMA_VERSION = "faser-multisource-physical-alignment-iteration-v1"
 ALLOWED_SPLITS = ("train", "validation")
 TRANSFER_VALIDATION_SPLITS = ("validation",)
+TRAIN_ONLY_SPLITS = ("train",)
 
 
 def iteration_split_mode(payload: Mapping[str, Any], *, label: str) -> str:
-    """Accept train+validation banks or a transfer-validation-only bank."""
+    """Accept train+validation, transfer-only, train-only, or reserved-blind banks."""
     forbidden = {str(value) for value in payload.get("forbidden_splits", ())}
     if "test" not in forbidden:
         raise ValueError(f"{label} must explicitly forbid test")
@@ -48,6 +49,14 @@ def iteration_split_mode(payload: Mapping[str, Any], *, label: str) -> str:
         and "train" in forbidden
     ):
         return "transfer_validation"
+    if allowed == TRAIN_ONLY_SPLITS and "validation" in forbidden and "test" in forbidden:
+        return "train_only"
+    if (
+        allowed == TRANSFER_VALIDATION_SPLITS
+        and payload.get("reserved_blind_validation_only") is True
+        and "train" in forbidden
+    ):
+        return "reserved_blind_validation"
     raise ValueError(f"{label} has an unsupported split contract {allowed}")
 
 
@@ -195,6 +204,7 @@ def prepare_iteration(
             "allowed_splits": list(allowed),
             "forbidden_splits": list(forbidden),
             "transfer_validation_only": corpus_config.get("transfer_validation_only"),
+            "reserved_blind_validation_only": corpus_config.get("reserved_blind_validation_only"),
             "test_data_accessed": False,
         },
         label="source configuration",
@@ -211,7 +221,11 @@ def prepare_iteration(
         raise ValueError("no train/validation source selected")
     represented = {source["split"] for source in sources}
     if source_ids is None:
-        expected = {"validation"} if split_mode == "transfer_validation" else set(ALLOWED_SPLITS)
+        expected = {
+            "transfer_validation": {"validation"},
+            "train_only": {"train"},
+            "reserved_blind_validation": {"validation"},
+        }.get(split_mode, set(ALLOWED_SPLITS))
         if represented != expected:
             raise ValueError(f"source configuration splits {sorted(represented)} do not match {split_mode}")
 
@@ -271,6 +285,7 @@ def prepare_iteration(
         "allowed_splits": list(allowed),
         "forbidden_splits": sorted(forbidden),
         "transfer_validation_only": split_mode == "transfer_validation",
+        "reserved_blind_validation_only": split_mode == "reserved_blind_validation",
         "test_data_accessed": False,
         "nevents_per_source": int(nevents),
         "alignment_iteration": contract,

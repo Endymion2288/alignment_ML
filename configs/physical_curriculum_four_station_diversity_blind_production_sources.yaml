@@ -1,0 +1,27 @@
+# Workbook 64 production copy of the reserved blind μ± pair.
+# Used only after the unused-artifact audit.  Train and sealed test
+# stay forbidden.  Workbook-56 transfer is not this gate.
+physical_curriculum_mlp:
+  allowed_splits: [validation]
+  forbidden_splits: [train, test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  relative_curriculum: 15d_gauge_then_left_se3
+  no_station_is_assumed_correct: true
+  reserved_blind_validation_only: true
+  do_not_load_until_final_gate: false
+  authorized_for_workbook64_production: true
+  workbook56_transfer_is_final_gate: false
+  test_data_accessed: false
+
+  sources:
+    - id: mc24_100047_00350_00399
+      split: validation
+      charge: mu-
+      transfer_role: reserved_blind_validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00350-00399-s0013-r0022-xAOD.root
+    - id: mc24_100048_00350_00399
+      split: validation
+      charge: mu+
+      transfer_role: reserved_blind_validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00350-00399-s0013-r0022-xAOD.root

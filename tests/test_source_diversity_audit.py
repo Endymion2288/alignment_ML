@@ -12,6 +12,7 @@ from training.source_diversity_audit import (
     attach_route_phase_space,
     assert_sources_allowed,
     charge_from_pdg,
+    coverage_expansion_report,
     coverage_report,
     fraction_inside_quantiles,
     quantile,
@@ -202,3 +203,36 @@ def test_phase_space_undercoverage_when_s3_is_outside_train():
     decision = recommend_diversity_next(coverage_report(train, [far]))
     assert decision["coverage_class"] == "source_phase_space_undercoverage"
     assert decision["authorize_new_training_sources"] is True
+
+
+def test_coverage_expansion_is_sanity_only_and_detects_wider_train():
+    old = [_covered_row(FAILURE_PAYLOAD, production_margin=1.2, logit_2to3=2.0)]
+    new = [
+        _covered_row(FAILURE_PAYLOAD, production_margin=1.2, logit_2to3=2.0),
+        _covered_row(
+            FAILURE_PAYLOAD,
+            truth_id=9,
+            production_margin=0.2,
+            logit_2to3=-0.5,
+            selected=False,
+        ),
+    ]
+    new[1]["track_state_by_station"]["2"]["ty"] = 0.40
+    new[1]["track_state_by_station"]["3"]["ty"] = 0.45
+    new[1]["track_state_by_station"]["3"]["tx"] = 0.35
+    failure = [
+        _covered_row(
+            FAILURE_PAYLOAD,
+            production_margin=0.25,
+            logit_2to3=-0.4,
+            selected=False,
+        )
+    ]
+    failure[0]["track_state_by_station"]["2"]["ty"] = 0.39
+    failure[0]["track_state_by_station"]["3"]["ty"] = 0.44
+    failure[0]["track_state_by_station"]["3"]["tx"] = 0.34
+    report = coverage_expansion_report(old, new, failure)
+    assert report["coverage_expanded"] is True
+    assert report["do_not_reselect_sources"] is True
+    assert report["do_not_modify_curriculum"] is True
+    assert report["sanity_check_only"] is True

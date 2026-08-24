@@ -1,0 +1,10 @@
+# Workbook 64 reserved-blind overlay.  Same frozen V2 synthetic policy.
+# Train is forbidden.  Sealed test is forbidden.
+base_config: physical_alignment_iteration_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [validation]
+  forbidden_splits: [train, test]
+  reserved_blind_validation_only: true
+  synthetic_multitrack:
+    overlay_seed_scope: alignment_iteration_shared_across_payloads

@@ -1,0 +1,10 @@
+# Workbook 64 six-source train overlay.  Synthetic policy is identical
+# to frozen V2.  Do not retune events_per_payload, tracks_per_event,
+# fake rates, or overlay_seed_scope.
+base_config: physical_alignment_iteration_trainval.yaml
+
+physical_curriculum_mlp:
+  allowed_splits: [train]
+  forbidden_splits: [validation, test]
+  synthetic_multitrack:
+    overlay_seed_scope: alignment_iteration_shared_across_payloads

@@ -351,3 +351,35 @@ diagnostic）：
 ```bash
 bash scripts/run_four_station_training_diversity_audit.sh
 ```
+
+条目 64 在条目 63 授权的六源 train 上从头训练与条目 62 完全相同的
+V2（dustbin-aware + gauge + max reduction；复制冻结 aux 权重；
+identity Platt；0.001 / −1.0；margin=1）。不改 objective / OP /
+架构，不扩大 envelope，不用 V3 identity 或同一文件的 synthetic
+重复代替 source diversity。最终 gate 只打开 reserved blind
+`100047_00350` / `100048_00350`，对照该 bank 自己的 nominal。
+通过则归类
+`training_domain_coverage_limitation_resolved_by_source_diversity`
+并第一次授权 route-selected 15D `ΔT_ij` WLS。若仍是同一
+left-SE(3) common transform 下的 systematic truth-utility drop，
+停止当前 V2 主线，下一步转向 architecture-level relative /
+gauge-equivariant representation。
+
+```bash
+bash scripts/run_four_station_source_diversity_training.sh audit-new-sources
+bash scripts/run_four_station_source_diversity_training.sh audit-blind-unused
+bash scripts/run_four_station_source_diversity_training.sh prepare-train
+bash scripts/run_four_station_source_diversity_training.sh submit-train
+bash scripts/run_four_station_source_diversity_training.sh assemble-train
+bash scripts/run_four_station_source_diversity_training.sh merge-train
+bash scripts/run_four_station_source_diversity_training.sh overlay-train
+bash scripts/run_four_station_source_diversity_training.sh coverage-sanity
+bash scripts/run_four_station_source_diversity_training.sh train
+bash scripts/run_four_station_source_diversity_training.sh prepare-blind
+bash scripts/run_four_station_source_diversity_training.sh submit-blind
+bash scripts/run_four_station_source_diversity_training.sh assemble-blind
+bash scripts/run_four_station_source_diversity_training.sh overlay-blind
+bash scripts/run_four_station_source_diversity_training.sh infer-blind
+bash scripts/run_four_station_source_diversity_training.sh mechanism-blind
+bash scripts/run_four_station_source_diversity_training.sh assess
+```

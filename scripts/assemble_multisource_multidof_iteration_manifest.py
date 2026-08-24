@@ -193,6 +193,7 @@ def main() -> None:
         "allowed_splits": list(iteration.get("allowed_splits") or ["train", "validation"]),
         "forbidden_splits": list(iteration.get("forbidden_splits") or ["test"]),
         "transfer_validation_only": bool(iteration.get("transfer_validation_only")),
+        "reserved_blind_validation_only": bool(iteration.get("reserved_blind_validation_only")),
         "test_data_accessed": False,
         "physical_geometry_repropagation": True,
         "coordinate_surrogate": False,

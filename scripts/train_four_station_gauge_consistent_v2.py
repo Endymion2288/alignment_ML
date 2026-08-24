@@ -39,12 +39,24 @@ from training.route_aware_transformer import (
     route_aware_artifact_summary,
     save_route_aware_transformer_artifact,
 )
+from training.source_diversity_audit import (
+    AUTHORIZED_SIX_TRAIN_SOURCES,
+    DEVELOPMENT_SOURCES,
+    HISTORY_ONLY_SOURCES,
+    OUTLIER_SOURCES,
+    RESERVED_BLIND_SOURCES,
+    UNUSED_RESERVE_SOURCES,
+    is_sealed_source,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEVELOPMENT_VALIDATION_SOURCES = (
-    "mc24_100047_00050_00099",
-    "mc24_100048_00050_00099",
+DEVELOPMENT_VALIDATION_SOURCES = tuple(sorted(DEVELOPMENT_SOURCES))
+FORBIDDEN_TRAIN_SOURCES = (
+    HISTORY_ONLY_SOURCES
+    | set(RESERVED_BLIND_SOURCES)
+    | set(UNUSED_RESERVE_SOURCES)
+    | set(OUTLIER_SOURCES)
 )
 
 
@@ -138,6 +150,8 @@ def _validate_train_only(
     manifest: Mapping[str, Any],
     samples: Sequence[CurriculumSample],
     q_over_p_mode: int,
+    *,
+    control_id: str | None = None,
 ) -> None:
     if tuple(contract.get("allowed_splits", ())) != ("train",):
         raise ValueError("gauge-consistent V2 loads only the train overlay")
@@ -150,14 +164,17 @@ def _validate_train_only(
         raise ValueError(f"V2 requires the ungated physical mode-{q_over_p_mode} candidate graph")
     if {sample.split for sample in samples} != {"train"}:
         raise ValueError("gauge-consistent V2 opened a non-train split")
-    leaking = {
-        source
-        for sample in samples
-        for source in sample.source_ids
-        if str(source) in DEVELOPMENT_VALIDATION_SOURCES
-    }
+    constituents = {str(source) for sample in samples for source in sample.source_ids}
+    leaking = constituents & FORBIDDEN_TRAIN_SOURCES
+    leaking.update(source for source in constituents if is_sealed_source(source))
     if leaking:
-        raise ValueError("development-validation sources leaked into training: " + ", ".join(sorted(leaking)))
+        raise ValueError("history-only, reserved-blind, sealed, or outlier sources leaked into training: " + ", ".join(sorted(leaking)))
+    if str(control_id or "") == "retrained_v2_source_disjoint_diversity_v1":
+        if constituents != set(AUTHORIZED_SIX_TRAIN_SOURCES):
+            raise ValueError(
+                "source-diversity V2 must train the authorized six-source set, got: "
+                + ", ".join(sorted(constituents))
+            )
     if manifest.get("physical_geometry_repropagation") is not True:
         raise ValueError("train overlay lacks physical geometry repropagation")
 
@@ -207,7 +224,13 @@ def main() -> None:
         require_all_splits=False,
         allowed_splits=("train",),
     )
-    _validate_train_only(contract, manifest, samples, int(args.q_over_p_mode))
+    _validate_train_only(
+        contract,
+        manifest,
+        samples,
+        int(args.q_over_p_mode),
+        control_id=None if not isinstance(objective, Mapping) else str(objective.get("control_id") or ""),
+    )
     axis = uniform_condition_axis(samples)
     train_sets = build_candidate_sets(
         samples,

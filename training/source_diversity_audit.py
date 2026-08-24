@@ -61,6 +61,10 @@ UNUSED_RESERVE_SOURCES = (
 )
 WB62_CHECKPOINT_SHA256 = "a46a35bd28eb294fe307590d4f12595f6d3bfaa8dc64aea0bf7418543605e1ef"
 WB62_OBJECTIVE = "dustbin_aware_plus_gauge_consistent_plus_max_reduction"
+AUTHORIZED_NEW_TRAIN_SOURCES = CANDIDATE_DIAGNOSTIC_SOURCES
+AUTHORIZED_SIX_TRAIN_SOURCES = PROPOSED_NEW_TRAIN_SOURCES
+HISTORY_ONLY_SOURCES = DEVELOPMENT_SOURCES | TRANSFER_DIAGNOSTIC_SOURCES
+FOCUS_COVERAGE_KEYS = ("s2_ty", "s3_ty", "s3_tx")
 
 # Frozen before the audit numbers are opened.
 COVERAGE_QUANTILES = (0.05, 0.95)
@@ -653,4 +657,98 @@ def recommend_diversity_next(report: Mapping[str, Any]) -> dict[str, object]:
         "proposed_new_train_sources": list(PROPOSED_NEW_TRAIN_SOURCES) if authorize else list(CURRENT_TRAIN_SOURCES),
         "next_step": next_step,
         "if_expanded_diversity_still_fails_same_way": "discuss_architecture_level_relative_gauge_equivariant_representation",
+    }
+
+
+def _mean_present(values: Iterable[float | None]) -> float | None:
+    return _mean(values)
+
+
+def coverage_expansion_report(
+    old_train_rows: Sequence[Mapping[str, Any]],
+    new_train_rows: Sequence[Mapping[str, Any]],
+    failure_core_rows: Sequence[Mapping[str, Any]],
+) -> dict[str, object]:
+    """Train-only sanity check: did six-source train expand WB63 coverage?
+
+    Never used to reselect sources or rewrite the curriculum.
+    """
+    if not failure_core_rows:
+        raise ValueError("coverage expansion needs the frozen workbook-63 failure core")
+    old_inside = _inside_table(failure_core_rows, old_train_rows)
+    new_inside = _inside_table(failure_core_rows, new_train_rows)
+    kinematic_keys = [f"s{station}_{key}" for station in STATIONS for key in STATE_KEYS]
+    old_logit = _collect(old_train_rows, lambda row: row.get("logit_2to3"))
+    new_logit = _collect(new_train_rows, lambda row: row.get("logit_2to3"))
+    fail_logit = _collect(failure_core_rows, lambda row: row.get("logit_2to3"))
+    old_delta = _collect(old_train_rows, lambda row: row.get("production_margin"))
+    new_delta = _collect(new_train_rows, lambda row: row.get("production_margin"))
+    fail_delta = _collect(failure_core_rows, lambda row: row.get("production_margin"))
+    old_logit_inside = fraction_inside_quantiles(fail_logit, old_logit)
+    new_logit_inside = fraction_inside_quantiles(fail_logit, new_logit)
+    old_delta_inside = fraction_inside_quantiles(fail_delta, old_delta)
+    new_delta_inside = fraction_inside_quantiles(fail_delta, new_delta)
+    kinematic_deltas = {
+        key: None
+        if old_inside[key] is None or new_inside[key] is None
+        else float(new_inside[key]) - float(old_inside[key])
+        for key in kinematic_keys
+    }
+    focus = {
+        key: {
+            "old_inside": old_inside[key],
+            "new_inside": new_inside[key],
+            "delta": kinematic_deltas[key],
+            "expanded": False
+            if kinematic_deltas[key] is None
+            else float(kinematic_deltas[key]) > 0.0,
+        }
+        for key in FOCUS_COVERAGE_KEYS
+    }
+    old_mean = _mean_present(old_inside[key] for key in kinematic_keys)
+    new_mean = _mean_present(new_inside[key] for key in kinematic_keys)
+    focus_old = _mean_present(old_inside[key] for key in FOCUS_COVERAGE_KEYS)
+    focus_new = _mean_present(new_inside[key] for key in FOCUS_COVERAGE_KEYS)
+    logit_expanded = (
+        old_logit_inside is not None
+        and new_logit_inside is not None
+        and float(new_logit_inside) > float(old_logit_inside)
+    )
+    delta_expanded = (
+        old_delta_inside is not None
+        and new_delta_inside is not None
+        and float(new_delta_inside) > float(old_delta_inside)
+    )
+    kinematic_expanded = (
+        old_mean is not None and new_mean is not None and float(new_mean) > float(old_mean)
+    )
+    focus_expanded = (
+        focus_old is not None and focus_new is not None and float(focus_new) > float(focus_old)
+    )
+    return {
+        "failure_core_n": int(len(failure_core_rows)),
+        "old_train_n": int(len(old_train_rows)),
+        "new_train_n": int(len(new_train_rows)),
+        "kinematic_inside_old": {key: old_inside[key] for key in kinematic_keys},
+        "kinematic_inside_new": {key: new_inside[key] for key in kinematic_keys},
+        "kinematic_inside_delta": kinematic_deltas,
+        "kinematic_mean_inside_old": old_mean,
+        "kinematic_mean_inside_new": new_mean,
+        "focus": focus,
+        "focus_mean_inside_old": focus_old,
+        "focus_mean_inside_new": focus_new,
+        "logit_2to3_inside_old": old_logit_inside,
+        "logit_2to3_inside_new": new_logit_inside,
+        "delta_inside_old": old_delta_inside,
+        "delta_inside_new": new_delta_inside,
+        "coverage_expanded": bool(
+            kinematic_expanded or focus_expanded or logit_expanded or delta_expanded
+        ),
+        "kinematic_expanded": bool(kinematic_expanded),
+        "focus_expanded": bool(focus_expanded),
+        "logit_2to3_expanded": bool(logit_expanded),
+        "delta_expanded": bool(delta_expanded),
+        "do_not_reselect_sources": True,
+        "do_not_modify_curriculum": True,
+        "sanity_check_only": True,
     }

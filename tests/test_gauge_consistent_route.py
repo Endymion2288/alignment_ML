@@ -135,6 +135,34 @@ def test_iteration_split_mode_accepts_transfer_validation_only():
     )
 
 
+def test_iteration_split_mode_accepts_train_only_and_reserved_blind():
+    from scripts.prepare_multisource_multidof_iteration import iteration_split_mode
+
+    assert (
+        iteration_split_mode(
+            {
+                "allowed_splits": ["train"],
+                "forbidden_splits": ["validation", "test"],
+                "test_data_accessed": False,
+            },
+            label="train-only",
+        )
+        == "train_only"
+    )
+    assert (
+        iteration_split_mode(
+            {
+                "allowed_splits": ["validation"],
+                "forbidden_splits": ["train", "test"],
+                "reserved_blind_validation_only": True,
+                "test_data_accessed": False,
+            },
+            label="blind",
+        )
+        == "reserved_blind_validation"
+    )
+
+
 def test_payload_gauge_role_pairs_chart_and_left_se3_twin():
     assert payload_gauge_role("iteration_00_draw_00") == ("iteration_00_draw_00", "s0_sampling_chart")
     assert payload_gauge_role("iteration_00_draw_00_plus_common") == (
