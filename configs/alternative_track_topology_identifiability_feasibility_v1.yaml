@@ -1,0 +1,280 @@
+# Alternative Track-Topology Identifiability Feasibility V1
+# Residual-blind inventory and predeclared topology Jacobian audit.
+# Same true cluster-local r_u, surface, leave-one-station-out, FD steps,
+# and frozen V2 routes as entries 57-58.  No new training, no full module
+# map, no geometry write, no cosine-tuned event selection.
+
+schema_version: faser-alternative-track-topology-identifiability-feasibility-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_route_policy: true
+do_not_modify_threshold: true
+do_not_modify_unmatched_penalty: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_generate_athena_fd_probes: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+entry_57:
+  observed_ry_cdx_abs_cosine: 0.5312387420206447
+  observed_dx_cdx_abs_cosine: 0.02120250074853137
+  observed_leakage_rank: 3
+  module_proxy_ry_cdx_abs_cosine: 0.994908703906658
+
+representative:
+  station_id: 0
+  layer_id: 0
+
+finite_difference:
+  translation_step_mm: 0.010
+  rotation_step_mrad: 0.05
+  c_dx_step_mm: 0.010
+
+bootstrap:
+  n_event_replicates: 400
+  n_half_splits: 200
+  seed: 14973
+  min_routes: 8
+
+# Residual-blind physics scales.  Not scanned against |cos(ry,C_dx)|.
+physics_scales:
+  faser_ip_distance_mm: 480000.0
+  tracker_radial_envelope_mm: 100.0
+  ip_angular_acceptance_rad: 0.000208
+  ip_like_max_slope: 0.0005
+  stereo_rad: 0.020
+  ift_layer_pitch_mm: 31.5
+  strip_pitch_mm: 0.080
+  wide_angle_min_slope: 0.002
+  slope_definition: global_route_from_endpoint_tracklet_xyz
+  slope_not_local_segmentfit_tx_ty: true
+  slope_rationale: "Local IFT SegmentFit tx/ty is a station-internal angle (median ~0.017). Category cuts use the spectrometer slope from endpoint tracklet (x,y,z), which is the residual-blind angular lever arm."
+  wide_angle_rationale: "stereo/10; IFT 63 mm span times 0.002 = 0.126 mm > strip pitch 0.080 mm"
+  ip_like_rationale: "2.4 times FASER IP angular acceptance ~0.208 mrad"
+  long_lever_stations: [0, 3]
+  station_z_mm:
+    0: -1860.15
+    1: 47.4
+    2: 1237.4
+    3: 2427.4
+
+predeclared_categories:
+  - id: ge3_station_with_ift
+    description: Current analysis sample, >=3 stations including IFT.
+    min_n_stations: 3
+    requires_ift: true
+    can_unlock_module_map: false
+    role: baseline_mixed_sample
+  - id: ip_like_forward
+    description: Collision-like forward tracks below 0.5 mrad slope.
+    min_n_stations: 3
+    requires_ift: true
+    max_slope: 0.0005
+    can_unlock_module_map: false
+    role: physics_control_expected_collinear
+  - id: intermediate_angle
+    description: Between IP-like and stereo/10, still typical r0022 mix.
+    min_n_stations: 3
+    requires_ift: true
+    min_slope: 0.0005
+    max_slope: 0.002
+    can_unlock_module_map: false
+    role: physics_control_typical_r0022
+  - id: wide_incident_angle
+    description: IFT incident slope at or above stereo/10 = 2 mrad.
+    min_n_stations: 3
+    requires_ift: true
+    min_slope: 0.002
+    can_unlock_module_map: true
+    role: high_angular_lever_arm
+  - id: complete_four_station
+    description: Complete 4-station selected route (IFT through station 3).
+    requires_complete_four_station: true
+    can_unlock_module_map: true
+    role: rare_long_topology
+  - id: long_lever_arm
+    description: Traverses IFT and station 3, maximum tracker lever arm.
+    min_n_stations: 3
+    requires_stations: [0, 3]
+    can_unlock_module_map: true
+    role: maximum_station_span
+  - id: full_ift_three_layers
+    description: IFT tracklet hits all three layers.
+    min_n_stations: 3
+    requires_ift: true
+    requires_full_ift_layers: true
+    can_unlock_module_map: false
+    role: common_ift_coverage
+
+runs:
+  jacobian:
+    - run: 14973
+      role: calibration_reference
+      participates_in_method_selection: false
+      source_id: data24_r14973_00007_skip49500_n84988
+      segment: "00007"
+      skip_events: 49500
+      nevents: 84988
+      corpus: scaling
+      selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14973_00007_skip49500_n84988/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14973_00007_skip49500_n84988/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14973_00007_skip49500_n84988/physical_scan/points/iteration_00_current/refit/tracklets.root
+      cluster_dump: outputs/true_cluster_local_residual_feasibility_v1/cluster_local.root
+    - run: 14974
+      role: independent_calibration_transfer
+      participates_in_method_selection: false
+      source_id: data24_r14974_00005_skip74400_n60886
+      segment: "00005"
+      skip_events: 74400
+      nevents: 60886
+      corpus: scaling
+      selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14974_00005_skip74400_n60886/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14974_00005_skip74400_n60886/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14974_00005_skip74400_n60886/physical_scan/points/iteration_00_current/refit/tracklets.root
+      cluster_dump: outputs/true_cluster_local_ry_cdx_stability_transfer_v1/dumps/cluster_local_r14974.root
+    - run: 14975
+      role: monitoring_read_only
+      participates_in_method_selection: false
+      source_id: data24_r14975_00005_skip21600_n111781
+      segment: "00005"
+      skip_events: 21600
+      nevents: 111781
+      corpus: scaling
+      selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14975_00005_skip21600_n111781/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14975_00005_skip21600_n111781/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14975_00005_skip21600_n111781/physical_scan/points/iteration_00_current/refit/tracklets.root
+      cluster_dump: outputs/true_cluster_local_ry_cdx_stability_transfer_v1/dumps/cluster_local_r14975.root
+    - run: 14976
+      role: monitoring_read_only
+      participates_in_method_selection: false
+      source_id: data24_r14976_00004_skip95500_n40562
+      segment: "00004"
+      skip_events: 95500
+      nevents: 40562
+      corpus: scaling
+      selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14976_00004_skip95500_n40562/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14976_00004_skip95500_n40562/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14976_00004_skip95500_n40562/physical_scan/points/iteration_00_current/refit/tracklets.root
+      cluster_dump: outputs/true_cluster_local_ry_cdx_stability_transfer_v1/dumps/cluster_local_r14976.root
+  inventory_only:
+    - run: 14977
+      role: held_out_dq_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14977_00005_skip135900_n01687
+      segment: "00005"
+      skip_events: 135900
+      nevents: 1687
+      corpus: scaling
+      selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14977_00005_skip135900_n01687/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14977_00005_skip135900_n01687/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14977_00005_skip135900_n01687/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14971
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14971_00003_skip20900_n112357
+      segment: "00003"
+      skip_events: 20900
+      nevents: 112357
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14971_00003_skip20900_n112357/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14971_00003_skip20900_n112357/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14971_00003_skip20900_n112357/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14972
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14972_00004_skip23300_n110071
+      segment: "00004"
+      skip_events: 23300
+      nevents: 110071
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14972_00004_skip23300_n110071/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14972_00004_skip23300_n110071/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14972_00004_skip23300_n110071/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14980
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14980_00005_skip57300_n77621
+      segment: "00005"
+      skip_events: 57300
+      nevents: 77621
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14980_00005_skip57300_n77621/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14980_00005_skip57300_n77621/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14980_00005_skip57300_n77621/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14981
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14981_00006_skip95600_n40646
+      segment: "00006"
+      skip_events: 95600
+      nevents: 40646
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14981_00006_skip95600_n40646/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14981_00006_skip95600_n40646/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14981_00006_skip95600_n40646/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14985
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14985_00012_skip95300_n40837
+      segment: "00012"
+      skip_events: 95300
+      nevents: 40837
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14985_00012_skip95300_n40837/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14985_00012_skip95300_n40837/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14985_00012_skip95300_n40837/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 14989
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r14989_00005_skip71900_n63559
+      segment: "00005"
+      skip_events: 71900
+      nevents: 63559
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r14989_00005_skip71900_n63559/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14989_00005_skip71900_n63559/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r14989_00005_skip71900_n63559/physical_scan/points/iteration_00_current/refit/tracklets.root
+    - run: 15007
+      role: expansion_inventory
+      participates_in_method_selection: false
+      source_id: data24_r15007_00005_skip111800_n24905
+      segment: "00005"
+      skip_events: 111800
+      nevents: 24905
+      corpus: expansion
+      selected_routes: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/association/data24_r15007_00005_skip111800_n24905/selected_routes.jsonl
+      enhanced_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r15007_00005_skip111800_n24905/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+      physical_tracklets: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1/athena/sources/data24_r15007_00005_skip111800_n24905/physical_scan/points/iteration_00_current/refit/tracklets.root
+
+alternative_sample_survey:
+  eos_rec_root: /eos/experiment/faser/rec
+  years: [2022, 2023, 2024, 2025, 2026]
+  extra_trees: [TestBeam2021]
+  name_keywords: [cosmic, halo, calib, special, beamtest, testbeam]
+  mc_wide_angle_note: "MC24 5 mrad particle-gun exists but is not a real-data topology and is not used to select categories or thresholds."
+  independent_survey_available: false
+
+occupancy_preflight_root: outputs/operating_protocol_v1_real_data_occupancy_preflight_v1/frozen_windows.json
+
+output_dir: outputs/alternative_track_topology_identifiability_feasibility_v1

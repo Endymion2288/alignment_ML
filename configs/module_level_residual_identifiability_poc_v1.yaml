@@ -1,0 +1,60 @@
+# Module-Level Residual & Identifiability Proof-of-Concept V1
+# Frozen V2 selected routes only.  No new training, no Station / reduced
+# Station / C_dx Mode, no official geometry write, no Newton solve.
+# Software FD is a sensitivity probe, not a Calypso conditions payload.
+
+schema_version: faser-module-level-residual-identifiability-poc-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_route_policy: true
+do_not_modify_threshold: true
+do_not_modify_unmatched_penalty: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_generate_athena_fd_probes: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+do_not_claim_acts_cluster_residual: true
+residual_kind: module-proxy unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+source_id: data24_r14973_00007_skip49500_n84988
+run: 14973
+selected_routes: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/association/data24_r14973_00007_skip49500_n84988/selected_routes.jsonl
+enhanced_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14973_00007_skip49500_n84988/physical_scan/points/iteration_00_current/refit/enhanced_tracklets.root
+physical_tracklets: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1/sources/data24_r14973_00007_skip49500_n84988/physical_scan/points/iteration_00_current/refit/tracklets.root
+frozen_a_report: outputs/operating_protocol_v1_final_real_data_closure_v1/operating_protocol_v1_final_report.json
+
+representative:
+  station_id: 0
+  layer_id: 0
+  n_modules: 4
+
+finite_difference:
+  translation_steps_mm: [0.010, 0.020]
+  rotation_steps_mrad: [0.05, 0.10]
+  c_dx_steps_mm: [0.010, 0.020]
+  linearity_max_relative_deviation: 0.15
+  targeting_max_offmodule_fraction: 1.0e-6
+
+leakage_decision:
+  high_cosine: 0.85
+  restored_cosine: 0.50
+  minimum_drop: 0.25
+  worse_null_condition_ratio: 1.0e3
+
+output_dir: outputs/module_level_residual_identifiability_poc_v1
