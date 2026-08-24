@@ -1,0 +1,29 @@
+# Source-disjoint transfer-validation contract opened by workbook 56.
+# From workbook 63 onward this bank is a development diagnostic only.
+# It must not train, pick a loss weight, select a checkpoint, select an
+# operating point, or serve as the next model's final independent gate.
+# Sealed test remains forbidden.
+physical_curriculum_mlp:
+  allowed_splits: [validation]
+  forbidden_splits: [train, test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  relative_curriculum: 15d_gauge_then_left_se3
+  no_station_is_assumed_correct: true
+  transfer_validation_only: true
+  development_diagnostic_only: true
+  final_independent_gate: false
+  development_validation_only: false
+  test_data_accessed: false
+
+  sources:
+    - id: mc24_100047_00300_00349
+      split: validation
+      charge: mu-
+      transfer_role: development_diagnostic_only
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00300-00349-s0013-r0022-xAOD.root
+    - id: mc24_100048_00300_00349
+      split: validation
+      charge: mu+
+      transfer_role: development_diagnostic_only
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00300-00349-s0013-r0022-xAOD.root

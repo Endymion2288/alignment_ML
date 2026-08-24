@@ -1,0 +1,117 @@
+# Workbook 63: source-disjoint four-station training-diversity audit.
+# Does not train, does not retune the workbook-62 objective / reduction /
+# margin / operating point, and does not open sealed test.  The already
+# opened workbook-56 transfer set is a development diagnostic only.
+schema_version: faser-four-station-training-diversity-audit-v1
+control_id: source_disjoint_training_diversity_audit_v1
+workbook: 63
+alignment_formulation: four_station_v1
+relative_curriculum: 15d_gauge_then_left_se3
+test_data_accessed: false
+new_athena_production: false
+condor_training_submitted: false
+workbook56_transfer_is_final_gate: false
+retune_loss_weight_reduction_or_operating_point: false
+enlarge_misalignment_envelope: false
+add_new_dof: false
+
+scientific_hypothesis: >
+  Workbook 62 already recovers absolute utility, reduces fragment winners,
+  and pushes many train near-boundary routes, but a stable draw_01+common
+  truth-utility drop remains on a new source.  The next question is whether
+  the two current train sources cover the transfer phase space / source
+  characteristics that cause that failure.  Only after that coverage
+  decision may new source-disjoint training files be added.  The objective
+  stays the frozen workbook-62 dustbin-aware + gauge + max-reduction whole.
+
+frozen:
+  candidate_checkpoint: outputs/mc24_four_station_hard_aware_reduction_v1/checkpoint
+  candidate_checkpoint_sha256: a46a35bd28eb294fe307590d4f12595f6d3bfaa8dc64aea0bf7418543605e1ef
+  objective: dustbin_aware_plus_gauge_consistent_plus_max_reduction
+  packing_route_competition_reduction: max
+  score_stream: raw_sigmoid_identity_calibration
+  pair_thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+  unmatched_penalty: -1.0
+  dustbin_utility: 0.0
+  packing_margin: 1.0
+  complete_route_query_injected_into_packing: false
+  unit_capacity_solver: adjacent_contiguous_unit_capacity_set_packing
+  observation_statistics: physical_edge_deduplicated
+  candidate_builder: residual_v1_ungated_mode0
+  physical_curriculum: workbook_53_15d_relative_plus_left_se3_twin
+  misalignment_box: "<=0.5 mm / <=5 mrad"
+
+current_train_sources:
+  - mc24_100043_00200_00299
+  - mc24_100044_00300_00399
+
+development_diagnostic_sources:
+  - mc24_100047_00050_00099
+  - mc24_100048_00050_00099
+
+transfer_development_diagnostic_sources:
+  - mc24_100047_00300_00349
+  - mc24_100048_00300_00349
+
+candidate_diagnostic_sources:
+  - mc24_100043_00300_00399
+  - mc24_100044_00200_00299
+  - mc24_100047_00100_00149
+  - mc24_100048_00100_00149
+
+reserved_blind_sources:
+  - mc24_100047_00350_00399
+  - mc24_100048_00350_00399
+
+unused_reserve_sources:
+  - mc24_100047_00800_00849
+  - mc24_100048_00800_00849
+
+forbidden_sources:
+  - mc24_100116
+  - mc24_100117
+  - mc24_100047_00150_00199
+
+coverage_rule:
+  written_before_numbers: true
+  failure_payload: iteration_00_draw_01_plus_common
+  failure_core: unselected_or_delta_below_margin_or_truth_utility_drop_vs_draw01_twin
+  kinematic_quantiles: [0.05, 0.95]
+  min_kinematic_inside: 0.90
+  min_s3_kinematic_inside: 0.90
+  min_occupancy_inside: 0.90
+  max_hard_rate_transfer_minus_train: 0.10
+  max_winner_rate_transfer_minus_train: 0.05
+  max_median_delta_train_minus_transfer: 0.20
+  max_median_logit_2to3_train_minus_transfer: 0.50
+
+if_undercoverage:
+  authorize_new_training_sources: true
+  keep_existing_train_pair: true
+  add_different_original_xaods: true
+  do_not_add_synthetic_repeats_of_the_same_two_files: true
+  freeze_workbook62_objective_as_a_whole: true
+  new_final_gate: reserved_blind_sources
+  do_not_use_workbook56_transfer_as_final_gate: true
+  gates_unchanged:
+    nominal_purity_min: 0.95
+    nominal_fake_max: 0.05
+    non_nominal_efficiency_drop_max: 0.10
+    gauge_twin: true
+    adjacent_23_and_s3_stability: true
+
+if_current_train_covers_failure_region:
+  authorize_new_training_sources: false
+  next: discuss_architecture_level_relative_gauge_equivariant_representation
+  still_reserve_blind_sources: true
+
+if_expanded_diversity_later_fails_same_common_se3_truth_utility_drop:
+  next: discuss_architecture_level_relative_gauge_equivariant_representation
+  do_not_retune_v2_loss_or_operating_point: true
+
+sealed_test: permanently_closed
+device: cuda
+cpu_fallback: false

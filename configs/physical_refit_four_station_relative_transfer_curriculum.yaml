@@ -1,0 +1,63 @@
+# Transfer-validation 15-DoF relative curriculum (workbook 56).
+# Same sampling philosophy as the association-retraining bank, new RNG seed.
+# Magnitudes stay inside the truth-selected local box.  No FD probes.
+physical_refit_capture_scan:
+  scan_mode: station_rigid_multidof
+  alignment_formulation: four_station_v1
+  gauge: unconstrained_full
+  relative_curriculum: 15d_gauge_then_left_se3
+  require_central_finite_difference_probes: false
+  input_xaod: /unused/per-source/override.root
+  nevents: 50
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: []
+  movable_station_ids: [0, 1, 2, 3]
+  condition_axis: four_station_relative_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+  survey_dz_prior_sigma_mm: 5.0
+
+  relative_sampling:
+    seed: 20260822
+    n_random_families: 2
+    relative_bounds:
+      translation_mm: 0.50
+      rotation_mrad: 5.0
+    common_bounds:
+      translation_mm: 0.30
+      rotation_mrad: 3.0
+    hard_relative_families:
+      - name: hard_s3_ry
+        relative_native:
+          s1_dx_mm: 0.30
+          s2_dy_mm: -0.20
+          s3_ry_mrad: 5.0
+
+  alignment_parameter_specs:
+    - {name: s0_dx_mm, scope: station, station_id: 0, component: dx_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s0_dy_mm, scope: station, station_id: 0, component: dy_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s0_dz_mm, scope: station, station_id: 0, component: dz_mm, unit: mm, role: survey_constrained, finite_difference_step: 2.0, severity_scale: 5.0}
+    - {name: s0_rx_mrad, scope: station, station_id: 0, component: rx_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s0_ry_mrad, scope: station, station_id: 0, component: ry_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s0_rz_mrad, scope: station, station_id: 0, component: rz_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s1_dx_mm, scope: station, station_id: 1, component: dx_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s1_dy_mm, scope: station, station_id: 1, component: dy_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s1_dz_mm, scope: station, station_id: 1, component: dz_mm, unit: mm, role: survey_constrained, finite_difference_step: 2.0, severity_scale: 5.0}
+    - {name: s1_rx_mrad, scope: station, station_id: 1, component: rx_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s1_ry_mrad, scope: station, station_id: 1, component: ry_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s1_rz_mrad, scope: station, station_id: 1, component: rz_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s2_dx_mm, scope: station, station_id: 2, component: dx_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s2_dy_mm, scope: station, station_id: 2, component: dy_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s2_dz_mm, scope: station, station_id: 2, component: dz_mm, unit: mm, role: survey_constrained, finite_difference_step: 2.0, severity_scale: 5.0}
+    - {name: s2_rx_mrad, scope: station, station_id: 2, component: rx_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s2_ry_mrad, scope: station, station_id: 2, component: ry_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s2_rz_mrad, scope: station, station_id: 2, component: rz_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s3_dx_mm, scope: station, station_id: 3, component: dx_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s3_dy_mm, scope: station, station_id: 3, component: dy_mm, unit: mm, role: free, finite_difference_step: 0.5, severity_scale: 5.0}
+    - {name: s3_dz_mm, scope: station, station_id: 3, component: dz_mm, unit: mm, role: survey_constrained, finite_difference_step: 2.0, severity_scale: 5.0}
+    - {name: s3_rx_mrad, scope: station, station_id: 3, component: rx_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s3_ry_mrad, scope: station, station_id: 3, component: ry_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}
+    - {name: s3_rz_mrad, scope: station, station_id: 3, component: rz_mrad, unit: mrad, role: free, finite_difference_step: 10.0, severity_scale: 60.0}

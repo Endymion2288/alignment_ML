@@ -18,6 +18,7 @@ from typing import Any, Mapping
 from datasets.physical_curriculum import PHYSICAL_CORPUS_SCHEMA
 from datasets.root_loader import load_events
 from scripts.build_physical_curriculum_corpus import _physical_point_completion
+from scripts.prepare_multisource_multidof_iteration import iteration_split_mode
 from scripts.run_refit_multidof_closure import _read_json
 
 
@@ -32,10 +33,7 @@ def _load_iteration(path: Path) -> dict[str, Any]:
         raise ValueError("iteration manifest does not certify physical geometry repropagation")
     if int(payload.get("q_over_p_mode", -1)) != 0:
         raise ValueError("iteration manifest is not mode-0")
-    if tuple(payload.get("allowed_splits", ())) != ("train", "validation") or "test" not in set(
-        payload.get("forbidden_splits", ())
-    ):
-        raise ValueError("iteration manifest does not seal test")
+    iteration_split_mode(payload, label="iteration manifest")
     if payload.get("test_data_accessed") is not False:
         raise ValueError("iteration manifest test access declaration is invalid")
     if not isinstance(payload.get("sources"), list) or not payload["sources"]:
@@ -192,8 +190,9 @@ def main() -> None:
         "iteration_manifest": str(iteration_path),
         "source_split_unit": "original_xAOD_file",
         "source_event_uid_convention": "source_id:run_id:event_id",
-        "allowed_splits": ["train", "validation"],
-        "forbidden_splits": ["test"],
+        "allowed_splits": list(iteration.get("allowed_splits") or ["train", "validation"]),
+        "forbidden_splits": list(iteration.get("forbidden_splits") or ["test"]),
+        "transfer_validation_only": bool(iteration.get("transfer_validation_only")),
         "test_data_accessed": False,
         "physical_geometry_repropagation": True,
         "coordinate_surrogate": False,

@@ -1,0 +1,50 @@
+# Workbook 57: frozen route-utility identifiability audit.
+# This is not a production operating-point contract and does not authorize
+# retraining, threshold changes, unmatched-penalty changes, Platt refits,
+# architecture changes, or 15-DoF WLS.
+schema_version: faser-four-station-route-utility-identifiability-v1
+control_id: route_utility_identifiability_v1
+test_data_accessed: false
+development_validation_used: false
+
+frozen:
+  candidate_checkpoint: outputs/mc24_four_station_gauge_consistent_route_v1/checkpoint
+  candidate_checkpoint_sha256: 0e2ffe171e7cbbfd8ced426c9ce34759ffd6d0a2d6b26216df5814d48337cd80
+  control_checkpoint: outputs/mc24_four_station_relative_association_retrain_v1/retrained_v2
+  score_stream: raw_sigmoid_identity_calibration
+  pair_thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+  unmatched_penalty: -1.0
+  dustbin_utility: 0.0
+  complete_route_query_injected_into_packing: false
+  unit_capacity_solver: adjacent_contiguous_unit_capacity_set_packing
+  transfer_overlay: outputs/mc24_four_station_relative_transfer_validation_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+  allowed_splits: [validation]
+  forbidden_splits: [train, test]
+
+do_not:
+  train: true
+  modify_checkpoint: true
+  retune_threshold: true
+  retune_unmatched_penalty: true
+  refit_platt: true
+  open_15d_wls: true
+  change_architecture: true
+  change_production_contract: true
+
+decision_classes:
+  - selected
+  - below_threshold_or_missing_candidate
+  - truth_beats_wrong_routes_but_loses_to_dustbin
+  - truth_loses_to_fragment
+  - margin_satisfied_solver_does_not_select
+
+next_if_dustbin_scale_mismatch: stay_on_route_competition_objective_diagnosis
+next_if_fragment_wins: change_only_negative_mining_or_route_competition_target
+next_if_margin_ok_solver_mismatch: audit_solver_implementation_consistency
+open_15d_wls_only_if:
+  truth_route_utility_margin: true
+  association_gate: true
+  gauge_twin: true

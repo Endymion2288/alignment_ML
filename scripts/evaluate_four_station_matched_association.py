@@ -55,6 +55,12 @@ def _pair_efficiency(report: Mapping[str, Any], pair: str) -> float | None:
     return None if value is None else float(value)
 
 
+def _optional_abs_diff(left: object, right: object) -> float | None:
+    if left is None or right is None:
+        return None
+    return abs(float(left) - float(right))
+
+
 def _refuse_forbidden_inputs(paths: list[Path], forbidden: list[str]) -> None:
     resolved = [str(path.resolve()) for path in paths]
     for item in forbidden:
@@ -108,17 +114,20 @@ def _gauge_audit(
     for family, (chart, control) in families.items():
         left = reports[chart]["selected_route"]
         right = reports[control]["selected_route"]
-        efficiency_diff = abs(float(left["complete_track_efficiency"]) - float(right["complete_track_efficiency"]))
-        purity_diff = abs(float(left["complete_track_purity"]) - float(right["complete_track_purity"]))
-        fake_diff = abs(float(left["track_fake_rate"]) - float(right["track_fake_rate"]))
+        efficiency_diff = _optional_abs_diff(left.get("complete_track_efficiency"), right.get("complete_track_efficiency"))
+        purity_diff = _optional_abs_diff(left.get("complete_track_purity"), right.get("complete_track_purity"))
+        fake_diff = _optional_abs_diff(left.get("track_fake_rate"), right.get("track_fake_rate"))
         left_23 = _pair_efficiency(reports[chart], "2->3")
         right_23 = _pair_efficiency(reports[control], "2->3")
-        pair_diff = None if left_23 is None or right_23 is None else abs(left_23 - right_23)
+        pair_diff = _optional_abs_diff(left_23, right_23)
         payload_ok = (
-            efficiency_diff <= float(limits["complete_track_efficiency_twin_abs_diff_max"])
+            efficiency_diff is not None
+            and purity_diff is not None
+            and fake_diff is not None
+            and pair_diff is not None
+            and efficiency_diff <= float(limits["complete_track_efficiency_twin_abs_diff_max"])
             and purity_diff <= float(limits["complete_track_purity_twin_abs_diff_max"])
             and fake_diff <= float(limits["track_fake_rate_twin_abs_diff_max"])
-            and pair_diff is not None
             and pair_diff <= float(limits["adjacent_23_efficiency_twin_abs_diff_max"])
         )
         ok = ok and payload_ok

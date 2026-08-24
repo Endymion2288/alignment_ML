@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from scripts.build_physical_curriculum_corpus import _physical_point_completion
+from scripts.prepare_multisource_multidof_iteration import iteration_split_mode
 from scripts.submit_physical_curriculum_condor import (
     WORKER,
     _require_eos_path,
@@ -37,10 +38,7 @@ def _read_manifest(path: Path) -> dict[str, Any]:
         raise ValueError("iteration manifest lacks physical geometry contract")
     if int(payload.get("q_over_p_mode", -1)) != 0:
         raise ValueError("iteration manifest is not mode-0")
-    if tuple(payload.get("allowed_splits", ())) != ("train", "validation") or "test" not in set(
-        payload.get("forbidden_splits", ())
-    ):
-        raise ValueError("iteration manifest does not seal test data")
+    iteration_split_mode(payload, label="iteration manifest")
     if payload.get("test_data_accessed") is not False:
         raise ValueError("iteration manifest has an invalid test-access declaration")
     sources = payload.get("sources")
@@ -164,8 +162,9 @@ def main() -> None:
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "iteration_manifest": str(manifest_path),
         "iteration_root": str(iteration_root),
-        "allowed_splits": ["train", "validation"],
-        "forbidden_splits": ["test"],
+        "allowed_splits": list(manifest.get("allowed_splits") or ["train", "validation"]),
+        "forbidden_splits": list(manifest.get("forbidden_splits") or ["test"]),
+        "transfer_validation_only": bool(manifest.get("transfer_validation_only")),
         "test_data_accessed": False,
         "source_ids": [item["source_id"] for item in selected],
         "sources_by_split": {

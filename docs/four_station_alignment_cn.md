@@ -141,6 +141,27 @@ gauge-invariance audit。预注册 complete-track efficiency 下降 ≤0.10 仍�
 WLS 保持关闭。2→3 崩塌主要是历史分布失配，不是完全缺少相对几何归纳偏置；
 该 checkpoint 不冻结进 WLS。
 
+条目 55 是对该 retrained V2 的 validation-only operating-layer 审计，外加
+一个预先冻结的低容量控制。逐 event 对齐的 `draw_00` gauge twin 显示：边
+排名稳定（Platt 保持 pair 内排序；未过 0.5 的 1→2 / 2→3 仍多为 source
+rank-1），但 left-SE(3) twin 上绝对分数下跌。0.104 的 efficiency 越界几乎
+全部来自 0.5 的 station-pair 阈值，不是 candidate graph 缺失。Nominal
+fake≈0.10 来自 validation 选出的 `unmatched_penalty=+0.5`，它放进大量短
+片段。唯一控制（train-only 三对 Platt、冻结 logits、历史 packing 0.001 /
+−1.0）把 nominal fake/purity 拉回原质量区间，也清掉了
+`draw_00_plus_common`，但把 nominal efficiency 打到 0.45，并在
+`draw_01_plus_common` 上以 0.117 失败。记录：表示基本足够，association
+operating layer 尚未达到 production gate。不放宽 0.10。不打开 15 维 WLS。
+
+条目 56 是同一架构 V2 的单一预注册训练目标控制：gauge-twin consistency
+加上局部 packing-utility margin，保留原 V2 edge BCE / route-query 主体。
+训练前冻结 operating convention（identity Platt、threshold 0.001、
+unmatched_penalty −1.0）。条目 53–55 的 validation 源降为
+`development_validation_only`，不能再宣称 production gate。最终闸改到全新
+source-disjoint transfer bank（`mc24_100047_00300_00349`、
+`mc24_100048_00300_00349`）。密封 test 保持关闭。只有 transfer 完整通过
+才打开已 truth-selected 的 15 维 WLS，capture 继续用条目 49/50 冻结合同。
+
 ## 命令
 
 ```bash
@@ -211,4 +232,122 @@ Matched association retraining（条目 53）。在 validation association 闸�
 ```bash
 bash scripts/run_four_station_association_retraining.sh prepare
 bash scripts/run_four_station_association_retraining.sh submit
+```
+
+条目 55 的 operating-layer 审计与唯一预注册控制（不打开 15 维 WLS）：
+
+```bash
+python scripts/audit_four_station_route_operating_layer.py \
+  --synthetic-manifest outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json \
+  --frozen-output outputs/mc24_four_station_relative_association_retrain_v1/retrained_v2 \
+  --output-dir outputs/mc24_four_station_relative_association_retrain_v1/operating_layer_audit_v1 \
+  --split validation --device auto
+
+python scripts/run_four_station_operating_layer_control.py \
+  --control-config configs/physical_four_station_operating_layer_control.yaml \
+  --synthetic-manifest outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json \
+  --frozen-output outputs/mc24_four_station_relative_association_retrain_v1/retrained_v2 \
+  --iteration-manifest outputs/mc24_four_station_relative_association_retrain_v1/iteration_manifest.json \
+  --output-dir outputs/mc24_four_station_relative_association_retrain_v1/operating_layer_control_v1 \
+  --device auto
+```
+
+条目 56 已在新 transfer bank 上打开闸：raw-chain recall 通过，相对条目 54
+的 origin-matched score-scale 已收缩，但 packing 选出 0 条 route。条目
+57–58 证明缺的是 dustbin 0，不是 fragment 拓扑。条目 59 在同一冻结
+packing 约定下训练了一个预注册的 dustbin-aware route-margin 辅助项。
+layer 1 通过，多数 payload 已选出 route（`U_truth` 中位 +0.87），但
+`draw_01` 加 common SE(3) 未过 vs-nominal efficiency 与 twin route-metric。
+15 维 WLS 不打开。新 checkpoint 只是 control，不是冻结的 production V2。
+条目 60 在该冻结 checkpoint 上直接调用生产 `_route_hypotheses`：所有
+production fragment winner 都已被条目 59 的 `max(rival)` 选中（train
+14/14，transfer 513/513）。不要打开 solver-in-the-loop mining。条目 61 统计了全部 train
+完整 truth route，而不是只看 14 个 winner：740 / 3331 条在冻结
+margin 内已有 2/3-station production competitor，其中 584 条是该
+event 的 max dustbin-aware loss，mean reduction 会按 2 或 3 条
+完整 route 把这个 max 稀释掉。Train 并非缺少短 near-boundary
+覆盖，因此不要判成 curriculum/domain-coverage，也不要用极端
+reweighting 去硬学不存在的短 hard 分布。该 control 已在条目 62 按冻结合同训练
+（`a46a35bd28eb294fe307590d4f12595f6d3bfaa8dc64aea0bf7418543605e1ef`）。
+layer 1 通过，score-scale 相对条目 54 收缩，但 `draw_01` 加
+common SE(3) 仍未过 vs-nominal efficiency（`Δeff=0.104`）和 twin
+efficiency（`|Δ|=0.070`）。Train 上 584 个 event-max short case
+的新 `Δ` 中位仍是 0.992，没有离开冻结 margin。停止继续用
+weighting / reduction / OP 救模型。失败归类
+`objective_reduction_failure`。15 维 WLS 不打开。
+
+条目 63 是 source-disjoint training-diversity 审计。不再改条目 59/62
+的 weighting、reduction、margin 或 operating point。已经打开的条目 56
+transfer 从现在起只做 development diagnostic，不再承担下一模型的最终
+独立 gate。冻结条目 62 在 train / development / transfer 上的计分，
+加上未密封候选 identity bank，显示 occupancy、charge 与 route
+multiplicity 已经重叠，但 `draw_01+common` failure core 在 `ty` /
+S3 `tx` 上落在当前两条 train source 之外（kinematic inside 0.821 /
+0.809 < 0.90）。同一 overlay recipe 还有很大的 source-characteristic
+偏移：transfer hard rate 0.799 vs train 0.234，fragment-winner rate
+0.170 vs 0.010，`Δ` 中位 0.413 vs 1.104。development 的
+`100047/100048` 00050–00099 已经重复这一图案。覆盖归类
+`source_phase_space_undercoverage`。授权新增 source-disjoint 训练源
+（保留当前 μ± 对，另加 `100043_00300`、`100044_00200`、
+`100047_00100`、`100048_00100`）。条目 62 objective 整体冻结。新的
+最终 gate 是从未进入 48–62、本条目也未加载的 reserved blind
+`100047_00350` / `100048_00350`。闸门仍是 nominal purity ≥ 0.95、
+fake ≤ 0.05、全部 non-nominal `Δeff≤0.10`、gauge-twin 与 2→3/S3
+stability。15 维 WLS 要等这个新 blind 通过才打开。若冻结模型在那里
+仍以相同 common-SE(3) truth-utility drop 失败，下一步才讨论
+architecture-level relative / gauge-equivariant representation。
+
+条目 56 的 gauge-consistent route training（唯一预注册 objective；
+从条目 63 起，已打开的 transfer 只做 development diagnostic）：
+
+```bash
+bash scripts/run_four_station_gauge_consistent_training.sh audit-sources
+bash scripts/run_four_station_gauge_consistent_training.sh prepare-transfer
+bash scripts/run_four_station_gauge_consistent_training.sh submit-transfer
+bash scripts/run_four_station_gauge_consistent_training.sh train
+```
+
+条目 59 的 dustbin-aware route-margin control（推理约定冻结；打开
+transfer 结果后禁止调参）：
+
+```bash
+bash scripts/run_four_station_dustbin_aware_training.sh train
+bash scripts/run_four_station_dustbin_aware_training.sh infer-transfer
+bash scripts/run_four_station_dustbin_aware_training.sh score-scale
+bash scripts/run_four_station_dustbin_aware_training.sh mechanism
+bash scripts/run_four_station_dustbin_aware_training.sh assess
+```
+
+条目 60 的 solver-generated hard-negative mining 审计（冻结条目 59
+checkpoint；只按 train 决策；禁止用 transfer 调参）：
+
+```bash
+bash scripts/run_four_station_solver_hard_negative_audit.sh all
+```
+
+条目 61 的 train-only weighting / reduction 可行性（冻结条目 59
+checkpoint；禁止用 transfer 选 reduction）：
+
+```bash
+bash scripts/run_four_station_weighting_reduction_audit.sh
+```
+
+条目 62 的 hard-aware max-reduction control（条目 61 冻结合同；
+在已打开的 transfer 上只评估一次）：
+
+```bash
+bash scripts/run_four_station_hard_aware_reduction_training.sh train
+bash scripts/run_four_station_hard_aware_reduction_training.sh infer-transfer
+bash scripts/run_four_station_hard_aware_reduction_training.sh score-scale
+bash scripts/run_four_station_hard_aware_reduction_training.sh mechanism
+bash scripts/run_four_station_hard_aware_reduction_training.sh assess
+bash scripts/run_four_station_hard_aware_reduction_training.sh compare
+```
+
+条目 63 的 source-disjoint training-diversity 审计（冻结条目 62
+checkpoint；禁止调参；不加载 reserved blind；条目 56 transfer 只做
+diagnostic）：
+
+```bash
+bash scripts/run_four_station_training_diversity_audit.sh
 ```

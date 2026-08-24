@@ -1,0 +1,77 @@
+# Workbook 60: solver-generated hard-negative mining audit + train-only
+# objective feasibility.  This is not a production operating-point contract
+# and does not authorize training, a new checkpoint, threshold / penalty /
+# Platt changes, architecture changes, or 15-DoF WLS.
+schema_version: faser-four-station-solver-hard-negative-feasibility-v1
+control_id: solver_hard_negative_mining_feasibility_v1
+workbook: 60
+test_data_accessed: false
+development_validation_used: false
+new_athena_production: false
+condor_training_submitted: false
+
+scientific_hypothesis: >
+  Workbook 59 crossed dustbin 0.  Remaining association failures are
+  fragment competition and the draw_01 common-SE(3) twin.  The question
+  is whether the workbook-59 max-rival miner actually selected the
+  production unit-capacity winner as its strongest negative, or whether
+  easy fragments occupied max(rival) and produced no gradient.
+
+frozen:
+  candidate_checkpoint: outputs/mc24_four_station_dustbin_aware_route_v1/checkpoint
+  candidate_checkpoint_sha256: 6565d028e01e561105d4ce467d10d5c82e5a2435daad6a69c47a07920defb5dc
+  score_stream: raw_sigmoid_identity_calibration
+  pair_thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+  unmatched_penalty: -1.0
+  dustbin_utility: 0.0
+  packing_margin: 1.0
+  complete_route_query_injected_into_packing: false
+  unit_capacity_solver: adjacent_contiguous_unit_capacity_set_packing
+  production_hypothesis_source: baselines.route_assignment._route_hypotheses
+  observation_statistics: physical_edge_deduplicated
+  candidate_builder: residual_v1_ungated_mode0
+  transfer_overlay: outputs/mc24_four_station_relative_transfer_validation_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+  train_overlay: outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+  transfer_sources:
+    - mc24_100047_00300_00349
+    - mc24_100048_00300_00349
+  train_sources:
+    - mc24_100043_00200_00299
+    - mc24_100044_00300_00399
+
+do_not:
+  train: true
+  modify_checkpoint: true
+  retune_threshold: true
+  retune_unmatched_penalty: true
+  refit_platt: true
+  increase_dustbin_loss_weight: true
+  change_packing_margin: true
+  open_15d_wls: true
+  change_architecture: true
+  change_production_contract: true
+  submit_condor_training: true
+  produce_athena: true
+  use_transfer_to_pick_loss_weights: true
+
+production_competitor_rule: >
+  For each unselected complete truth route, take competitors from the
+  production _route_hypotheses set (U > 0) and from the routes the
+  unit-capacity packer actually selected.  Do not substitute a
+  re-enumerated threshold-feasible set that includes U <= 0.
+
+miner_coverage_rule: >
+  A production winner is covered only if those exact endpoints appear in
+  the workbook-59 mined-negative set of the same event and are chosen as
+  max(rival).  Topology-in-enumerator is not sufficient.
+
+next_if_production_winner_not_selected_as_strongest: design_solver_in_the_loop_hard_negative_control
+next_if_production_winner_fully_covered: diagnose_loss_weighting_per_event_reduction_and_route_length_bias
+open_15d_wls_only_if:
+  raw_complete_truth_chain_recall: true
+  association_gate: true
+  gauge_twin: true
+  new_objective_control_on_source_disjoint_transfer: true

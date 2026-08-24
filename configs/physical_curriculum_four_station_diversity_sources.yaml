@@ -1,0 +1,97 @@
+# Source-disjoint four-station diversity inventory for workbook 63.
+# Split unit: original xAOD file.  Sealed test is absent.  Reserved
+# blind files are listed so they cannot be silently reused, but this
+# contract does not resolve or open those xAODs.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  relative_curriculum: 15d_gauge_then_left_se3
+  no_station_is_assumed_correct: true
+  workbook56_transfer_is_final_gate: false
+  test_data_accessed: false
+
+  sources:
+    - id: mc24_100043_00200_00299
+      role: current_train
+      split: train
+      charge: mu-
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100044_00300_00399
+      role: current_train
+      split: train
+      charge: mu+
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100047_00050_00099
+      role: development_diagnostic
+      split: validation
+      charge: mu-
+      development_validation_only: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - id: mc24_100048_00050_00099
+      role: development_diagnostic
+      split: validation
+      charge: mu+
+      development_validation_only: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+    - id: mc24_100047_00300_00349
+      role: transfer_development_diagnostic
+      split: validation
+      charge: mu-
+      transfer_role: development_diagnostic_only
+      final_independent_gate: false
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00300-00349-s0013-r0022-xAOD.root
+    - id: mc24_100048_00300_00349
+      role: transfer_development_diagnostic
+      split: validation
+      charge: mu+
+      transfer_role: development_diagnostic_only
+      final_independent_gate: false
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00300-00349-s0013-r0022-xAOD.root
+    - id: mc24_100043_00300_00399
+      role: candidate_diagnostic
+      split: train
+      charge: mu-
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100044_00200_00299
+      role: candidate_diagnostic
+      split: train
+      charge: mu+
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100047_00100_00149
+      role: candidate_diagnostic
+      split: train
+      charge: mu-
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00100-00149-s0013-r0022-xAOD.root
+    - id: mc24_100048_00100_00149
+      role: candidate_diagnostic
+      split: train
+      charge: mu+
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00100-00149-s0013-r0022-xAOD.root
+    - id: mc24_100047_00350_00399
+      role: reserved_blind_validation
+      split: validation
+      charge: mu-
+      do_not_load: true
+      never_used_in_workbooks_48_62: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00350-00399-s0013-r0022-xAOD.root
+    - id: mc24_100048_00350_00399
+      role: reserved_blind_validation
+      split: validation
+      charge: mu+
+      do_not_load: true
+      never_used_in_workbooks_48_62: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00350-00399-s0013-r0022-xAOD.root
+    - id: mc24_100047_00800_00849
+      role: unused_reserve
+      split: validation
+      charge: mu-
+      do_not_load: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00800-00849-s0013-r0022-xAOD.root
+    - id: mc24_100048_00800_00849
+      role: unused_reserve
+      split: validation
+      charge: mu+
+      do_not_load: true
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00800-00849-s0013-r0022-xAOD.root

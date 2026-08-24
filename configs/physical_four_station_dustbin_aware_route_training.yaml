@@ -1,0 +1,170 @@
+# Pre-registered workbook-59 dustbin-aware route-margin objective control.
+# Written before the first optimizer step.  After transfer results are opened
+# it is forbidden to change the objective, margin, loss weights, thresholds,
+# unmatched penalty, or calibration.
+schema_version: faser-four-station-dustbin-aware-route-training-v1
+control_id: retrained_v2_dustbin_aware_route_margin_v1
+workbook: 59
+alignment_formulation: four_station_v1
+relative_curriculum: 15d_gauge_then_left_se3
+q_over_p_mode: 0
+route_solver: adjacent_contiguous_unit_capacity_set_packing
+observation_statistics: physical_edge_deduplicated
+test_data_accessed: false
+architecture_change_allowed: false
+v3_exact_structured_margin_allowed: false
+candidate_builder_change_allowed: false
+unit_capacity_solver_change_allowed: false
+unmatched_penalty_rescue_allowed: false
+second_platt_after_training_allowed: false
+feature_set: residual_v1
+
+scientific_hypothesis: >
+  Workbook 58 showed that selected_routes collapse because U_truth sits below
+  dustbin 0 while ranking remains usable.  Keep the historical V2 body, the
+  workbook-56 fragment packing term, and gauge-twin consistency.  Add one
+  low-capacity auxiliary whose strongest competitor is max(U_fragment, 0),
+  so training sees the production admit boundary.  Do not raise the gauge
+  weight to the clip ceiling when the first-stage twin term is identically
+  zero.  Do not add Transformer depth, hidden size, or features.
+
+operating_convention:
+  frozen_before_training: true
+  score_stream: raw_sigmoid_identity_calibration
+  calibration:
+    method: platt
+    scope: station_pair
+    fit_split: identity_frozen_pre_training
+    identity_map: true
+    slope: 1.0
+    intercept: 0.0
+  pair_thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+  unmatched_penalty: -1.0
+  dustbin_utility: 0.0
+  solver_probability_floor: 1.0e-6
+  complete_route_query_injected_into_packing: false
+  selection_split: pre_registered_frozen_historical_packing
+
+objective:
+  keep_historical_v2_body: true
+  keep_workbook56_packing_route_competition: true
+  historical_v2_terms:
+    edge_loss: weighted_focal_binary_cross_entropy
+    route_truth_consistency: weighted_focal_binary_cross_entropy
+    one_to_one_competition: endpoint_incident_route_logsumexp
+    fake_route_penalty: softplus_on_fake_endpoint_routes
+    edge_loss_weight: 1.0
+    route_consistency_weight: 1.0
+    one_to_one_competition_weight: 0.25
+    fake_route_penalty_weight: 0.25
+  auxiliaries:
+    gauge_twin_consistency:
+      pairing: alignment_iteration_shared_across_payloads_origin
+      edge_term: mse_raw_adjacent_logits
+      complete_route_term: mse_complete_route_packing_utility
+      zero_mean_fallback_weight: 1.0
+      do_not_inflate_zero_mean_to_clip_ceiling: true
+    packing_route_competition:
+      definition: workbook56_max_feasible_rival
+      margin: 1.0
+      kept_unmodified: true
+    dustbin_aware_route_margin:
+      definition: U_truth_gt_max_fragment_or_dustbin_plus_margin
+      strongest_competitor: max_of_feasible_rival_and_dustbin_zero
+      margin: 1.0
+      loss: relu_competitor_plus_margin_minus_truth_utility
+      does_not_replace_edge_bce: true
+      does_not_redefine_inference_score: true
+  loss_weight_algorithm:
+    grid_search_on_validation: false
+    development_validation_tuning_forbidden: true
+    transfer_validation_tuning_forbidden: true
+    method: train_only_deterministic_mean_scale_with_zero_mean_fallback
+    relative_target_vs_edge: 1.0
+    epsilon: 1.0e-6
+    weight_clip: [0.05, 20.0]
+    zero_mean_threshold: 1.0e-6
+    zero_mean_fallback_weight: 1.0
+    freeze_after_initial_train_pass: true
+    write_computed_weights_before_optimizer_steps: true
+
+checkpoint_selection:
+  split: train_only
+  development_validation_used: false
+  transfer_validation_used: false
+  rule: last_completed_epoch_of_fixed_30_epoch_budget
+  early_stopping: false
+  epoch_budget: 30
+  curriculum_stages:
+    - name: nominal
+      maximum_condition_magnitude: 0.0
+      epochs: 8
+    - name: local_relative_and_gauge_control
+      maximum_condition_magnitude: 1.0
+      epochs: 22
+
+train_bank:
+  reuse_existing_physical_and_overlay: true
+  new_athena_production: false
+  overlay: outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1
+  sources:
+    - mc24_100043_00200_00299
+    - mc24_100044_00300_00399
+  split_loaded: train
+
+transfer_validation:
+  carries_final_gate: true
+  reuse_existing_workbook56_overlay: true
+  new_athena_production: false
+  sources:
+    - mc24_100047_00300_00349
+    - mc24_100048_00300_00349
+  after_results_opened_forbidden:
+    - objective
+    - margin
+    - loss_weight
+    - threshold
+    - unmatched_penalty
+    - calibration
+
+gates:
+  raw_complete_truth_chain_recall_min: 0.90
+  adjacent_truth_edge_recall_min: 0.90
+  nominal_complete_track_purity_min: 0.95
+  nominal_track_fake_rate_max: 0.05
+  complete_track_efficiency_drop_vs_nominal_max: 0.10
+  complete_track_purity_drop_vs_nominal_max: 0.05
+  track_fake_rate_increase_vs_nominal_max: 0.05
+  require_adjacent_pair_and_s3_report: true
+  gauge_invariance_audit:
+    same_delta_t_ij_required: true
+    complete_track_efficiency_twin_abs_diff_max: 0.05
+    complete_track_purity_twin_abs_diff_max: 0.05
+    track_fake_rate_twin_abs_diff_max: 0.05
+    adjacent_23_efficiency_twin_abs_diff_max: 0.08
+  score_scale:
+    compare_against: workbook_54_retrained_v2_on_same_transfer_overlay
+    require_not_worse_than_workbook_54: true
+    require_strict_contraction: false
+    matched_origin_raw_logit_median_abs_shift_ratio_max: 1.0
+    matched_origin_truth_route_utility_median_abs_shift_ratio_max: 1.0
+
+if_transfer_passes:
+  freeze_checkpoint_calibration_operating_convention: true
+  open_15d_route_selected_delta_t_ij_wls: true
+  capture_contract: workbook_49_50_frozen
+
+if_association_fails_and_u_truth_crosses_dustbin_but_loses_to_fragment:
+  next: diagnose_solver_generated_hard_negative_mining
+  architecture_change_allowed: false
+
+if_utility_margin_still_fails:
+  next: route_objective_still_misses_production_decision_boundary
+  architecture_change_allowed: false
+
+sealed_test: permanently_closed
+device: cuda
+cpu_fallback: false

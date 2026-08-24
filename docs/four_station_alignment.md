@@ -169,6 +169,30 @@ complete-track efficiency drop ≤0.10 still fails on one payload
 closed.  The 2→3 collapse was mainly historical domain shift, not a missing
 relative-geometry inductive bias; the checkpoint is not frozen for WLS.
 
+Workbook 55 is a validation-only operating-layer audit of that retrained V2,
+plus one pre-registered low-capacity control.  Event-aligned `draw_00` gauge
+twins show that truth-edge ranking is stable (Platt preserves pair order;
+failed 1→2 / 2→3 edges are still mostly source rank-1) while absolute scores
+drop on the left-SE(3) twin.  The 0.104 efficiency miss is almost entirely
+the 0.5 station-pair thresholds, not a missing candidate graph.  Nominal fake
+~0.10 comes from the validation-selected `unmatched_penalty=+0.5`, which
+admits short fragments.  The single control (train-only 3-pair Platt, frozen
+logits, historical packing 0.001 / −1.0) restores nominal fake/purity and
+clears `draw_00_plus_common`, but drops nominal efficiency to 0.45 and fails
+`draw_01_plus_common` (drop 0.117).  Record: representation is basically
+sufficient; the association operating layer is not at the production gate.
+Do not loosen 0.10.  Do not open 15-DoF WLS.
+
+Workbook 56 is one same-architecture V2 training-objective control:
+gauge-twin consistency plus a local packing-utility margin, with the
+historical body kept.  Operating convention is frozen before training
+(identity Platt, threshold 0.001, unmatched_penalty −1.0).  Workbook 53–55
+validation sources are `development_validation_only` and cannot claim the
+production gate.  The gate moves to a new source-disjoint transfer bank
+(`mc24_100047_00300_00349`, `mc24_100048_00300_00349`).  Sealed test stays
+closed.  15-DoF WLS opens only if that transfer set passes, using the
+already frozen workbook 49/50 capture.
+
 ## Commands
 
 ```bash
@@ -240,4 +264,134 @@ this path until the validation association gate passes:
 ```bash
 bash scripts/run_four_station_association_retraining.sh prepare
 bash scripts/run_four_station_association_retraining.sh submit
+```
+
+Workbook 55 operating-layer audit and the single pre-registered control
+(does not open 15-DoF WLS):
+
+```bash
+python scripts/audit_four_station_route_operating_layer.py \
+  --synthetic-manifest outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json \
+  --frozen-output outputs/mc24_four_station_relative_association_retrain_v1/retrained_v2 \
+  --output-dir outputs/mc24_four_station_relative_association_retrain_v1/operating_layer_audit_v1 \
+  --split validation --device auto
+
+python scripts/run_four_station_operating_layer_control.py \
+  --control-config configs/physical_four_station_operating_layer_control.yaml \
+  --synthetic-manifest outputs/mc24_four_station_relative_association_retrain_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json \
+  --frozen-output outputs/mc24_four_station_relative_association_retrain_v1/retrained_v2 \
+  --iteration-manifest outputs/mc24_four_station_relative_association_retrain_v1/iteration_manifest.json \
+  --output-dir outputs/mc24_four_station_relative_association_retrain_v1/operating_layer_control_v1 \
+  --device auto
+```
+
+Workbook 56 ran that pre-registered objective on the new transfer bank and
+failed the production association gate: raw-chain recall passed and
+origin-matched score-scale contracted versus workbook 54, but packing
+selected zero routes.  Workbooks 57–58 showed the missing competitor was
+dustbin 0, not a missing fragment topology.  Workbook 59 trained one
+pre-registered dustbin-aware route-margin auxiliary under the same frozen
+packing convention.  Transfer layer 1 passed and most payloads now select
+routes (`U_truth` median +0.87), but `draw_01` plus common SE(3) missed
+the vs-nominal efficiency gate and the twin route-metric gate.  15-DoF
+WLS stays closed.  The new checkpoint is a control artifact, not a frozen
+production V2.  Workbook 60 called the production `_route_hypotheses`
+set on that frozen checkpoint: every production fragment winner was
+already the workbook-59 `max(rival)` (train 14/14, transfer 513/513).
+Do not open solver-in-the-loop mining.  Workbook 61 scored every train
+complete truth route, not only the 14 winners: 740 / 3331 have a
+2/3-station production competitor inside the frozen margin, 584 of
+those cases are the per-event max dustbin-aware loss, and mean
+reduction dilutes that max by the 2- or 3-fold complete-route
+multiplicity.  Train is not missing short near-boundary coverage, so
+do not stop as a curriculum/domain-coverage limitation and do not
+reweight a nonexistent short-hard distribution.  One reduction-only
+control was trained under that frozen contract (workbook 62,
+`a46a35bd28eb294fe307590d4f12595f6d3bfaa8dc64aea0bf7418543605e1ef`).
+Layer 1 passed and score-scale contracted versus workbook 54, but
+`draw_01` plus common SE(3) still missed vs-nominal efficiency
+(`Δeff=0.104`) and the twin efficiency gate (`|Δ|=0.070`).  The 584
+train event-max short cases stayed inside the frozen margin (median
+`Δ=0.992`).  Stop weighting / reduction / operating-point rescue.
+Failure class: `objective_reduction_failure`.  15-DoF WLS stays closed.
+
+Workbook 63 is the source-disjoint training-diversity audit.  It does
+not retune workbook 59/62 weighting, reduction, margin, or the
+operating point.  The already-opened workbook-56 transfer set is a
+development diagnostic only and is no longer the next model's final
+independent gate.  Frozen workbook-62 scoring of train / development /
+transfer, plus unused non-sealed identity banks, shows that occupancy,
+charge, and route multiplicity already overlap, but the
+`draw_01+common` failure core sits outside the two current train
+sources in `ty` / S3 `tx` (kinematic inside 0.821 / 0.809 < 0.90).
+The same overlay recipe also has a large source-characteristic shift:
+transfer hard rate 0.799 vs train 0.234, fragment-winner rate 0.170 vs
+0.010, median `Δ` 0.413 vs 1.104.  Development `100047/100048`
+00050–00099 already repeats that pattern.  Coverage class:
+`source_phase_space_undercoverage`.  New source-disjoint training
+files are authorized (keep the current μ± pair; add
+`100043_00300`, `100044_00200`, `100047_00100`, `100048_00100`).
+The workbook-62 objective is frozen as a whole.  The new final gate is
+the reserved blind pair `100047_00350` / `100048_00350`, never loaded
+here and never used in workbooks 48–62.  Gates stay
+nominal purity ≥ 0.95, fake ≤ 0.05, all non-nominal `Δeff≤0.10`,
+gauge-twin and 2→3 / S3 stability.  15-DoF WLS stays closed until that
+new blind set passes.  If the frozen objective still fails there with
+the same common-SE(3) truth-utility drop, the next discussion is
+architecture-level relative / gauge-equivariant representation.
+
+Workbook 56 gauge-consistent route training (one pre-registered objective;
+from workbook 63 onward the opened transfer set is a development
+diagnostic only):
+
+```bash
+bash scripts/run_four_station_gauge_consistent_training.sh audit-sources
+bash scripts/run_four_station_gauge_consistent_training.sh prepare-transfer
+bash scripts/run_four_station_gauge_consistent_training.sh submit-transfer
+bash scripts/run_four_station_gauge_consistent_training.sh train
+```
+
+Workbook 59 dustbin-aware route-margin control (same frozen inference
+convention; do not retune after transfer results):
+
+```bash
+bash scripts/run_four_station_dustbin_aware_training.sh train
+bash scripts/run_four_station_dustbin_aware_training.sh infer-transfer
+bash scripts/run_four_station_dustbin_aware_training.sh score-scale
+bash scripts/run_four_station_dustbin_aware_training.sh mechanism
+bash scripts/run_four_station_dustbin_aware_training.sh assess
+```
+
+Workbook 60 solver-generated hard-negative mining audit (frozen
+workbook-59 checkpoint; train-only decision; do not retune):
+
+```bash
+bash scripts/run_four_station_solver_hard_negative_audit.sh all
+```
+
+Workbook 61 train-only weighting / reduction feasibility (frozen
+workbook-59 checkpoint; do not load transfer to pick a reduction):
+
+```bash
+bash scripts/run_four_station_weighting_reduction_audit.sh
+```
+
+Workbook 62 hard-aware max-reduction control (frozen workbook-61
+contract; one evaluation on the already-opened transfer set):
+
+```bash
+bash scripts/run_four_station_hard_aware_reduction_training.sh train
+bash scripts/run_four_station_hard_aware_reduction_training.sh infer-transfer
+bash scripts/run_four_station_hard_aware_reduction_training.sh score-scale
+bash scripts/run_four_station_hard_aware_reduction_training.sh mechanism
+bash scripts/run_four_station_hard_aware_reduction_training.sh assess
+bash scripts/run_four_station_hard_aware_reduction_training.sh compare
+```
+
+Workbook 63 source-disjoint training-diversity audit (frozen
+workbook-62 checkpoint; do not retune; do not load reserved blind
+sources; workbook-56 transfer is diagnostic only):
+
+```bash
+bash scripts/run_four_station_training_diversity_audit.sh
 ```

@@ -29,6 +29,26 @@ from scripts.run_physical_refit_capture_scan import _build_plan
 
 SCHEMA_VERSION = "faser-multisource-physical-alignment-iteration-v1"
 ALLOWED_SPLITS = ("train", "validation")
+TRANSFER_VALIDATION_SPLITS = ("validation",)
+
+
+def iteration_split_mode(payload: Mapping[str, Any], *, label: str) -> str:
+    """Accept train+validation banks or a transfer-validation-only bank."""
+    forbidden = {str(value) for value in payload.get("forbidden_splits", ())}
+    if "test" not in forbidden:
+        raise ValueError(f"{label} must explicitly forbid test")
+    if payload.get("test_data_accessed") not in (False, None):
+        raise ValueError(f"{label} has an invalid test-access declaration")
+    allowed = tuple(str(value) for value in payload.get("allowed_splits", ()))
+    if allowed == ALLOWED_SPLITS:
+        return "train_validation"
+    if (
+        allowed == TRANSFER_VALIDATION_SPLITS
+        and payload.get("transfer_validation_only") is True
+        and "train" in forbidden
+    ):
+        return "transfer_validation"
+    raise ValueError(f"{label} has an unsupported split contract {allowed}")
 
 
 def _read_template(path: Path) -> dict[str, Any]:
@@ -169,11 +189,16 @@ def prepare_iteration(
         raise ValueError("nevents must be positive")
     corpus_config = _load_config(source_config_path)
     allowed = tuple(_allowed_splits(corpus_config))
-    if allowed != ALLOWED_SPLITS:
-        raise ValueError("multi-source alignment iteration requires exactly train and validation")
     forbidden = {str(value) for value in corpus_config.get("forbidden_splits", ())}
-    if "test" not in forbidden:
-        raise ValueError("multi-source alignment iteration must explicitly forbid test")
+    split_mode = iteration_split_mode(
+        {
+            "allowed_splits": list(allowed),
+            "forbidden_splits": list(forbidden),
+            "transfer_validation_only": corpus_config.get("transfer_validation_only"),
+            "test_data_accessed": False,
+        },
+        label="source configuration",
+    )
     sources = _validate_sources(corpus_config, allowed)
     known_sources = {source["source_id"] for source in sources}
     if source_ids:
@@ -185,8 +210,10 @@ def prepare_iteration(
     if not sources:
         raise ValueError("no train/validation source selected")
     represented = {source["split"] for source in sources}
-    if source_ids is None and represented != set(ALLOWED_SPLITS):
-        raise ValueError("source configuration must provide both train and validation")
+    if source_ids is None:
+        expected = {"validation"} if split_mode == "transfer_validation" else set(ALLOWED_SPLITS)
+        if represented != expected:
+            raise ValueError(f"source configuration splits {sorted(represented)} do not match {split_mode}")
 
     template = _read_template(iteration_template_path)
     compiled, contract = _compile_scan(template, iteration=iteration, current_values=current_values)
@@ -241,8 +268,9 @@ def prepare_iteration(
             "NtupleDumper -> FaserActsExtrapolationTool(mode 0)"
         ),
         "source_split_unit": "original_xAOD_file",
-        "allowed_splits": list(ALLOWED_SPLITS),
-        "forbidden_splits": ["test"],
+        "allowed_splits": list(allowed),
+        "forbidden_splits": sorted(forbidden),
+        "transfer_validation_only": split_mode == "transfer_validation",
         "test_data_accessed": False,
         "nevents_per_source": int(nevents),
         "alignment_iteration": contract,

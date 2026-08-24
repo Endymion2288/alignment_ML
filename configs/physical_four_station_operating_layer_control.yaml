@@ -1,0 +1,42 @@
+# Pre-registered once, before the validation freeze-eval of this control.
+# Edge logits stay at the retrained V2 checkpoint.  No unmatched-penalty
+# grid, no draw_00_plus_common retuning, no workbook-52 held-outs, no
+# architecture/solver change, no 15-DoF WLS.
+control_id: retrained_v2_train_pair_platt_historical_packing_v1
+fit_split: train_only
+evaluation_split: validation
+edge_logits: frozen_retrained_v2
+architecture_change_allowed: false
+solver_change_allowed: false
+unmatched_penalty_grid_search_allowed: false
+draw_00_plus_common_retuning_allowed: false
+workbook_52_held_outs_opened: false
+continue_to_15d_relative_wls_if_fail: false
+
+calibration:
+  method: platt
+  scope: station_pair
+  pairs:
+    - 0->1
+    - 1->2
+    - 2->3
+  parameter_count: 6
+
+packing:
+  source: historical_frozen_v2
+  method: adjacent_contiguous_unit_capacity_set_packing
+  unmatched_penalty: -1.0
+  pair_thresholds:
+    0->1: 0.001
+    1->2: 0.001
+    2->3: 0.001
+
+nominal_quality_band:
+  maximum_track_fake_rate: 0.05
+  minimum_complete_track_purity: 0.95
+
+association_gates: configs/physical_four_station_association_retraining_gates.yaml
+
+if_control_fails:
+  record: representation_sufficient_association_operating_layer_not_at_production_gate
+  do_not_loosen_efficiency_drop_gate: true

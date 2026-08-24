@@ -203,8 +203,11 @@ def _field_candidates_by_event(candidate_sets: Sequence[object]) -> dict[tuple[s
 
 
 def _assert_sealed_contract(contract: Mapping[str, object], *, label: str) -> None:
-    if contract.get("loaded_event_splits") != ["train", "validation"]:
+    splits = [str(value) for value in contract.get("loaded_event_splits") or ()]
+    if not splits or set(splits) - {"train", "validation"}:
         raise ValueError(f"{label} did not declare a train/validation-only model contract")
+    if "test" in splits:
+        raise ValueError(f"{label} loaded sealed test events")
     if contract.get("test_events_loaded") is not False or contract.get("test_artifacts_opened") is not False:
         raise ValueError(f"{label} is not sealed from test data")
     if "test" not in {str(value) for value in contract.get("forbidden_splits", ())}:
@@ -216,8 +219,9 @@ def _assert_sealed_contract(contract: Mapping[str, object], *, label: str) -> No
 def _route_config(operating: Mapping[str, object], maximum_hypotheses: int) -> RouteAssignmentConfig:
     if operating.get("method") != "adjacent_contiguous_unit_capacity_set_packing":
         raise ValueError("frozen operating point uses an unsupported route solver")
-    if operating.get("selection_split") != "validation_only" or operating.get("test_opened") is not False:
-        raise ValueError("frozen operating point is not validation-only")
+    selection = str(operating.get("selection_split") or "")
+    if selection not in {"validation_only", "pre_registered_frozen_historical_packing"} or operating.get("test_opened") is not False:
+        raise ValueError("frozen operating point is not a sealed pre-registered packing convention")
     raw_thresholds = operating.get("thresholds")
     if not isinstance(raw_thresholds, Mapping):
         raise ValueError("frozen operating point lacks route thresholds")
@@ -257,13 +261,15 @@ def _maximum_hypotheses(root: Path, section: str) -> int:
 def _load_calibration(root: Path) -> Mapping[str, object]:
     wrapper = _read_json(root / "calibration.json")
     calibration = wrapper.get("calibration")
+    fit_split = wrapper.get("fit_split")
+    allowed = {"validation_only", "identity_frozen_pre_training"}
     if (
-        wrapper.get("fit_split") != "validation_only"
+        fit_split not in allowed
         or wrapper.get("test_opened") is not False
         or not isinstance(calibration, Mapping)
-        or calibration.get("fit_split") != "validation_only"
+        or calibration.get("fit_split") not in allowed
     ):
-        raise ValueError("frozen score calibration is not validation-only")
+        raise ValueError("frozen score calibration is not a sealed identity or validation-only map")
     return dict(calibration)
 
 

@@ -1,0 +1,49 @@
+# Authorized workbook-63 source-disjoint four-station training set.
+# Written after the diversity audit found both phase-space and
+# source-characteristic undercoverage.  Keep the two current train
+# files and add four different original xAODs (μ−/μ+ and a second
+# DSID pair).  Do not add more synthetic repeats of the same two
+# files.  Workbook-56 transfer is not a training source.  Reserved
+# blind validation is absent from this file.
+physical_curriculum_mlp:
+  allowed_splits: [train]
+  forbidden_splits: [validation, test]
+  source_split_unit: original_xaod_file
+  four_station_contract: faser-four-station-alignment-v1
+  relative_curriculum: 15d_gauge_then_left_se3
+  no_station_is_assumed_correct: true
+  authorized_by: workbook_63
+  workbook56_transfer_is_final_gate: false
+  test_data_accessed: false
+
+  sources:
+    - id: mc24_100043_00200_00299
+      split: train
+      charge: mu-
+      role: keep_current_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100044_00300_00399
+      split: train
+      charge: mu+
+      role: keep_current_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100043_00300_00399
+      split: train
+      charge: mu-
+      role: new_source_disjoint_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - id: mc24_100044_00200_00299
+      split: train
+      charge: mu+
+      role: new_source_disjoint_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - id: mc24_100047_00100_00149
+      split: train
+      charge: mu-
+      role: new_source_disjoint_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00100-00149-s0013-r0022-xAOD.root
+    - id: mc24_100048_00100_00149
+      split: train
+      charge: mu+
+      role: new_source_disjoint_train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00100-00149-s0013-r0022-xAOD.root
