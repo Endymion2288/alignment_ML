@@ -103,6 +103,12 @@ train)
     --q-over-p-mode 0
   ;;
 
+freeze-checkpoint)
+  python scripts/freeze_four_station_source_diversity_checkpoint.py \
+    --checkpoint-dir "$CONTROL/checkpoint" \
+    --output-json "$CONTROL/checkpoint_freeze.json"
+  ;;
+
 prepare-blind)
   python scripts/prepare_four_station_relative_curriculum.py \
     --source-config configs/physical_curriculum_four_station_diversity_blind_production_sources.yaml \

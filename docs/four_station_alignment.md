@@ -396,20 +396,25 @@ sources; workbook-56 transfer is diagnostic only):
 bash scripts/run_four_station_training_diversity_audit.sh
 ```
 
-Workbook 64 trains the frozen workbook-62 objective on the authorized
+Workbook 64 trained the frozen workbook-62 objective on the authorized
 six-source set (keep the two current train files; add
 `100043_00300`, `100044_00200`, `100047_00100`, `100048_00100`).
-Do not retune loss, weights, reduction, margin, threshold, penalty,
-Platt, candidate builder, solver, or architecture.  Do not enlarge
-the envelope or substitute V3 identity / synthetic repeats.  The
-final gate is the reserved blind pair `100047_00350` /
-`100048_00350`, compared to that bank's own nominal.  If it passes,
-reclassify the workbook-62 failure as
-`training_domain_coverage_limitation_resolved_by_source_diversity`
-and open route-selected 15-DoF `ΔT_ij` WLS.  If it fails with the
-same left-SE(3) common-transform truth-utility drop, stop the V2
-mainline; the next discussion is architecture-level relative /
-gauge-equivariant representation.
+Loss, weights, reduction, margin, threshold, penalty, Platt,
+candidate builder, solver, and architecture stayed frozen.  The
+reserved-blind pair `100047_00350` / `100048_00350` was opened only
+after checkpoint freeze
+`0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236`
+(`blind_not_used_for_training=true`).  Compared to that bank's own
+nominal: layer 1 raw recall is 1.0, nominal purity/fake pass
+(0.961 / 0.038), and the three left-SE(3) twins stay inside the
+gauge tolerances.  Layer 2 fails on `draw_00` complete-track
+`Δeff=0.117` and on `draw_00+common` 2→3 `Δeff=0.101`.  Common-twin
+`U_truth` does not drop (0/3 families).  Failure class:
+`source_diversity_blind_failed_other`, not
+`source_diversity_insufficient_for_gauge_transfer`.
+`continue_to_15d_relative_wls=false`.  Do not add more same-family
+sources, reweight, or retune the operating point.  15-DoF WLS stays
+closed.
 
 ```bash
 bash scripts/run_four_station_source_diversity_training.sh audit-new-sources
@@ -421,6 +426,7 @@ bash scripts/run_four_station_source_diversity_training.sh merge-train
 bash scripts/run_four_station_source_diversity_training.sh overlay-train
 bash scripts/run_four_station_source_diversity_training.sh coverage-sanity
 bash scripts/run_four_station_source_diversity_training.sh train
+bash scripts/run_four_station_source_diversity_training.sh freeze-checkpoint
 bash scripts/run_four_station_source_diversity_training.sh prepare-blind
 bash scripts/run_four_station_source_diversity_training.sh submit-blind
 bash scripts/run_four_station_source_diversity_training.sh assemble-blind

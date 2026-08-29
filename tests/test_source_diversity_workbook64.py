@@ -60,6 +60,7 @@ def test_blind_pass_authorizes_wls_and_common_drop_stops_v2():
     assert failed["stop_v2_mainline"] is True
     assert failed["continue_to_15d_relative_wls"] is False
     assert failed["do_not_add_more_same_family_sources"] is True
+    assert failed["coverage_class"] == "source_diversity_insufficient_for_gauge_transfer"
 
 
 def test_iteration_split_mode_workbook64_contracts():

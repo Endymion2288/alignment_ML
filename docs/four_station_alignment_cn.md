@@ -352,18 +352,20 @@ diagnostic）：
 bash scripts/run_four_station_training_diversity_audit.sh
 ```
 
-条目 64 在条目 63 授权的六源 train 上从头训练与条目 62 完全相同的
+条目 64 已在条目 63 授权的六源 train 上从头训练与条目 62 完全相同的
 V2（dustbin-aware + gauge + max reduction；复制冻结 aux 权重；
 identity Platt；0.001 / −1.0；margin=1）。不改 objective / OP /
-架构，不扩大 envelope，不用 V3 identity 或同一文件的 synthetic
-重复代替 source diversity。最终 gate 只打开 reserved blind
-`100047_00350` / `100048_00350`，对照该 bank 自己的 nominal。
-通过则归类
-`training_domain_coverage_limitation_resolved_by_source_diversity`
-并第一次授权 route-selected 15D `ΔT_ij` WLS。若仍是同一
-left-SE(3) common transform 下的 systematic truth-utility drop，
-停止当前 V2 主线，下一步转向 architecture-level relative /
-gauge-equivariant representation。
+架构。checkpoint
+`0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236`
+冻结后才打开 reserved blind `100047_00350` / `100048_00350`，对照
+该 bank 自己的 nominal。Layer 1 raw recall=1.0，nominal purity/fake
+通过（0.961 / 0.038），三组 left-SE(3) twin 在 gauge 容差内。
+Layer 2 失败：`draw_00` 完整-track `Δeff=0.117`，`draw_00+common`
+2→3 `Δeff=0.101`。common twin 的 `U_truth` 没有下降（0/3）。
+归类 `source_diversity_blind_failed_other`，不是
+`source_diversity_insufficient_for_gauge_transfer`。
+`continue_to_15d_relative_wls=false`。不再增加同类 source，不
+reweight / 改 OP，不打开 15D WLS。
 
 ```bash
 bash scripts/run_four_station_source_diversity_training.sh audit-new-sources
@@ -375,6 +377,7 @@ bash scripts/run_four_station_source_diversity_training.sh merge-train
 bash scripts/run_four_station_source_diversity_training.sh overlay-train
 bash scripts/run_four_station_source_diversity_training.sh coverage-sanity
 bash scripts/run_four_station_source_diversity_training.sh train
+bash scripts/run_four_station_source_diversity_training.sh freeze-checkpoint
 bash scripts/run_four_station_source_diversity_training.sh prepare-blind
 bash scripts/run_four_station_source_diversity_training.sh submit-blind
 bash scripts/run_four_station_source_diversity_training.sh assemble-blind

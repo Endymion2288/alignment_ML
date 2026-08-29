@@ -314,6 +314,15 @@ def main() -> None:
             "route_assignment_backend": "adjacent_contiguous_unit_capacity_set_packing",
             "checkpoint_selection": "last_completed_epoch_of_fixed_30_epoch_budget",
             "control_id": objective.get("control_id"),
+            "loaded_source_ids": sorted(
+                {str(source) for sample in samples for source in sample.source_ids}
+            ),
+            "history_only_sources_loaded": False,
+            "reserved_blind_used_for_training": False,
+            "reserved_blind_used_for_checkpoint_selection": False,
+            "blind_not_used_for_training": True,
+            "early_stopping": False,
+            "objective_reestimated": False,
         },
     )
     _write_json(output_root / "artifact_summary.json", route_aware_artifact_summary(artifact))

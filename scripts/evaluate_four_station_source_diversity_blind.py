@@ -53,7 +53,7 @@ def classify_blind_decision(
     if layer1_ok and same_common_se3_truth_utility_drop:
         return {
             "passed": False,
-            "coverage_class": "architecture_level_relative_gauge_equivariant_representation_required",
+            "coverage_class": "source_diversity_insufficient_for_gauge_transfer",
             "continue_to_15d_relative_wls": False,
             "stop_v2_mainline": True,
             "do_not_add_more_same_family_sources": True,
