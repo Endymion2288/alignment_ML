@@ -1,0 +1,216 @@
+# External-Constraint + Year/IOV-Dependent Alignment Framework Feasibility V1
+# Information requirement for a survey/metrology prior on ry↔C_dx, and an
+# IOV-aware parameterization.  No new training, no full module map, no
+# geometry write, no alignment payload, no residual-selected prior.
+
+schema_version: faser-external-constraint-iov-alignment-feasibility-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_route_policy: true
+do_not_modify_threshold: true
+do_not_modify_unmatched_penalty: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_generate_athena_fd_probes: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_select_prior_from_residual: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_invent_survey_numbers: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+representative:
+  station_id: 0
+  layer_id: 0
+
+finite_difference:
+  translation_step_mm: 0.010
+  rotation_step_mrad: 0.05
+  c_dx_step_mm: 0.010
+
+physics_scales:
+  strip_pitch_mm: 0.080
+  stereo_rad: 0.020
+  ift_layer_pitch_mm: 31.5
+  ip_angular_acceptance_rad: 0.000208
+  measurement_sigma_mm: 0.080
+  measurement_sigma_source: strip_pitch_not_residual_rms
+  c_dx_equals_ry_times_layer_pitch: true
+  c_dx_ry_design_map_mm_per_mrad: 0.0315
+
+# Predeclared prior grid.  Edges are detector/mechanical scales, not cosine.
+prior_scan:
+  sigma_ry_mrad: [100.0, 20.0, 5.0, 1.0, 0.5, 0.208, 0.05, 0.01]
+  sigma_cdx_mm: [10.0, 1.0, 0.315, 0.080, 0.0315, 0.010, 0.001]
+  families: [none, ry_only, cdx_only, both]
+  sigma_ry_scale_notes:
+    100.0: unconstrained_relative_to_tracker
+    20.0: stereo_angle_design_not_a_station_survey
+    5.0: coarse_mechanical
+    1.0: typical_fixture
+    0.5: sub_mrad_survey
+    0.208: FASER_IP_angular_acceptance
+    0.05: software_FD_step_optimistic_for_real_survey
+    0.01: optical_survey_grade
+  sigma_cdx_scale_notes:
+    10.0: unconstrained
+    1.0: millimetre_support
+    0.315: 10x_layer_pitch_times_1mrad
+    0.080: one_strip_pitch
+    0.0315: layer_pitch_times_1mrad
+    0.010: ten_micron_layer_metrology
+    0.001: one_micron_MC_isolation_budget_not_a_survey
+
+unlock:
+  rank_tolerance: 0.01
+  max_ry_cdx_correlation: 0.90
+  min_sigma3_over_sigma1: 0.01
+  sensitivity_sigma_factor: 3.0
+  min_routes: 8
+  note: "Unlock uses column-normalized SVD rank in (mm, mrad, mm) scan units plus |ρ(ry,C_dx)| from Fisher covariance. Thresholds are predeclared, not scanned against cosine or residual RMS."
+
+track_jacobians:
+  topology_config: configs/alternative_track_topology_identifiability_feasibility_v1.yaml
+  collinear_category: intermediate_angle
+  mixed_category: ge3_station_with_ift
+  runs: [14973, 14974]
+
+official_alignment_pool_dir: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/poolcond
+
+year_iovs:
+  - year: 2022
+    rec_tags: [r0021, r0022]
+    geometry_tags: [FASERNU-04]
+    conditions_tags_production: [OFLCOND-FASER-04, OFLCOND-FASER-05]
+    alignment_pool_files: [FASER-04_2022_Align.pool.root]
+    ift_in_production: mixed
+    ift_note: "r0021 --noIFT three-station CKF; r0022 IFT-era 4-station CKF. C_dx only after IFT exists."
+    track_sample: collision_like
+    xaod_available: true
+    available_track_samples:
+      - id: rec_r0021
+        topology: collision_like
+        xaod: true
+        four_station_ckf: false
+        c_dx_in_parameterization: false
+        cluster_local_jacobian_this_stage: false
+        note: "--noIFT disables 4-station CKF only. Do not Jacobian or mix with 2024."
+      - id: rec_r0022
+        topology: collision_like
+        xaod: true
+        four_station_ckf: true
+        c_dx_in_parameterization: true
+        cluster_local_jacobian_this_stage: false
+        note: "IFT-era 4-station CKF. Same TI12 collision topology; different IOV from 2024."
+  - year: 2023
+    rec_tags: [r0019, r0020, r0021]
+    geometry_tags: [FASERNU-04, FASERNU-03]
+    conditions_tags_production: [OFLCOND-FASER-04, OFLCOND-FASER-05]
+    alignment_pool_files: [FASER-05_2023_Align.pool.root, FASER-06_2023_Align.pool.root]
+    ift_in_production: mixed
+    ift_note: "r0021 production --noIFT; 2023_ift ntuple uses FASERNU-04 / OFLCOND-FASER-05; 2023_cos rec is FASERNU-03 and xAOD was not retained."
+    track_sample: collision_like
+    xaod_available: mixed
+    available_track_samples:
+      - id: rec_r0021
+        topology: collision_like
+        xaod: true
+        four_station_ckf: false
+        cluster_local_jacobian_this_stage: false
+      - id: phys_2023_ift
+        topology: collision_like
+        xaod: true
+        four_station_ckf: true
+        geometry_tag: FASERNU-04
+        conditions_tag: OFLCOND-FASER-05
+        cluster_local_jacobian_this_stage: false
+        note: "Still collision-like. Do not mix residuals with 2024."
+      - id: rec_2023_cos
+        topology: named_cosmic_stream
+        xaod: false
+        geometry_tag: FASERNU-03
+        conditions_tag: OFLCOND-FASER-04
+        cluster_local_jacobian_this_stage: false
+        note: "xAOD not retained; occupancy is not a high lever-arm sample."
+  - year: 2024
+    rec_tags: [r0022, r0023]
+    geometry_tags: [FASERNU-04]
+    conditions_tags_production: [OFLCOND-FASER-05]
+    conditions_tag_current_protocol: OFLCOND-FASER-06
+    alignment_pool_files: [FASER-05_2024_Align.pool.root, FASER-06_2024_Align.pool.root]
+    ift_in_production: true
+    track_sample: collision_like_r0022_frozen_v2_windows
+    xaod_available: true
+    available_track_samples:
+      - id: rec_r0022_frozen_v2
+        topology: collision_like
+        xaod: true
+        four_station_ckf: false
+        cluster_local_jacobian_this_stage: true
+        jacobian_runs: [14973, 14974]
+        note: "Only this IOV is Jacobianed in the prior-strength scan. Production tag OFLCOND-FASER-05 vs protocol OFLCOND-FASER-06 is an in-year IOV split."
+      - id: phys_2024_cos
+        topology: named_cosmic_stream
+        occupancy: empty
+        cluster_local_jacobian_this_stage: false
+      - id: phys_2024_back_alps_ift
+        topology: collision_like
+        cluster_local_jacobian_this_stage: false
+        note: "Same spectrometer slope mix as r0022; not an independent topology."
+  - year: 2025
+    rec_tags: [r0023, p0014]
+    geometry_tags: [FASERNU-04]
+    conditions_tags_production: [OFLCOND-FASER-05]
+    alignment_pool_files: [FASER-06_2025_Align.pool.root]
+    ift_in_production: true
+    track_sample: collision_like_few_r0023_runs
+    xaod_available: true
+    available_track_samples:
+      - id: rec_r0023
+        topology: collision_like
+        xaod: true
+        cluster_local_jacobian_this_stage: false
+        note: "Few r0023 runs. Same TI12 collision topology; do not mix with 2024."
+  - year: 2021
+    rec_tags: [TestBeam2021/r0010]
+    geometry_tags: [FASER-TB00]
+    conditions_tags_production: [OFLCOND-FASER-TB00]
+    alignment_pool_files: [FASER-TB00_Align.pool.root]
+    ift_in_production: false
+    track_sample: testbeam
+    xaod_available: true
+    independent_of_ti12: true
+    available_track_samples:
+      - id: TestBeam2021_r0010
+        topology: testbeam
+        xaod: true
+        c_dx_in_parameterization: false
+        cluster_local_jacobian_this_stage: false
+        note: "FASER-TB00 has no IFT/C_dx lever. Fully independent of TI12 years."
+
+parameterization:
+  form: "theta^(y) = theta_static + Delta_theta_year^(y)"
+  do_not_free_fill_or_run_initially: true
+  do_not_share_one_constant_set_across_years: true
+
+output_dir: outputs/external_constraint_iov_alignment_feasibility_v1

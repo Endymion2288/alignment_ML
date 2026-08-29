@@ -1,0 +1,128 @@
+# Survey/Metrology Ingestion + IOV-Aware Alignment Infrastructure V1
+# Prepare the schema, IOV state, and track+prior Fisher combiner so a real
+# independent survey can be tested inside one IOV.  No alignment payload,
+# no new 2024 r0022 Jacobian, no design/gauge numbers as measurements.
+
+schema_version: faser-survey-metrology-iov-alignment-infrastructure-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_route_policy: true
+do_not_modify_threshold: true
+do_not_modify_unmatched_penalty: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_generate_athena_fd_probes: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_select_prior_from_residual: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_rebuild_2024_r0022_jacobian: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_average_across_iovs: true
+do_not_invent_survey_numbers: true
+do_not_use_design_as_survey: true
+do_not_use_software_gauge_as_survey: true
+synthetic_prior_feasibility_only: true
+geometry_candidate_from_synthetic: false
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+entry_61_frozen:
+  source: outputs/external_constraint_iov_alignment_feasibility_v1/next_stage_decision.json
+  degeneracy_breaking_sigma_ry_mrad: 20.0
+  degeneracy_breaking_sigma_cdx_mm: 0.315
+  leftover_sigma_cdx_mm_after_tight_ry: 0.34514281813225994
+  leftover_sigma_ry_mrad_after_tight_cdx: 10.78707460814348
+  leftover_cdx_finer_than_strip_pitch: false
+  collinear_abs_cosine: 0.9814146834434979
+  collinear_track_only_n_rows: 191
+  collinear_track_only_marginal_sigma_ry_mrad: 57.53391340393952
+  collinear_track_only_marginal_sigma_cdx_mm: 1.840859539486741
+  collinear_track_only_ry_cdx_correlation: -0.9822665199425727
+  toy_unlock_sigma_ry_mrad: 0.5
+  toy_unlock_sigma_cdx_mm: 0.01
+  note: "20 mrad / 0.315 mm breaks degeneracy on the collinear r0022 Jacobian. It is not the physically useful alignment target."
+
+physics_scales:
+  strip_pitch_mm: 0.080
+  stereo_full_mrad: 40.0
+  stereo_per_side_mrad: 20.0
+  stereo_source: "geomDB SCTBRLMODULE STEREOANGLE 40.0 milliradian, SCT_Module inner/outer = ±0.5 * angle"
+  ift_layer_pitch_mm: 31.5
+  ift_layer_pitch_source: "geomDB SCTFASERGENERAL LAYERPITCH"
+  measurement_sigma_mm: 0.080
+  measurement_sigma_source: strip_pitch_not_residual_rms
+  c_dx_ry_design_map_mm_per_mrad: 0.0315
+  station_z_nominal_mm:
+    0: -1860.15
+    1: 47.4
+    2: 1237.4
+    3: 2427.4
+
+useful_precision:
+  ry_mrad: 0.5
+  ry_rationale: "Predeclared sub-mrad survey scale. Leftover σ(ry) after a tight C_dx prior on collinear tracks is ~10.8 mrad, so useful ry must be a direct orientation measurement."
+  cdx_mm: 0.080
+  cdx_rationale: "One strip pitch. Leftover σ(C_dx) after a tight ry prior saturates at 0.345 mm on collinear tracks, so useful C_dx must be direct layer metrology."
+  l0_minus_l2_dx_mm: 0.160
+  l0_minus_l2_rationale: "C_dx=(dx_L0-dx_L2)/2, so σ(dx_L0-dx_L2)=2 σ(C_dx)"
+
+stretch_precision:
+  ry_mrad: 0.208
+  ry_rationale: "FASER IP angular acceptance; optical-survey grade is 0.01 mrad and is not required to start."
+  cdx_mm: 0.010
+  cdx_rationale: "Ten-micron layer metrology; one-micron MC isolation is not a survey target."
+  l0_minus_l2_dx_mm: 0.020
+
+unlock:
+  rank_tolerance: 0.01
+  max_ry_cdx_correlation: 0.90
+  min_sigma3_over_sigma1: 0.01
+
+calypso:
+  faser_reco: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+  sct_geometry_cfg: Tracker/TrackerDetDescr/FaserSCT_GeoModel/python/FaserSCT_GeoModelConfig.py
+  detector_factory: Tracker/TrackerDetDescr/FaserSCT_GeoModel/src/SCT_DetectorFactory.cxx
+  align_db_tool: Tracker/TrackerAlignTools/TrackerAlignGenTools/src/TrackerAlignDBTool.cxx
+  geomdb_sql: DetectorDescription/GeoModel/FaserGeoModel/data/geomDB.sql
+  write_alignment_readme: Control/CalypsoExample/WriteAlignment/README.md
+  align_folder: /Tracker/Align
+  geom_flag_to_tags:
+    TI12Data03: {geometry_tag: FASERNU-03, conditions_tag_data: OFLCOND-FASER-04}
+    TI12Data04: {geometry_tag: FASERNU-04, conditions_tag_current_reco: OFLCOND-FASER-06}
+    TestBeamData: {geometry_tag: FASER-TB01, conditions_tag: OFLCOND-FASER-TB01, note: "faser_reco TestBeamData maps to TB01; production TestBeam2021 r0010 used FASER-TB00 / OFLCOND-FASER-TB00"}
+  no_ift_meaning: "faser_reco --noIFT disables 4-station CKF only; SegmentFit and 3-station CKF remain; IFT clusters can still exist."
+
+official_alignment_pool_dir: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/poolcond
+
+grl:
+  2022: /cvmfs/faser.cern.ch/repo/sw/runlist/v10/faser_goodrunlist_2022_physics.json
+  2023: /cvmfs/faser.cern.ch/repo/sw/runlist/v10/faser_goodrunlist_2023_physics.json
+  2024: /cvmfs/faser.cern.ch/repo/sw/runlist/v10/faser_goodrunlist_2024_physics.json
+  2025: /cvmfs/faser.cern.ch/repo/sw/runlist/v10/faser_runlist_2025_stable.json
+
+parameterization:
+  form: "theta^(y) = theta_static + Delta_theta_IOV^(y)"
+  do_not_free_fill_or_run_initially: true
+  do_not_share_one_constant_set_across_years: true
+  do_not_share_one_constant_set_across_conditions_tags: true
+
+output_dir: outputs/survey_metrology_iov_alignment_infrastructure_v1

@@ -1,0 +1,283 @@
+# Non-Collision / Cross-Year Track-Topology Inventory & Identifiability Feasibility V1
+# Residual-blind provenance and topology search for a real-data population
+# that is physically different from ordinary 2024 r0022 collision-like tracks.
+# No new training, no full module map, no geometry write, no cosine-tuned cuts,
+# no stacking of additional 2024 r0022 collision-like windows.
+
+schema_version: faser-noncollision-crossyear-topology-identifiability-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_route_policy: true
+do_not_modify_threshold: true
+do_not_modify_unmatched_penalty: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_generate_athena_fd_probes: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+entry_59:
+  decision: no_portable_alternative_topology_in_current_r0022
+  inventory: outputs/alternative_track_topology_identifiability_feasibility_v1/topology_inventory_report.json
+
+# Same physics scales as entry 59.  Not scanned against |cos(ry,C_dx)|.
+physics_scales:
+  faser_ip_distance_mm: 480000.0
+  tracker_radial_envelope_mm: 100.0
+  ip_angular_acceptance_rad: 0.000208
+  ip_like_max_slope: 0.0005
+  stereo_rad: 0.020
+  ift_layer_pitch_mm: 31.5
+  strip_pitch_mm: 0.080
+  wide_angle_min_slope: 0.002
+  slope_definition: global_ckf_or_selected_route_endpoint_xyz
+  slope_not_local_segmentfit_tx_ty: true
+  slope_not_unassociated_event_segments: true
+  slope_rationale: "Spectrometer slope is a single-track Δx/Δz. Unassociated PHYS TrackSegments in one event are not a route. Local SegmentFit tx/ty is a station-internal angle."
+  wide_angle_rationale: "stereo/10; IFT 63 mm span times 0.002 = 0.126 mm > strip pitch 0.080 mm"
+  ip_like_rationale: "2.4 times FASER IP angular acceptance ~0.208 mrad"
+  long_lever_stations: [0, 3]
+  station_z_mm:
+    0: -1860.15
+    1: 47.4
+    2: 1237.4
+    3: 2427.4
+  station_z_match_tolerance_mm: 400.0
+
+finite_difference:
+  translation_step_mm: 0.010
+  rotation_step_mrad: 0.05
+  c_dx_step_mm: 0.010
+
+# Frozen 2024 r0022 collision-like baseline from entry 59.  Do not restack.
+r0022_collision_baseline:
+  year: 2024
+  rec_tag: r0022
+  geometry_tag_production: FASERNU-04
+  conditions_tag_production: OFLCOND-FASER-05
+  conditions_tag_current_protocol: OFLCOND-FASER-06
+  n_selected_routes: 1265
+  n_jacobian_eligible: 811
+  n_complete_four_station_selected_routes: 17
+  occupancy_four_station_coincidence_in_100_event_window: 0.09
+  jacobian_eligible_wide_fraction: 0.50
+  selected_route_four_station_fraction: 0.0134
+  phys_collision_like_stream: 2024_ift
+  phys_ckf_wide_fraction_reference: 0.5528
+  note: "Entry-59 selected-route wide fraction is ~50% of >=3-station+IFT routes. Occupancy four-station coincidence is 8-10%. PHYS 2024_ift CKF wide fraction is the like-for-like collision PHYS baseline (~55%). Track-filtered PHYS four-station rates are not occupancy."
+
+# Predeclared from run metadata / reconstruction flags / named PHYS streams.
+# Frozen before residual or Jacobian inspection.  Not cosine-optimized.
+predeclared_topologies:
+  - id: phys_2024_cosmic_beam_mode
+    phys_stream: 2024_cos
+    year: 2024
+    declared_from: "NtupleDumper --cosmics: LHC beamMode in {NO BEAM, SETUP, CYCLING, RAMP DOWN}"
+    expected_difference: non_stable_beam_mode_event_filter_of_2024_r0022
+    same_year_as_r0022: true
+    can_mix_residuals_with_2024_r0022: false
+    can_mix_note: "Same rec files, but this audit treats the cosmic-mode subset as a distinct topology source and still forbids mixing correction values across filters until IOV identity is proven event-by-event."
+    requires_ift_for_cdx: true
+  - id: phys_2023_cosmic_like
+    phys_stream: 2023_cos
+    year: 2023
+    declared_from: "Named PHYS stream 2023_cos; ntuple --no_stable --NoTrackFilt --trigFilt; rec logs TI12Data03 / FASERNU-03"
+    expected_difference: dedicated_cosmic_or_no_stable_runs_absent_from_2023_r0021_rec
+    same_year_as_r0022: false
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: phys_backward_ckf
+    phys_stream: "*_back"
+    year: [2022, 2023, 2024]
+    declared_from: "NtupleDumper --backward on the same collision rec files"
+    expected_difference: reverse_ckf_propagation_not_a_new_incident_angle_source
+    same_year_as_r0022: mixed
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: phys_alps_filter
+    phys_stream: "*_alps"
+    year: [2022, 2023, 2024]
+    declared_from: "Named ALPS PHYS stream / rare-signal filter"
+    expected_difference: physics_filter_not_an_angular_topology
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: phys_ift_collision
+    phys_stream: "*_ift"
+    year: [2022, 2023, 2024]
+    declared_from: "NtupleDumper --useIFT on collision GRL"
+    expected_difference: same_collision_like_tracks_with_IFT_ckf_enabled
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: rec_2022_collision
+    rec: rec/2022
+    year: 2022
+    declared_from: "2022 reconstruction; r0021 --noIFT, r0022 IFT-era FASERNU-04 / OFLCOND-FASER-05"
+    expected_difference: earlier_collision_year_possible_different_alignment_IOV
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: rec_2023_collision
+    rec: rec/2023
+    year: 2023
+    declared_from: "2023 r0021 production --noIFT FASERNU-04 / OFLCOND-FASER-04; 2023_ift ntuple uses FASERNU-04 / OFLCOND-FASER-05"
+    expected_difference: earlier_collision_year_and_conditions_tag
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: rec_2025_collision
+    rec: rec/2025
+    year: 2025
+    declared_from: "2025 r0023 / p0014 TI12Data04 --noIFT --triggerMask 27; FASERNU-04 / OFLCOND-FASER-05"
+    expected_difference: later_collision_year_and_trigger_mask
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+  - id: testbeam_2021
+    rec: rec/TestBeam2021
+    year: 2021
+    declared_from: "TestBeam2021 r0010; FASER-TB00 / OFLCOND-FASER-TB00; no FaserLHCData"
+    expected_difference: test_beam_geometry_not_TI12_four_station_ift
+    can_mix_residuals_with_2024_r0022: false
+    requires_ift_for_cdx: true
+
+jacobian_admission:
+  min_wide_dominated_ckf_fraction: 0.90
+  min_unbiased_four_station_coincidence_ratio_vs_r0022_occupancy: 3.0
+  min_ge3_ift_events_per_scanned_file: 200
+  min_independent_runs_same_period: 2
+  require_ift_for_cdx_jacobian: true
+  require_xaod_with_clusters_and_segmentfit: true
+  require_same_period_transfer: true
+  forbid_cross_year_residual_or_constant_mix: true
+  forbid_cosine_event_selection: true
+  do_not_restack_2024_r0022_collision_like: true
+  unassociated_segment_slope_cannot_admit_jacobian: true
+  collision_like_metadata_cannot_admit: true
+  ratio_rationale: "A cosmic/halo/testbeam source may proceed only if it is wide-dominated (CKF slope >=90% above stereo/10) or has >=3x the r0022 occupancy four-station coincidence, with IFT and two same-period runs. 90% is a stereo/10 population cut, not a cosine scan. Collision-like years/streams cannot admit even if their mix is 70% vs 55%."
+
+eos:
+  rec_root: /eos/experiment/faser/rec
+  data0_rec_root: /eos/experiment/faser/data0/rec
+  phys_root: /eos/experiment/faser/phys
+  years: [2022, 2023, 2024, 2025, 2026]
+  extra_rec_trees: [TestBeam2021]
+  phys_streams_of_interest:
+    - 2022_alps
+    - 2022_back
+    - 2022_ift
+    - 2022_iftback
+    - 2023_alps
+    - 2023_back
+    - 2023_cos
+    - 2023_ift
+    - 2024_alps
+    - 2024_back
+    - 2024_cos
+    - 2024_ift
+    - 2025
+
+log_probes:
+  - id: rec_2022_r0022_008090
+    path: /eos/experiment/faser/rec/2022/r0022_log/008090/Faser-Physics-008090-00000.rec.log
+  - id: rec_2022_r0021_007729
+    path: /eos/experiment/faser/rec/2022/r0021_log/007729/Faser-Physics-007729-00000.rec.log
+  - id: rec_2023_r0021_010417
+    path: /eos/experiment/faser/rec/2023/r0021_log/010417/Faser-Physics-010417-00000.rec.log
+  - id: rec_2023_cos_011780
+    path: /eos/experiment/faser/rec/2023/r0019_log/011780/Faser-Physics-011780-00000.rec.log
+  - id: rec_2024_r0022_014973
+    path: /eos/experiment/faser/rec/2024/r0022_log/014973/Faser-Physics-014973-00000.rec.log
+  - id: rec_2024_r0022_014587
+    path: /eos/experiment/faser/rec/2024/r0022_log/014587/Faser-Physics-014587-00000.rec.log
+  - id: rec_2024_r0023_013832
+    path: /eos/experiment/faser/rec/2024/r0023_log/013832/Faser-Physics-013832-00000.rec.log
+  - id: rec_2025_r0023_020012
+    path: /eos/experiment/faser/rec/2025/r0023_log/020012/Faser-Physics-020012-00000.rec.log
+  - id: rec_2025_p0014_019336
+    path: /eos/experiment/faser/rec/2025/p0014_log/019336/Faser-Physics-019336-00000.rec.log
+  - id: rec_testbeam_003395
+    path: /eos/experiment/faser/rec/TestBeam2021/r0010_log/003395/Faser-Physics-003395-00000.rec.log
+  - id: phys_2023_cos_011780
+    path: /eos/experiment/faser/phys/2023_cos/r0019_log/011780/Faser-Physics-011780-0000-PHYS.ntp.log
+  - id: phys_2024_cos_014587
+    path: /eos/experiment/faser/phys/2024_cos/r0022-r0023_log/014587/Faser-Physics-014587-0000-PHYS.ntp.log
+  - id: phys_2024_back_014973
+    path: /eos/experiment/faser/phys/2024_back/r0022_log/014973/Faser-Physics-014973-0000-PHYS.ntp.log
+  - id: phys_2024_ift_014975
+    path: /eos/experiment/faser/phys/2024_ift/dev_log/014975/Faser-Physics-014975-0000-PHYS.ntp.log
+  - id: phys_2023_ift_011705
+    path: /eos/experiment/faser/phys/2023_ift/dev_log/011705/Faser-Physics-011705-0000-PHYS.ntp.log
+  - id: phys_2022_ift_008090
+    path: /eos/experiment/faser/phys/2022_ift/r0022_log/008090/Faser-Physics-008090-0000-PHYS.ntp.log
+
+xaod_probes:
+  - id: xaod_2022_r0022_008090
+    path: /eos/experiment/faser/rec/2022/r0022/008090/Faser-Physics-008090-00000-r0022-xAOD.root
+    year: 2022
+    rec_tag: r0022
+  - id: xaod_2022_r0021_007729
+    path: /eos/experiment/faser/rec/2022/r0021/007729/Faser-Physics-007729-00000-xAOD.root
+    year: 2022
+    rec_tag: r0021
+  - id: xaod_2023_r0021_010417
+    path: /eos/experiment/faser/rec/2023/r0021/010417/Faser-Physics-010417-00000-xAOD.root
+    year: 2023
+    rec_tag: r0021
+  - id: xaod_2024_r0022_014973
+    path: /eos/experiment/faser/rec/2024/r0022/014973/Faser-Physics-014973-00000-r0022-xAOD.root
+    year: 2024
+    rec_tag: r0022
+  - id: xaod_2024_r0022_014587
+    path: /eos/experiment/faser/rec/2024/r0022/014587/Faser-Physics-014587-00000-r0022-xAOD.root
+    year: 2024
+    rec_tag: r0022
+  - id: xaod_2025_r0023_020012
+    path: /eos/experiment/faser/rec/2025/r0023/020012/Faser-Physics-020012-00000-r0023-xAOD.root
+    year: 2025
+    rec_tag: r0023
+  - id: xaod_testbeam_003395
+    path: /eos/experiment/faser/rec/TestBeam2021/r0010/003395/Faser-Physics-003395-00000-r0010-xAOD.root
+    year: 2021
+    rec_tag: r0010
+
+phys_topology_probes:
+  max_events: 20000
+  files:
+    - {id: phys_2024_ift_014975, topology_id: phys_ift_collision, path: /eos/experiment/faser/phys/2024_ift/dev/014975/Faser-Physics-014975-00000-00049-PHYS.root, role: collision_phys_baseline}
+    - {id: phys_2024_cos_014587, topology_id: phys_2024_cosmic_beam_mode, path: /eos/experiment/faser/phys/2024_cos/r0022-r0023/014587/Faser-Physics-014587-00000-00006-r0022-r0023-PHYS.root, role: candidate}
+    - {id: phys_2024_cos_014973, topology_id: phys_2024_cosmic_beam_mode, path: /eos/experiment/faser/phys/2024_cos/r0022-r0023/014973/Faser-Physics-014973-00000-00049-r0022-r0023-PHYS.root, role: candidate}
+    - {id: phys_2024_back_014587, topology_id: phys_backward_ckf, path: /eos/experiment/faser/phys/2024_back/r0022/014587/Faser-Physics-014587-00000-00006-r0022-PHYS.root, role: candidate}
+    - {id: phys_2024_back_014973, topology_id: phys_backward_ckf, path: /eos/experiment/faser/phys/2024_back/r0022/014973/Faser-Physics-014973-00000-00049-r0022-PHYS.root, role: candidate}
+    - {id: phys_2024_alps_016064, topology_id: phys_alps_filter, path: /eos/experiment/faser/phys/2024_alps/p0012/016064/Faser-Physics-016064-00000-00049-p0012-PHYS.root, role: candidate}
+    - {id: phys_2023_cos_011780, topology_id: phys_2023_cosmic_like, path: /eos/experiment/faser/phys/2023_cos/r0019/011780/Faser-Physics-011780-00000-00049-r0019-PHYS.root, role: candidate}
+    - {id: phys_2023_cos_011792, topology_id: phys_2023_cosmic_like, path: /eos/experiment/faser/phys/2023_cos/r0019/011792/Faser-Physics-011792-00000-00049-r0019-PHYS.root, role: candidate}
+    - {id: phys_2023_back_010417, topology_id: phys_backward_ckf, path: /eos/experiment/faser/phys/2023_back/r0019/010417/Faser-Physics-010417-00000-00023-r0019-PHYS.root, role: candidate}
+    - {id: phys_2023_alps_010417, topology_id: phys_alps_filter, path: /eos/experiment/faser/phys/2023_alps/r0019/010417/Faser-Physics-010417-00000-00023-r0019-PHYS.root, role: candidate}
+    - {id: phys_2023_ift_011705, topology_id: phys_ift_collision, path: /eos/experiment/faser/phys/2023_ift/dev/011705/Faser-Physics-011705-00000-00049-PHYS.root, role: candidate}
+    - {id: phys_2022_ift_008090, topology_id: phys_ift_collision, path: /eos/experiment/faser/phys/2022_ift/r0022/008090/Faser-Physics-008090-00000-00022-r0022-PHYS.root, role: candidate}
+    - {id: phys_2022_iftback_008090, topology_id: phys_backward_ckf, path: /eos/experiment/faser/phys/2022_iftback/r0022/008090/Faser-Physics-008090-00000-00022-r0022-PHYS.root, role: candidate}
+    - {id: phys_2022_back_007733, topology_id: phys_backward_ckf, path: /eos/experiment/faser/phys/2022_back/r0021/007733/Faser-Physics-007733-00000-00034-PHYS.root, role: candidate}
+    - {id: phys_2022_alps_008651, topology_id: phys_alps_filter, path: /eos/experiment/faser/phys/2022_alps/r0019/008651/Faser-Physics-008651-00000-00032-r0019-PHYS.root, role: candidate}
+    - {id: phys_2025_r0023_020012, topology_id: rec_2025_collision, path: /eos/experiment/faser/phys/2025/r0023/020012/Faser-Physics-020012-00000-00024-r0023-PHYS.root, role: candidate}
+    - {id: phys_2025_r0023_020602, topology_id: rec_2025_collision, path: /eos/experiment/faser/phys/2025/r0023/020602/Faser-Physics-020602-00000-00024-r0023-PHYS.root, role: candidate}
+
+output_dir: outputs/noncollision_crossyear_topology_identifiability_v1

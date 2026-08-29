@@ -1,0 +1,182 @@
+# Survey-Summary Reconstruction & Frame-Reconciliation V1
+# Transcribe recoverable 2021/2022 slide summaries into machine-readable
+# evidence.  Do not wait for the original survey Excel, do not write PPT
+# numbers as an alignment prior or geometry, and do not treat station
+# standard deviations as Gaussian measurement sigma.
+
+schema_version: faser-survey-summary-reconstruction-frame-reconciliation-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_slide_summary: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_select_prior_from_residual: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_rebuild_2024_r0022_jacobian: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_average_across_iovs: true
+do_not_invent_survey_numbers: true
+do_not_use_design_as_survey: true
+do_not_use_software_gauge_as_survey: true
+do_not_treat_conditions_as_independent_survey: true
+do_not_upgrade_numeric_agreement_to_survey_derived: true
+do_not_treat_ppt_as_alignment_prior: true
+do_not_treat_ppt_as_geometry: true
+do_not_wait_for_original_survey_excel: true
+do_not_use_station_sd_as_measurement_sigma: true
+do_not_equate_layer_trend_to_calypso_station_ry: true
+do_not_digitize_screenshot_tables_as_measurements: true
+synthetic_prior_feasibility_only: true
+slide_summary_feasibility_only: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+source_pdfs:
+  2021:
+    relative: docs/FAS_IFT_Dec10-2021.pdf
+    title: IFT Survey & Metrology
+    author: Frank Cadoux
+    date: "2021-12-10"
+    pages: 16
+    creator: Microsoft PowerPoint v16
+  2022:
+    relative: docs/04Nov2022_Survey.pdf
+    title: Comparing Tracker Survey with Nominal Geometry
+    author: D. Casper
+    survey_data_from: Franck
+    date: "2022-11-04"
+    pages: 10
+    creator: Microsoft PowerPoint v16
+
+slide_2021_recovered:
+  cern_survey_date: "2021-11-25"
+  surveyed_by: CERN
+  survey_file_author: Camille
+  n_if_points: 4
+  cad_in_nominal_position: true
+  cad_has_12mm_vertical_shift_of_three_trk_stations: false
+  nominal_normal_cad: [0.0, 0.0, -1.0]
+  measured_normal_cad: [-0.00306, -0.003954, -0.999987]
+  center_shift_cad_mm: [0.15851756, -0.35130553, 0.05215010]
+  cad_axes:
+    x: horizontal
+    y: beam_los
+    z: vertical_up
+  other_station_mean_plane_angles_deg:
+    ST1: 0.116
+    ST2: 0.38
+    ST3: 0.111
+    note: "Page 15 backbone ST1/ST2/ST3, not IFT. Quoted as 0.35 mm over 200 mm."
+  source_pages:
+    four_point_if_and_cad_axes: 5
+    top_view_small_rz: 6
+    side_view_normals_and_center_shift: 7
+    beam_view_vertical_shift: 8
+    unge_two_step: 9
+    reference_chain: 10
+    camille_file: 11
+    other_station_angles: 15
+
+slide_2022_recovered:
+  station_mean_offset_mm:
+    0: [0.727, -0.982, -27.772]
+    1: [-0.322, -0.095, 0.121]
+    2: [-0.057, 0.037, -0.037]
+    3: [0.379, 0.058, -0.084]
+  station_offset_width_mm:
+    0: [0.315, 0.213, 0.594]
+    1: [0.150, 0.128, 0.176]
+    2: [0.060, 0.060, 0.206]
+    3: [0.155, 0.134, 0.221]
+  station_offset_width_label: population_spread_not_measurement_sigma
+  layer_mean_shift_side0_mm:
+    0: [0.9667531209582592, -0.8338629886183355, -27.76697823415884]
+    1: [0.7550531702547865, -1.012504560299206, -27.785426685326456]
+    2: [0.4585192513611407, -1.100037257840885, -27.76415029087576]
+    3: [-0.30816863460421473, -0.08999266809102124, 0.11269286539991308]
+    4: [-0.3291558805981598, -0.09403579372326121, 0.1337940309479204]
+    5: [-0.3300890481152656, -0.10052884613507018, 0.1163832240662046]
+    6: [-0.034812097241515794, 0.05770992818386844, -0.0385857465991819]
+    7: [-0.05722013478983712, 0.0440400335686455, -0.025114072848879232]
+    8: [-0.07793138066855931, 0.009074111082156833, -0.046349153454116276]
+    9: [0.39666139814204016, 0.05517815388198244, -0.09257975587377132]
+    10: [0.36871607015664765, 0.07881538782588748, -0.0983307328406795]
+    11: [0.3719997077188921, 0.0397396934073484, -0.06191003093516656]
+  support_beam_horizontal_misalignment_urad: 350.0
+  front_sensor_pigtail_side_only: true
+  translation_from_stations_1_to_3_front_sensor_average: true
+  ift_not_used_in_translation: true
+  source_pages:
+    cad_to_faser_via_support_beam: 2
+    wafer_separation: 3
+    nominal_geometry_and_translation: 4
+    station_mean_offsets: 5
+    station_offset_widths: 6
+    x_offsets_and_350urad: 7
+    z_offsets_and_ift_comment: 9
+    mean_shifts_by_layer: 10
+
+entry_61_frozen:
+  source: outputs/external_constraint_iov_alignment_feasibility_v1/next_stage_decision.json
+  degeneracy_breaking_sigma_ry_mrad: 20.0
+  degeneracy_breaking_sigma_cdx_mm: 0.315
+  leftover_sigma_cdx_mm_after_tight_ry: 0.34514281813225994
+  leftover_sigma_ry_mrad_after_tight_cdx: 10.78707460814348
+  leftover_cdx_finer_than_strip_pitch: false
+  collinear_abs_cosine: 0.9814146834434979
+  collinear_track_only_n_rows: 191
+  collinear_track_only_marginal_sigma_ry_mrad: 57.53391340393952
+  collinear_track_only_marginal_sigma_cdx_mm: 1.840859539486741
+  collinear_track_only_ry_cdx_correlation: -0.9822665199425727
+  note: "20 mrad / 0.315 mm breaks degeneracy on the collinear r0022 Jacobian. It is not the physically useful alignment target."
+
+physics_scales:
+  strip_pitch_mm: 0.080
+  ift_layer_pitch_mm: 31.5
+  ift_layer_pitch_is_survey: false
+  measurement_sigma_mm: 0.080
+  measurement_sigma_source: strip_pitch_not_residual_rms
+  station0_nominal_z_mm: -1860.15
+  station0_nominal_z_is_survey: false
+  calypso_plus_10mrad_ry_observed_dx_mm: -18.5981
+
+useful_precision:
+  ry_mrad: 0.5
+  cdx_mm: 0.080
+
+stretch_precision:
+  ry_mrad: 0.208
+  cdx_mm: 0.010
+
+unlock:
+  rank_tolerance: 0.01
+  max_ry_cdx_correlation: 0.90
+  min_sigma3_over_sigma1: 0.01
+
+prior_scan:
+  sigma_ry_mrad: [20.0, 10.78707460814348, 5.0, 0.5, 0.208]
+  sigma_cdx_mm: [0.34514281813225994, 0.315, 0.080, 0.010]
+
+existing_conditions_summary: outputs/tracker_align_conditions_survey_provenance_audit_v1/ift_station0_ry_cdx_conditions_summary.json
+
+output_dir: outputs/survey_summary_reconstruction_frame_reconciliation_v1

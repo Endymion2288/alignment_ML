@@ -1,0 +1,92 @@
+# /Tracker/Align Conditions Dump & Survey-Provenance Audit V1
+# Read the official OFLCOND-FASER-04/05/06 /Tracker/Align payloads from
+# CVMFS/DBRelease.  Do not train, refit, write geometry, or treat conditions
+# constants as an independent survey measurement.
+
+schema_version: faser-tracker-align-conditions-survey-provenance-audit-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_select_prior_from_residual: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_rebuild_2024_r0022_jacobian: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_average_across_iovs: true
+do_not_invent_survey_numbers: true
+do_not_use_design_as_survey: true
+do_not_use_software_gauge_as_survey: true
+do_not_treat_conditions_as_independent_survey: true
+do_not_upgrade_numeric_agreement_to_survey_derived: true
+synthetic_prior_feasibility_only: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+conditions_tags:
+  - OFLCOND-FASER-04
+  - OFLCOND-FASER-05
+  - OFLCOND-FASER-06
+
+dbrelease:
+  sqlite: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/sqlite200/ALLP200.db
+  pool_dir: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/poolcond
+  pool_catalog: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/poolcond/PoolCat_oflcond.xml
+  data_cool_instance: CONDBR3
+  mc_cool_instance: OFLP200
+  align_folder: /Tracker/Align
+
+current_reconstruction:
+  geom_flag: TI12Data04
+  geometry_tag: FASERNU-04
+  conditions_tag: OFLCOND-FASER-06
+  database_instance_data: CONDBR3
+  representative_2024_run: 14973
+  faser_reco_comment: "New 2025 alignment"
+  production_2024_r0022_conditions_tag: OFLCOND-FASER-05
+
+physics_scales:
+  strip_pitch_mm: 0.080
+  ift_layer_pitch_mm: 31.5
+  station0_nominal_z_mm: -1860.15
+  station0_nominal_z_is_survey: false
+  layer_pitch_is_survey: false
+
+published_survey_metrology_readonly:
+  named_2021_ppt_found: false
+  substitutes:
+    - source: "arXiv:2207.11427 / JINST 19 (2024) P05066 The FASER Detector"
+      unge_cmm_in_plane_um: 5.0
+      unge_cmm_out_of_plane_um: 12.5
+      unge_frame_tolerance_um: 20.0
+      unge_max_module_positioning_um: 100.0
+      four_stainless_steel_targets_per_frame: true
+      paper_says_metrology_will_be_used_in_reconstruction: true
+      paper_says_is_not_cool_tag_provenance: true
+    - source: "Hideyuki Oide, The FASER detector: from concept to operation, 2022-12-02"
+      cern_survey_station_point_accuracy_um: 16.0
+      note: "3D laser scanning of tracker-station survey points before/after TI12 installation. OCR of the slide said O(16 m); the physical unit is micrometre."
+  cern_survey_angle_scale_mrad_over_240mm: 0.0667
+  do_not_invent_ppt_measured_points: true
+
+output_dir: outputs/tracker_align_conditions_survey_provenance_audit_v1
+raw_pool_dump: outputs/tracker_align_conditions_survey_provenance_audit_v1/_raw_pool_dump.json
