@@ -43,6 +43,8 @@ class RouteAwareTransformerConfig:
     route_hidden_dim: int = 128
     route_pair_embedding_dim: int = 16
     route_dropout: float = 0.10
+    use_relative_route_representation: bool = False
+    use_additive_route_correction: bool = True
 
     def as_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -124,6 +126,8 @@ class RouteAwareSparseTransformer(nn.Module):
             nn.GELU(),
         )
         self.route_score = nn.Linear(config.route_hidden_dim, 1)
+        nn.init.zeros_(self.route_score.weight)
+        nn.init.zeros_(self.route_score.bias)
         # A zero terminal makes the initial V2 edge interface exactly the V1
         # backbone interface.  The route loss can learn a route score first;
         # only then does edge supervision admit a route-aware correction.
@@ -229,6 +233,15 @@ class RouteAwareSparseTransformer(nn.Module):
             )
 
         route_nodes = node_states[route_node_indices]
+        if self.config.use_relative_route_representation:
+            # Anchor 4-station route endpoint states to Station 0 in latent space
+            ref_node = route_nodes[:, 0:1]
+            diff_nodes = route_nodes[:, 1:] - ref_node
+            rel_route_nodes = torch.cat([ref_node, diff_nodes], dim=1)
+            route_node_features = rel_route_nodes.reshape(routes, -1)
+        else:
+            route_node_features = route_nodes.reshape(routes, -1)
+
         node_keys = self.route_node_key(route_nodes)
         query_logits = (node_keys * self.route_query[None, None, :]).sum(dim=-1)
         query_weights = torch.softmax(query_logits / (self.config.d_model**0.5), dim=1)
@@ -240,14 +253,19 @@ class RouteAwareSparseTransformer(nn.Module):
         route_input = torch.cat(
             (
                 pooled_nodes,
-                route_nodes.reshape(routes, -1),
+                route_node_features,
                 route_edge_states.reshape(routes, -1),
                 route_pair_states.reshape(routes, -1),
                 route_base_logits,
             ),
             dim=-1,
         )
-        route_logits = self.route_score(self.route_encoder(route_input)).squeeze(-1)
+        delta_route_logits = self.route_score(self.route_encoder(route_input)).squeeze(-1)
+        if self.config.use_additive_route_correction:
+            edge_sum_logits = route_base_logits.sum(dim=-1)
+            route_logits = edge_sum_logits + delta_route_logits
+        else:
+            route_logits = delta_route_logits
         route_mean, route_counts = self._route_edge_mean(
             route_logits, route_score_edge_indices, int(base_edge_logits.numel())
         )
@@ -267,3 +285,74 @@ class RouteAwareSparseTransformer(nn.Module):
             route_logits=route_logits,
             route_edge_counts=route_counts,
         )
+
+
+@dataclass(frozen=True)
+class RelativeRouteTransformerConfig(RouteAwareTransformerConfig):
+    """Configuration for Relative Route Transformer V4."""
+
+    use_relative_route_representation: bool = True
+
+
+class RelativeRouteSparseTransformer(RouteAwareSparseTransformer):
+    """Relative Route Transformer V4 for explicit 4-station route scoring."""
+
+    def __init__(self, config: RouteAwareTransformerConfig) -> None:
+        if not config.use_relative_route_representation:
+            config = RouteAwareTransformerConfig(
+                **{**config.as_dict(), "use_relative_route_representation": True}
+            )
+        super().__init__(config)
+
+
+def freeze_backbone_and_edge_scorer(
+    model: RouteAwareSparseTransformer,
+) -> dict[str, object]:
+    """Freeze V2 backbone and edge scorer, keeping only complete-route head trainable.
+
+    Trainable route-head components:
+      - route_query
+      - route_node_key
+      - route_edge_projection
+      - route_pair_embedding
+      - route_encoder
+      - route_score
+
+    Frozen components:
+      - node_encoder
+      - node_layers (Transformer encoder layers)
+      - edge_encoder
+      - edge_score
+      - local_edge_residual
+      - route_edge_correction
+    """
+    ROUTE_HEAD_PREFIXES = (
+        "route_query",
+        "route_node_key",
+        "route_edge_projection",
+        "route_pair_embedding",
+        "route_encoder",
+        "route_score",
+    )
+    trainable_names: list[str] = []
+    frozen_names: list[str] = []
+    n_trainable = 0
+    n_frozen = 0
+
+    for name, param in model.named_parameters():
+        is_route_head = any(name == prefix or name.startswith(f"{prefix}.") for prefix in ROUTE_HEAD_PREFIXES)
+        if is_route_head:
+            param.requires_grad = True
+            trainable_names.append(name)
+            n_trainable += param.numel()
+        else:
+            param.requires_grad = False
+            frozen_names.append(name)
+            n_frozen += param.numel()
+
+    return {
+        "trainable_parameter_names": tuple(trainable_names),
+        "frozen_parameter_names": tuple(frozen_names),
+        "n_trainable_parameters": int(n_trainable),
+        "n_frozen_parameters": int(n_frozen),
+    }

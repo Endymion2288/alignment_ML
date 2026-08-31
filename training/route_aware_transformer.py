@@ -27,8 +27,11 @@ from evaluation.pairwise_metrics import (
     platt_calibration_report,
 )
 from models.route_transformer import (
+    RelativeRouteSparseTransformer,
+    RelativeRouteTransformerConfig,
     RouteAwareSparseTransformer,
     RouteAwareTransformerConfig,
+    freeze_backbone_and_edge_scorer,
 )
 from training.curriculum_mlp import CandidateSet
 from training.geometry_aware_transformer import (

@@ -1,0 +1,111 @@
+# Workbook 68 Pre-registered Training Contract: Arm 1 (Absolute-Route Control)
+# Frozen V2 backbone & edge scorer + trainable absolute route head (use_relative_route_representation=False).
+absolute_route_control:
+  arm: 1
+  arm_name: absolute_route_control
+  description: "Frozen V2 backbone + historical absolute route correction head (use_relative_route_representation=False)"
+
+  input_contract:
+    allowed_splits: [train]
+    forbidden_splits: [validation, test]
+    physical_geometry_repropagation: true
+    q_over_p_mode: 0
+    candidate_chi2_gate: null
+    feature_set: residual_v1
+    context_mode: full_event
+    station_path: [0, 1, 2, 3]
+    condition_axis: four_station_relative_l2
+    curriculum_condition_magnitudes: [0.0, 1.0]
+    development_validation_only_sources_forbidden: true
+    authorized_train_sources:
+      - mc24_100043_00200_00299
+      - mc24_100044_00300_00399
+      - mc24_100043_00300_00399
+      - mc24_100044_00200_00299
+      - mc24_100047_00100_00149
+      - mc24_100048_00100_00149
+
+  architecture:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    ffn_dim: 256
+    dropout: 0.10
+    station_embedding_dim: 16
+    station_pair_embedding_dim: 16
+    direction_embedding_dim: 4
+    use_geometric_bias: true
+    use_chi2_physics_term: true
+    chi2_lambda: 1.0
+    chi2_tau: 2000000.0
+    use_local_edge_residual: true
+    route_hidden_dim: 128
+    route_pair_embedding_dim: 16
+    route_dropout: 0.10
+    use_relative_route_representation: false
+    use_additive_route_correction: true
+
+  freeze_contract:
+    freeze_backbone_and_edge_scorer: true
+    frozen_components:
+      - node_encoder
+      - node_layers
+      - edge_encoder
+      - edge_score
+      - local_edge_residual
+      - route_edge_correction
+    trainable_components:
+      - route_query
+      - route_node_key
+      - route_edge_projection
+      - route_pair_embedding
+      - route_encoder
+      - route_score
+    initialization:
+      route_score_weight: zeros
+      route_score_bias: zeros
+
+  training:
+    batch_size: 32
+    learning_rate: 0.0002
+    weight_decay: 0.0001
+    seed: 20260822
+    device: cuda
+    early_stopping: false
+    checkpoint_selection_split: train_only
+    selection_policy: last_completed_epoch
+    focal_gamma: 1.5
+    hard_negative_weight: 2.0
+    maximum_edge_positive_weight: 30.0
+    maximum_route_positive_weight: 80.0
+    edge_loss_weight: 1.0
+    route_consistency_weight: 1.0
+    one_to_one_competition_weight: 0.25
+    fake_route_penalty_weight: 0.25
+
+  curriculum_stages:
+    - name: nominal
+      maximum_condition_magnitude: 0.0
+      epochs: 8
+    - name: local_relative_and_gauge_control
+      maximum_condition_magnitude: 1.0
+      epochs: 22
+
+  calibration:
+    scope: station_pair
+    method: platt
+    bins: 15
+    fit_split: identity_frozen_pre_training
+    identity_map: true
+
+  route_selection:
+    method: adjacent_contiguous_unit_capacity_set_packing
+    selection_split: pre_registered_frozen_historical_packing
+    initial_thresholds:
+      0->1: 0.001
+      1->2: 0.001
+      2->3: 0.001
+    unmatched_penalty: -1.0
+    composition: replace
+    maximum_sweeps: 1
+    maximum_hypotheses: 100000
