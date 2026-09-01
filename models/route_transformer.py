@@ -80,6 +80,7 @@ class RouteAwareTransformerOutput:
     base_edge_logits: torch.Tensor
     route_logits: torch.Tensor
     route_edge_counts: torch.Tensor
+    delta_route_logits: torch.Tensor | None = None
 
 
 class RouteAwareSparseTransformer(nn.Module):
@@ -230,6 +231,7 @@ class RouteAwareSparseTransformer(nn.Module):
                 base_edge_logits=base_edge_logits,
                 route_logits=base_edge_logits.new_empty((0,)),
                 route_edge_counts=base_edge_logits.new_zeros(base_edge_logits.shape),
+                delta_route_logits=base_edge_logits.new_empty((0,)),
             )
 
         route_nodes = node_states[route_node_indices]
@@ -284,6 +286,7 @@ class RouteAwareSparseTransformer(nn.Module):
             base_edge_logits=base_edge_logits,
             route_logits=route_logits,
             route_edge_counts=route_counts,
+            delta_route_logits=delta_route_logits,
         )
 
 

@@ -284,7 +284,9 @@ def test_additive_route_score_mathematical_contract():
         complete_route_score_composition="replace",
     )
     r4 = next(r for r in routes if len(r.endpoints) == 4)
-    assert math.isclose(r4.utility, u_complete + 3 * 1e-6, rel_tol=1e-5)
+    from baselines.route_assignment import _CONTINUATION_TIE_BREAK
+    assert math.isclose(r4.utility, u_complete + 3 * _CONTINUATION_TIE_BREAK, rel_tol=1e-7)
+    assert _CONTINUATION_TIE_BREAK == 1.0e-9
 
 
 # -----------------------------------------------------------------------------
@@ -551,3 +553,76 @@ def test_preregistered_training_configs():
     assert c_primary["training"] == c_control["training"]
     assert c_primary["freeze_contract"] == c_control["freeze_contract"]
     assert c_primary["curriculum_stages"] == c_control["curriculum_stages"]
+
+
+# -----------------------------------------------------------------------------
+# Test 16: Training/Inference Utility Identity & Deterministic Continuation Tie-break
+# -----------------------------------------------------------------------------
+def test_training_inference_utility_identity():
+    from baselines.route_assignment import _CONTINUATION_TIE_BREAK, _route_hypotheses, ScoredMatch
+    from training.gauge_consistent_route import packing_utility, clipped_packing_logits
+    from datasets.root_loader import EventTracklets
+
+    event = EventTracklets(
+        run_id=1, event_id=1,
+        station_id=np.asarray([0, 1, 2, 3], dtype=np.int16),
+        tracklet_id=np.asarray([0, 1, 2, 3], dtype=np.int32),
+        z_mm=np.asarray([0.0, 1000.0, 2000.0, 3000.0], dtype=np.float64),
+        state=np.zeros((4, 4), dtype=np.float64),
+        covariance=np.tile(np.eye(4), (4, 1, 1)),
+        chi2=np.ones(4), ndof=np.ones(4), n_hit=np.full(4, 3, dtype=np.int16),
+        hit_pattern=np.full(4, 0b111111, dtype=np.uint64),
+        truth_particle_id=np.full(4, 1, dtype=np.int64),
+        truth_pdg=np.full(4, 13, dtype=np.int32),
+        truth_match_fraction=np.ones(4),
+        synthetic_role=np.zeros(4, dtype=np.int8),
+    )
+
+    p01, p12, p23 = 0.8, 0.85, 0.9
+    def logit(p: float) -> float:
+        return math.log(p) - math.log(1.0 - p)
+
+    l_edge = logit(p01) + logit(p12) + logit(p23)
+    delta_route_logit = 0.5
+    l_corrected = l_edge + delta_route_logit
+    p_complete = 1.0 / (1.0 + math.exp(-l_corrected))
+
+    # Production solver hypothesis
+    edge_lookups = {
+        (0, 1): {(0, 1): ScoredMatch(0, 1, 1.0, p01)},
+        (1, 2): {(1, 2): ScoredMatch(1, 2, 1.0, p12)},
+        (2, 3): {(2, 3): ScoredMatch(2, 3, 1.0, p23)},
+    }
+    routes = _route_hypotheses(
+        event, (0, 1, 2, 3), edge_lookups, -1.0, 1000,
+        complete_route_scores={(0, 1, 2, 3): p_complete},
+        complete_route_score_composition="replace",
+    )
+
+    for r in routes:
+        n_st = len(r.endpoints)
+        if n_st == 4:
+            u_phys = l_corrected - 4.0
+            train_u = float(clipped_packing_logits(torch.tensor(l_corrected, dtype=torch.float64)) - 4.0)
+        else:
+            edge_scores = [m.score for pair, m in r.matches]
+            u_phys = sum(logit(s) for s in edge_scores) + n_st * (-1.0)
+            edge_tensor = torch.tensor([logit(s) for s in edge_scores], dtype=torch.float64)
+            train_u = float(packing_utility(edge_tensor, -1.0, n_st))
+
+        # 1. Exact training physical term == production physical term before tie-break
+        assert math.isclose(train_u, u_phys, rel_tol=1e-7)
+        # 2. Production stored utility == physical term + (n_stations - 1) * 1e-9
+        assert _CONTINUATION_TIE_BREAK == 1.0e-9
+        assert math.isclose(r.utility, u_phys + (n_st - 1) * _CONTINUATION_TIE_BREAK, rel_tol=1e-7)
+
+
+# -----------------------------------------------------------------------------
+# Test 17: Solver-aware C/D Objectives Gradient Flow to Trainable Route Head
+# -----------------------------------------------------------------------------
+def test_solver_aware_c_and_d_objectives_propagate_gradients_to_route_head():
+    from scripts.audit_route_head_solver_gradients import audit_losses
+    results = audit_losses("cpu")
+    assert results["dustbin_aware_route_margin (WB64 / Problem C)"] > 0.0
+    assert results["packing_route_competition (WB64 / Problem D)"] > 0.0
+    assert results["total_loss_grad_norm"] > 0.0

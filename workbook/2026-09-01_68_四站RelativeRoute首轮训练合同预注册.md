@@ -221,3 +221,9 @@ new_final_blind_content_accessed = false
 ```
 
 > **科学纪律**：本任务已完成所有训练前合同冻结与代码审计，**未启动任何实际训练循环，未生成任何 checkpoint**。训练将严格在下一条目 Workbook 69 中依据本合同正式执行。
+
+---
+
+> **Erratum: see Workbook 68A** (`workbook/2026-09-01_68A_四站RelativeRoute训练合同勘误与Objective梯度审计.md`)
+> 1. Continuation tie-break production contract is strictly `1e-9` (not `1e-6`).
+> 2. Training hyperparameters are explicitly categorized into historical V2 route-head convention vs Workbook-64 solver-aware objective (including dustbin-aware route margin, packing route competition, and gauge consistency).

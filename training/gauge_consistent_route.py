@@ -31,6 +31,7 @@ from training.geometry_aware_transformer import (
     resolve_device,
 )
 from training.route_aware_transformer import (
+    RouteCandidateTable,
     RouteAwareTrainingConfig,
     RouteAwareTransformerArtifact,
     _adjacent_pair_ids,
@@ -183,6 +184,27 @@ def split_graph_edge_logits(
     return result
 
 
+def split_graph_route_logits(
+    graphs: Sequence[TransformerGraph],
+    route_logits: torch.Tensor,
+    route_tables: Mapping[int, RouteCandidateTable] | None = None,
+) -> dict[int, torch.Tensor]:
+    offset = 0
+    result: dict[int, torch.Tensor] = {}
+    for graph in graphs:
+        table = (
+            enumerate_complete_route_candidates(graph)
+            if route_tables is None
+            else route_tables[id(graph)]
+        )
+        width = int(table.size)
+        result[id(graph)] = route_logits[offset : offset + width]
+        offset += width
+    if offset != int(route_logits.numel()):
+        raise RuntimeError("batched route logits are not aligned with graph route tables")
+    return result
+
+
 def _adjacent_edge_maps(graph: TransformerGraph) -> list[dict[int, list[tuple[int, int]]]]:
     pair_ids = _adjacent_pair_ids()
     maps: list[dict[int, list[tuple[int, int]]]] = [defaultdict(list), defaultdict(list), defaultdict(list)]
@@ -266,6 +288,10 @@ def gauge_twin_consistency_loss(
     twin: TransformerGraph,
     chart_logits: torch.Tensor,
     twin_logits: torch.Tensor,
+    chart_route_logits: torch.Tensor | None = None,
+    twin_route_logits: torch.Tensor | None = None,
+    chart_route_table: RouteCandidateTable | None = None,
+    twin_route_table: RouteCandidateTable | None = None,
 ) -> torch.Tensor:
     """MSE on origin-matched raw logits and complete-route packing utilities.
 
@@ -278,26 +304,44 @@ def gauge_twin_consistency_loss(
     if shared:
         delta = torch.stack([chart_edges[key] - twin_edges[key] for key in shared])
         terms.append(torch.mean(delta.square()))
-    chart_table = enumerate_complete_route_candidates(chart)
-    twin_table = enumerate_complete_route_candidates(twin)
+    chart_table = (
+        enumerate_complete_route_candidates(chart)
+        if chart_route_table is None
+        else chart_route_table
+    )
+    twin_table = (
+        enumerate_complete_route_candidates(twin)
+        if twin_route_table is None
+        else twin_route_table
+    )
     chart_routes: dict[tuple[object, ...], torch.Tensor] = {}
-    for nodes, edges, label in zip(chart_table.node_indices, chart_table.score_edge_indices, chart_table.labels):
+    for i, (nodes, edges, label) in enumerate(
+        zip(chart_table.node_indices, chart_table.score_edge_indices, chart_table.labels)
+    ):
         if not bool(label):
             continue
         key = origin_route_key(chart.event, nodes)
         if key is None:
             continue
-        index = torch.as_tensor(list(edges), device=chart_logits.device, dtype=torch.long)
-        chart_routes[key] = packing_utility(chart_logits[index], -1.0, 4)
+        if chart_route_logits is not None:
+            chart_routes[key] = clipped_packing_logits(chart_route_logits[i]) + 4.0 * (-1.0)
+        else:
+            index = torch.as_tensor(list(edges), device=chart_logits.device, dtype=torch.long)
+            chart_routes[key] = packing_utility(chart_logits[index], -1.0, 4)
     twin_routes: dict[tuple[object, ...], torch.Tensor] = {}
-    for nodes, edges, label in zip(twin_table.node_indices, twin_table.score_edge_indices, twin_table.labels):
+    for i, (nodes, edges, label) in enumerate(
+        zip(twin_table.node_indices, twin_table.score_edge_indices, twin_table.labels)
+    ):
         if not bool(label):
             continue
         key = origin_route_key(twin.event, nodes)
         if key is None:
             continue
-        index = torch.as_tensor(list(edges), device=twin_logits.device, dtype=torch.long)
-        twin_routes[key] = packing_utility(twin_logits[index], -1.0, 4)
+        if twin_route_logits is not None:
+            twin_routes[key] = clipped_packing_logits(twin_route_logits[i]) + 4.0 * (-1.0)
+        else:
+            index = torch.as_tensor(list(edges), device=twin_logits.device, dtype=torch.long)
+            twin_routes[key] = packing_utility(twin_logits[index], -1.0, 4)
     shared_routes = sorted(set(chart_routes) & set(twin_routes), key=str)
     if shared_routes:
         delta = torch.stack([chart_routes[key] - twin_routes[key] for key in shared_routes])
@@ -326,6 +370,8 @@ def packing_route_competition_loss(
     margin: float,
     include_dustbin: bool = False,
     reduction: str = "mean",
+    route_logits: torch.Tensor | None = None,
+    route_table: RouteCandidateTable | None = None,
 ) -> torch.Tensor:
     """Local margin of the complete truth route over the strongest feasible rival.
 
@@ -351,11 +397,31 @@ def packing_route_competition_loss(
     probabilities = torch.sigmoid(edge_logits)
     dustbin = edge_logits.new_tensor(float(DUSTBIN_UTILITY))
     masked_out = edge_logits.new_tensor(float("-inf"))
+
+    route_map: dict[tuple[int, ...], torch.Tensor] = {}
+    if route_logits is not None:
+        table = (
+            enumerate_complete_route_candidates(graph)
+            if route_table is None
+            else route_table
+        )
+        if table.size:
+            if route_logits.shape != (table.size,):
+                raise ValueError("route logits are not aligned with the graph route table")
+            for i, nodes in enumerate(table.node_indices):
+                route_map[tuple(int(v) for v in nodes)] = route_logits[i]
+
     terms: list[torch.Tensor] = []
     for truth_nodes, truth_edges in truths:
         truth_set = set(truth_nodes)
-        truth_index = torch.as_tensor(list(truth_edges), device=edge_logits.device, dtype=torch.long)
-        truth_utility = packing_utility(edge_logits.index_select(0, truth_index), unmatched_penalty, 4)
+        if tuple(truth_nodes) in route_map:
+            truth_utility = (
+                clipped_packing_logits(route_map[tuple(truth_nodes)])
+                + 4.0 * float(unmatched_penalty)
+            )
+        else:
+            truth_index = torch.as_tensor(list(truth_edges), device=edge_logits.device, dtype=torch.long)
+            truth_utility = packing_utility(edge_logits.index_select(0, truth_index), unmatched_penalty, 4)
         competitor_utilities: list[torch.Tensor] = []
         for nodes, edges in routes:
             if nodes == truth_nodes:
@@ -363,9 +429,15 @@ def packing_route_competition_loss(
             if not truth_set.intersection(nodes):
                 continue
             index = torch.as_tensor(list(edges), device=edge_logits.device, dtype=torch.long)
-            selected = edge_logits.index_select(0, index)
             feasible = torch.all(probabilities.index_select(0, index) >= float(threshold))
-            utility = packing_utility(selected, unmatched_penalty, len(nodes))
+            if len(nodes) == 4 and tuple(nodes) in route_map:
+                utility = (
+                    clipped_packing_logits(route_map[tuple(nodes)])
+                    + 4.0 * float(unmatched_penalty)
+                )
+            else:
+                selected = edge_logits.index_select(0, index)
+                utility = packing_utility(selected, unmatched_penalty, len(nodes))
             competitor_utilities.append(torch.where(feasible, utility, masked_out))
         if competitor_utilities:
             strongest = torch.stack(competitor_utilities).max()
@@ -389,6 +461,8 @@ def dustbin_aware_route_margin_loss(
     unmatched_penalty: float,
     margin: float,
     reduction: str = "mean",
+    route_logits: torch.Tensor | None = None,
+    route_table: RouteCandidateTable | None = None,
 ) -> torch.Tensor:
     """Production-boundary margin: ``U_truth > max(U_fragment, 0) + m``."""
     return packing_route_competition_loss(
@@ -399,6 +473,8 @@ def dustbin_aware_route_margin_loss(
         margin=margin,
         include_dustbin=True,
         reduction=reduction,
+        route_logits=route_logits,
+        route_table=route_table,
     )
 
 
@@ -539,14 +615,34 @@ def _aux_losses_for_batch(
     edge_logits: torch.Tensor,
     pairs_in_stage: Sequence[tuple[TransformerGraph, TransformerGraph]],
     aux: GaugeConsistentAuxConfig,
+    route_logits: torch.Tensor | None = None,
+    route_tables: Mapping[int, RouteCandidateTable] | None = None,
 ) -> dict[str, torch.Tensor]:
     by_id = split_graph_edge_logits(graphs, edge_logits)
+    by_route_id = (
+        split_graph_route_logits(graphs, route_logits, route_tables)
+        if route_logits is not None
+        else {}
+    )
     present = {id(graph) for graph in graphs}
     gauge_terms = []
     for chart, twin in pairs_in_stage:
         if id(chart) in present and id(twin) in present:
+            chart_r_logits = by_route_id.get(id(chart))
+            twin_r_logits = by_route_id.get(id(twin))
+            chart_r_table = route_tables.get(id(chart)) if route_tables is not None else None
+            twin_r_table = route_tables.get(id(twin)) if route_tables is not None else None
             gauge_terms.append(
-                gauge_twin_consistency_loss(chart, twin, by_id[id(chart)], by_id[id(twin)])
+                gauge_twin_consistency_loss(
+                    chart,
+                    twin,
+                    by_id[id(chart)],
+                    by_id[id(twin)],
+                    chart_route_logits=chart_r_logits,
+                    twin_route_logits=twin_r_logits,
+                    chart_route_table=chart_r_table,
+                    twin_route_table=twin_r_table,
+                )
             )
     if gauge_terms:
         gauge = torch.stack(gauge_terms).mean()
@@ -560,6 +656,8 @@ def _aux_losses_for_batch(
             unmatched_penalty=aux.unmatched_penalty,
             margin=aux.packing_margin,
             reduction=aux.route_competition_reduction,
+            route_logits=by_route_id.get(id(graph)),
+            route_table=route_tables.get(id(graph)) if route_tables is not None else None,
         )
         for graph in graphs
     ]
@@ -578,6 +676,8 @@ def _aux_losses_for_batch(
                 unmatched_penalty=aux.unmatched_penalty,
                 margin=aux.packing_margin,
                 reduction=aux.route_competition_reduction,
+                route_logits=by_route_id.get(id(graph)),
+                route_table=route_tables.get(id(graph)) if route_tables is not None else None,
             )
             for graph in graphs
         ]
@@ -612,7 +712,10 @@ def estimate_aux_loss_scales(
             )
             output = _forward_route_batch(model, batch)
             body = _route_loss_components(output, batch, training_config, edge_positive_weight)
-            aux_losses = _aux_losses_for_batch(batch_graphs, output.edge_logits, pairs, aux)
+            aux_losses = _aux_losses_for_batch(
+                batch_graphs, output.edge_logits, pairs, aux,
+                route_logits=output.route_logits, route_tables=route_tables
+            )
             totals["edge"] += float(body["edge"].detach().cpu())
             totals["gauge_twin"] += float(aux_losses["gauge_twin"].detach().cpu())
             totals["packing_route_competition"] += float(
@@ -764,7 +867,10 @@ def train_gauge_consistent_v2(
                 optimizer.zero_grad(set_to_none=True)
                 output = _forward_route_batch(model, batch)
                 body = _route_loss_components(output, batch, training_config, edge_positive_weight)
-                aux_losses = _aux_losses_for_batch(batch_graphs, output.edge_logits, pairs, aux)
+                aux_losses = _aux_losses_for_batch(
+                    batch_graphs, output.edge_logits, pairs, aux,
+                    route_logits=output.route_logits, route_tables=train_route_tables
+                )
                 total = (
                     body["total"]
                     + gauge_weight * aux_losses["gauge_twin"]

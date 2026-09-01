@@ -1,36 +1,42 @@
-# Workbook 68 Pre-registered Training Contract: Arm 2 (RelativeRoute V4 Primary)
-# Frozen V2 backbone & edge scorer + trainable Station-0-anchored relative route head.
 relative_route_v4_primary:
   arm: 2
   arm_name: relative_route_v4_primary
-  description: "Frozen V2 backbone + Station-0-anchored latent relative route correction head (use_relative_route_representation=True)"
-
+  description: Frozen V2 backbone + Station-0-anchored latent relative route correction
+    head (use_relative_route_representation=True)
   input_contract:
-    allowed_splits: [train]
-    forbidden_splits: [validation, test]
+    allowed_splits:
+    - train
+    forbidden_splits:
+    - validation
+    - test
     physical_geometry_repropagation: true
     q_over_p_mode: 0
     candidate_chi2_gate: null
     feature_set: residual_v1
     context_mode: full_event
-    station_path: [0, 1, 2, 3]
+    station_path:
+    - 0
+    - 1
+    - 2
+    - 3
     condition_axis: four_station_relative_l2
-    curriculum_condition_magnitudes: [0.0, 1.0]
+    curriculum_condition_magnitudes:
+    - 0.0
+    - 1.0
     development_validation_only_sources_forbidden: true
     authorized_train_sources:
-      - mc24_100043_00200_00299
-      - mc24_100044_00300_00399
-      - mc24_100043_00300_00399
-      - mc24_100044_00200_00299
-      - mc24_100047_00100_00149
-      - mc24_100048_00100_00149
-
+    - mc24_100043_00200_00299
+    - mc24_100044_00300_00399
+    - mc24_100043_00300_00399
+    - mc24_100044_00200_00299
+    - mc24_100047_00100_00149
+    - mc24_100048_00100_00149
   architecture:
     d_model: 128
     nhead: 8
     num_layers: 4
     ffn_dim: 256
-    dropout: 0.10
+    dropout: 0.1
     station_embedding_dim: 16
     station_pair_embedding_dim: 16
     direction_embedding_dim: 4
@@ -41,30 +47,28 @@ relative_route_v4_primary:
     use_local_edge_residual: true
     route_hidden_dim: 128
     route_pair_embedding_dim: 16
-    route_dropout: 0.10
+    route_dropout: 0.1
     use_relative_route_representation: true
     use_additive_route_correction: true
-
   freeze_contract:
     freeze_backbone_and_edge_scorer: true
     frozen_components:
-      - node_encoder
-      - node_layers
-      - edge_encoder
-      - edge_score
-      - local_edge_residual
-      - route_edge_correction
+    - node_encoder
+    - node_layers
+    - edge_encoder
+    - edge_score
+    - local_edge_residual
+    - route_edge_correction
     trainable_components:
-      - route_query
-      - route_node_key
-      - route_edge_projection
-      - route_pair_embedding
-      - route_encoder
-      - route_score
+    - route_query
+    - route_node_key
+    - route_edge_projection
+    - route_pair_embedding
+    - route_encoder
+    - route_score
     initialization:
       route_score_weight: zeros
       route_score_bias: zeros
-
   training:
     batch_size: 32
     learning_rate: 0.0002
@@ -82,22 +86,19 @@ relative_route_v4_primary:
     route_consistency_weight: 1.0
     one_to_one_competition_weight: 0.25
     fake_route_penalty_weight: 0.25
-
   curriculum_stages:
-    - name: nominal
-      maximum_condition_magnitude: 0.0
-      epochs: 8
-    - name: local_relative_and_gauge_control
-      maximum_condition_magnitude: 1.0
-      epochs: 22
-
+  - name: nominal
+    maximum_condition_magnitude: 0.0
+    epochs: 8
+  - name: local_relative_and_gauge_control
+    maximum_condition_magnitude: 1.0
+    epochs: 22
   calibration:
     scope: station_pair
     method: platt
     bins: 15
     fit_split: identity_frozen_pre_training
     identity_map: true
-
   route_selection:
     method: adjacent_contiguous_unit_capacity_set_packing
     selection_split: pre_registered_frozen_historical_packing
@@ -109,3 +110,14 @@ relative_route_v4_primary:
     composition: replace
     maximum_sweeps: 1
     maximum_hypotheses: 100000
+  auxiliary_objective:
+    keep_workbook56_packing_route_competition: true
+    keep_workbook59_dustbin_aware_target: true
+    enable_dustbin_aware_route_margin: true
+    route_competition_reduction: max
+    packing_margin: 1.0
+    pair_threshold: 0.001
+    unmatched_penalty: -1.0
+    packing_route_competition_weight: 0.07061055340401011
+    dustbin_aware_route_margin_weight: 0.05
+    gauge_twin_consistency_weight: 1.0
