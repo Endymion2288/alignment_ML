@@ -18,6 +18,7 @@ from baselines.field_chi2_matching import FieldCandidate
 from models.route_transformer import (
     RelativeRouteTransformerConfig,
     RelativeRouteSparseTransformer,
+    RelativeRouteV4Inference,
     RouteAwareTransformerConfig,
     RouteAwareSparseTransformer,
     freeze_backbone_and_edge_scorer,
@@ -138,11 +139,20 @@ def _frozen_grad_count(model: nn.Module) -> int:
 
 def audit_losses(device_name: str = "cpu") -> dict[str, float]:
     device = torch.device(device_name)
-    cfg = RelativeRouteTransformerConfig(
-        node_feature_dim=17, edge_feature_dim=11, use_relative_route_representation=True
+    frozen = RouteAwareSparseTransformer(
+        RouteAwareTransformerConfig(
+            node_feature_dim=17,
+            edge_feature_dim=11,
+            use_additive_route_correction=False,
+        )
     )
-    model = RelativeRouteSparseTransformer(cfg).to(device)
-    freeze_backbone_and_edge_scorer(model)
+    trainable = RelativeRouteSparseTransformer(
+        RelativeRouteTransformerConfig(
+            node_feature_dim=17, edge_feature_dim=11, use_relative_route_representation=True
+        )
+    )
+    freeze_backbone_and_edge_scorer(trainable)
+    model = RelativeRouteV4Inference(frozen, trainable).to(device)
 
     sets_chart = _toy_candidate_sets("chart_payload")
     sets_twin = _toy_candidate_sets("chart_payload_plus_common")

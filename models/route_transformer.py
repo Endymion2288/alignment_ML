@@ -44,7 +44,10 @@ class RouteAwareTransformerConfig:
     route_pair_embedding_dim: int = 16
     route_dropout: float = 0.10
     use_relative_route_representation: bool = False
-    use_additive_route_correction: bool = True
+    # Historical V2 checkpoints omit this key and must keep the original
+    # route-query -> route_edge_correction path.  RelativeRoute V4 YAML sets
+    # the additive complete-route correction explicitly.
+    use_additive_route_correction: bool = False
 
     def as_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -264,12 +267,15 @@ class RouteAwareSparseTransformer(nn.Module):
         )
         delta_route_logits = self.route_score(self.route_encoder(route_input)).squeeze(-1)
         if self.config.use_additive_route_correction:
-            edge_sum_logits = route_base_logits.sum(dim=-1)
-            route_logits = edge_sum_logits + delta_route_logits
+            # Trainable delta must not enter the frozen Workbook-64 edge
+            # correction.  Historical V2 computed route_edge_correction from
+            # the route-query output; under the additive contract that query
+            # is delta_route_logit and would move production edges.
+            route_for_edge_correction = route_base_logits.sum(dim=-1).detach()
         else:
-            route_logits = delta_route_logits
+            route_for_edge_correction = delta_route_logits
         route_mean, route_counts = self._route_edge_mean(
-            route_logits, route_score_edge_indices, int(base_edge_logits.numel())
+            route_for_edge_correction, route_score_edge_indices, int(base_edge_logits.numel())
         )
         correction_features = torch.stack(
             (
@@ -281,6 +287,11 @@ class RouteAwareSparseTransformer(nn.Module):
         )
         correction = self.route_edge_correction(correction_features).squeeze(-1)
         edge_logits = base_edge_logits + correction * (route_counts > 0.0).to(correction.dtype)
+        if self.config.use_additive_route_correction:
+            production_edge_sum = edge_logits[route_score_edge_indices].sum(dim=-1)
+            route_logits = production_edge_sum + delta_route_logits
+        else:
+            route_logits = delta_route_logits
         return RouteAwareTransformerOutput(
             edge_logits=edge_logits,
             base_edge_logits=base_edge_logits,
@@ -295,17 +306,126 @@ class RelativeRouteTransformerConfig(RouteAwareTransformerConfig):
     """Configuration for Relative Route Transformer V4."""
 
     use_relative_route_representation: bool = True
+    use_additive_route_correction: bool = True
 
 
 class RelativeRouteSparseTransformer(RouteAwareSparseTransformer):
     """Relative Route Transformer V4 for explicit 4-station route scoring."""
 
     def __init__(self, config: RouteAwareTransformerConfig) -> None:
-        if not config.use_relative_route_representation:
-            config = RouteAwareTransformerConfig(
-                **{**config.as_dict(), "use_relative_route_representation": True}
+        if not config.use_relative_route_representation or not config.use_additive_route_correction:
+            config = RelativeRouteTransformerConfig(
+                **{
+                    **config.as_dict(),
+                    "use_relative_route_representation": True,
+                    "use_additive_route_correction": True,
+                }
             )
         super().__init__(config)
+
+
+class RelativeRouteV4Inference(nn.Module):
+    """Compose frozen Workbook-64 production edges with a trainable route head.
+
+    Production adjacent logits are exactly the frozen Workbook-64 forward
+    (historical route-query -> route_edge_correction).  The trainable head
+    emits only ``delta_route_logit``.  Complete-route logits consumed by the
+    solver-aware objective and by ``complete_route_scores`` are
+
+        L_corrected = L_edge_W64 + delta_route_logit
+
+    where ``L_edge_W64`` is the sum of the three frozen production adjacent
+    logits on that physical chain.  Fragments never see ``delta``.
+    """
+
+    def __init__(
+        self,
+        frozen_workbook64: RouteAwareSparseTransformer,
+        trainable: RouteAwareSparseTransformer,
+    ) -> None:
+        super().__init__()
+        if frozen_workbook64.config.use_additive_route_correction:
+            raise ValueError("frozen Workbook-64 replica must use the historical V2 edge path")
+        if not trainable.config.use_additive_route_correction:
+            raise ValueError("RelativeRoute V4 trainable head must use additive complete-route correction")
+        self.frozen_workbook64 = frozen_workbook64
+        self.trainable = trainable
+        for param in self.frozen_workbook64.parameters():
+            param.requires_grad = False
+        self.frozen_workbook64.eval()
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        # Dropout in the frozen Workbook-64 replica would change production
+        # adjacent logits; keep that replica in eval regardless of wrapper mode.
+        self.frozen_workbook64.eval()
+        return self
+
+    def forward(
+        self,
+        node_features: torch.Tensor,
+        station_ids: torch.Tensor,
+        message_edge_source: torch.Tensor,
+        message_edge_destination: torch.Tensor,
+        message_edge_features: torch.Tensor,
+        message_edge_chi2: torch.Tensor,
+        message_edge_station_pair: torch.Tensor,
+        message_edge_direction: torch.Tensor,
+        score_edge_source: torch.Tensor,
+        score_edge_destination: torch.Tensor,
+        score_edge_features: torch.Tensor,
+        score_edge_station_pair: torch.Tensor,
+        route_node_indices: torch.Tensor,
+        route_score_edge_indices: torch.Tensor,
+    ) -> RouteAwareTransformerOutput:
+        with torch.no_grad():
+            frozen_out = self.frozen_workbook64(
+                node_features,
+                station_ids,
+                message_edge_source,
+                message_edge_destination,
+                message_edge_features,
+                message_edge_chi2,
+                message_edge_station_pair,
+                message_edge_direction,
+                score_edge_source,
+                score_edge_destination,
+                score_edge_features,
+                score_edge_station_pair,
+                route_node_indices,
+                route_score_edge_indices,
+            )
+        train_out = self.trainable(
+            node_features,
+            station_ids,
+            message_edge_source,
+            message_edge_destination,
+            message_edge_features,
+            message_edge_chi2,
+            message_edge_station_pair,
+            message_edge_direction,
+            score_edge_source,
+            score_edge_destination,
+            score_edge_features,
+            score_edge_station_pair,
+            route_node_indices,
+            route_score_edge_indices,
+        )
+        delta = train_out.delta_route_logits
+        if delta is None:
+            delta = frozen_out.route_logits.new_zeros(frozen_out.route_logits.shape)
+        if int(delta.numel()):
+            production_edge_sum = frozen_out.edge_logits[route_score_edge_indices].sum(dim=-1)
+            route_logits = production_edge_sum + delta
+        else:
+            route_logits = frozen_out.route_logits.new_empty((0,))
+        return RouteAwareTransformerOutput(
+            edge_logits=frozen_out.edge_logits,
+            base_edge_logits=frozen_out.base_edge_logits,
+            route_logits=route_logits,
+            route_edge_counts=frozen_out.route_edge_counts,
+            delta_route_logits=delta,
+        )
 
 
 def freeze_backbone_and_edge_scorer(

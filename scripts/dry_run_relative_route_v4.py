@@ -13,6 +13,7 @@ from datasets.root_loader import EventTracklets
 from models.route_transformer import (
     RelativeRouteSparseTransformer,
     RelativeRouteTransformerConfig,
+    RelativeRouteV4Inference,
     RouteAwareSparseTransformer,
     RouteAwareTransformerConfig,
     freeze_backbone_and_edge_scorer,
@@ -142,12 +143,32 @@ def run_dry_run_audit(device_str: str = "auto") -> dict[str, object]:
         use_additive_route_correction=True,
     )
 
-    model_arm1 = RouteAwareSparseTransformer(config_arm1).to(device)
-    model_arm2 = RelativeRouteSparseTransformer(config_arm2).to(device)
-
-    # 3. Apply parameter freeze
-    report_arm1 = freeze_backbone_and_edge_scorer(model_arm1)
-    report_arm2 = freeze_backbone_and_edge_scorer(model_arm2)
+    frozen_arm1 = RouteAwareSparseTransformer(
+        RouteAwareTransformerConfig(
+            node_feature_dim=17,
+            edge_feature_dim=11,
+            d_model=128,
+            ffn_dim=256,
+            route_hidden_dim=128,
+            use_additive_route_correction=False,
+        )
+    )
+    frozen_arm2 = RouteAwareSparseTransformer(
+        RouteAwareTransformerConfig(
+            node_feature_dim=17,
+            edge_feature_dim=11,
+            d_model=128,
+            ffn_dim=256,
+            route_hidden_dim=128,
+            use_additive_route_correction=False,
+        )
+    )
+    trainable_arm1 = RouteAwareSparseTransformer(config_arm1)
+    trainable_arm2 = RelativeRouteSparseTransformer(config_arm2)
+    report_arm1 = freeze_backbone_and_edge_scorer(trainable_arm1)
+    report_arm2 = freeze_backbone_and_edge_scorer(trainable_arm2)
+    model_arm1 = RelativeRouteV4Inference(frozen_arm1, trainable_arm1).to(device)
+    model_arm2 = RelativeRouteV4Inference(frozen_arm2, trainable_arm2).to(device)
 
     print(f"[DRY-RUN] Arm 1 Trainable Params: {report_arm1['n_trainable_parameters']}, Frozen: {report_arm1['n_frozen_parameters']}")
     print(f"[DRY-RUN] Arm 2 Trainable Params: {report_arm2['n_trainable_parameters']}, Frozen: {report_arm2['n_frozen_parameters']}")

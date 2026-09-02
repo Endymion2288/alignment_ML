@@ -23,13 +23,17 @@ from datasets.root_loader import EventTracklets
 from models.route_transformer import (
     RelativeRouteSparseTransformer,
     RelativeRouteTransformerConfig,
+    RelativeRouteV4Inference,
     RouteAwareSparseTransformer,
     RouteAwareTransformerConfig,
     freeze_backbone_and_edge_scorer,
 )
 from training.curriculum_mlp import CandidateSet
 from training.geometry_aware_transformer import (
+    ADJACENT_STATION_PAIRS,
     ALL_STATION_PAIRS,
+    EDGE_FEATURE_NAMES,
+    NODE_FEATURE_NAMES,
     build_transformer_graph_bundle,
     fit_graph_standardizers,
 )
@@ -39,12 +43,16 @@ from training.route_assignment import (
 )
 from training.route_aware_transformer import (
     RouteAwareTrainingConfig,
+    RouteAwareTransformerArtifact,
     _forward_route_batch,
     _make_route_batch,
     _route_loss_components,
     enumerate_complete_route_candidates,
+    load_relative_route_v4_head_only_artifact,
+    load_route_aware_transformer_artifact,
     predict_route_aware_scores,
     route_query_score_maps_by_event,
+    save_relative_route_v4_head_only_artifact,
 )
 
 
@@ -404,24 +412,31 @@ def test_arm1_and_arm2_trainable_parameter_matching():
 # Test 8: Identical Edge Scores for Arm 0/1/2 (Backbone Invariance)
 # -----------------------------------------------------------------------------
 def test_edge_scores_identical_across_arms():
-    cfg_arm1 = RouteAwareTransformerConfig(
-        node_feature_dim=17, edge_feature_dim=11, use_relative_route_representation=False
-    )
-    cfg_arm2 = RelativeRouteTransformerConfig(
-        node_feature_dim=17, edge_feature_dim=11, use_relative_route_representation=True
-    )
-    m1 = RouteAwareSparseTransformer(cfg_arm1).eval()
-    m2 = RelativeRouteSparseTransformer(cfg_arm2).eval()
-    m2.load_state_dict(m1.state_dict())
+    frozen = _historical_v2_model()
+    arm1 = _v4_wrapper(relative=False)
+    arm2 = _v4_wrapper(relative=True)
+    arm1.frozen_workbook64.load_state_dict(frozen.state_dict())
+    arm2.frozen_workbook64.load_state_dict(frozen.state_dict())
+    _copy_frozen_non_head(frozen, arm1.trainable)
+    _copy_frozen_non_head(frozen, arm2.trainable)
+    torch.nn.init.ones_(arm1.trainable.route_score.weight)
+    torch.nn.init.ones_(arm1.trainable.route_score.bias)
+    torch.nn.init.ones_(arm2.trainable.route_score.weight)
+    torch.nn.init.ones_(arm2.trainable.route_score.bias)
 
     bundle = build_transformer_graph_bundle(_toy_candidate_sets(), context_mode="full_event")
     node_std, edge_std = fit_graph_standardizers(bundle)
-
-    pred1 = predict_route_aware_scores(m1, bundle, node_std, edge_std, device="cpu", batch_size=2)
-    pred2 = predict_route_aware_scores(m2, bundle, node_std, edge_std, device="cpu", batch_size=2)
-
-    for s1, s2 in zip(pred1.edge_scores, pred2.edge_scores):
-        np.testing.assert_array_equal(s1, s2)
+    batch = _make_route_batch(bundle.graphs, node_std, edge_std, torch.device("cpu"))
+    frozen.eval()
+    arm1.eval()
+    arm2.eval()
+    with torch.no_grad():
+        frozen_out = _forward_route_batch(frozen, batch)
+        out1 = _forward_route_batch(arm1, batch)
+        out2 = _forward_route_batch(arm2, batch)
+    torch.testing.assert_close(out1.edge_logits, frozen_out.edge_logits, atol=0.0, rtol=0.0)
+    torch.testing.assert_close(out2.edge_logits, frozen_out.edge_logits, atol=0.0, rtol=0.0)
+    torch.testing.assert_close(out1.edge_logits, out2.edge_logits, atol=0.0, rtol=0.0)
 
 
 # -----------------------------------------------------------------------------
@@ -626,3 +641,187 @@ def test_solver_aware_c_and_d_objectives_propagate_gradients_to_route_head():
     assert results["dustbin_aware_route_margin (WB64 / Problem C)"] > 0.0
     assert results["packing_route_competition (WB64 / Problem D)"] > 0.0
     assert results["total_loss_grad_norm"] > 0.0
+
+
+def _historical_v2_model() -> RouteAwareSparseTransformer:
+    return RouteAwareSparseTransformer(
+        RouteAwareTransformerConfig(
+            node_feature_dim=17,
+            edge_feature_dim=11,
+            dropout=0.0,
+            route_dropout=0.0,
+            use_additive_route_correction=False,
+        )
+    )
+
+
+def _copy_frozen_non_head(src: RouteAwareSparseTransformer, dst: RouteAwareSparseTransformer) -> None:
+    prefixes = (
+        "route_query",
+        "route_node_key",
+        "route_edge_projection",
+        "route_pair_embedding",
+        "route_encoder",
+        "route_score",
+    )
+    src_state = src.state_dict()
+    dst_state = dst.state_dict()
+    for key, value in src_state.items():
+        is_head = any(key == prefix or key.startswith(f"{prefix}.") for prefix in prefixes)
+        if not is_head and key in dst_state and dst_state[key].shape == value.shape:
+            dst_state[key] = value
+    dst.load_state_dict(dst_state)
+
+
+def _v4_wrapper(*, relative: bool) -> RelativeRouteV4Inference:
+    frozen = _historical_v2_model()
+    if relative:
+        trainable = RelativeRouteSparseTransformer(
+            RelativeRouteTransformerConfig(
+                node_feature_dim=17,
+                edge_feature_dim=11,
+                dropout=0.0,
+                route_dropout=0.0,
+            )
+        )
+    else:
+        trainable = RouteAwareSparseTransformer(
+            RouteAwareTransformerConfig(
+                node_feature_dim=17,
+                edge_feature_dim=11,
+                dropout=0.0,
+                route_dropout=0.0,
+                use_relative_route_representation=False,
+                use_additive_route_correction=True,
+            )
+        )
+    _copy_frozen_non_head(frozen, trainable)
+    torch.nn.init.zeros_(trainable.route_score.weight)
+    torch.nn.init.zeros_(trainable.route_score.bias)
+    freeze_backbone_and_edge_scorer(trainable)
+    return RelativeRouteV4Inference(frozen, trainable)
+
+
+# -----------------------------------------------------------------------------
+# Test 18: Workbook-64 production edges stay frozen after a nonzero delta
+# -----------------------------------------------------------------------------
+def test_workbook64_production_edges_invariant_to_trainable_delta():
+    frozen = _historical_v2_model()
+    trainable = RelativeRouteSparseTransformer(
+        RelativeRouteTransformerConfig(node_feature_dim=17, edge_feature_dim=11, dropout=0.0, route_dropout=0.0)
+    )
+    _copy_frozen_non_head(frozen, trainable)
+    torch.nn.init.ones_(trainable.route_score.weight)
+    torch.nn.init.ones_(trainable.route_score.bias)
+    freeze_backbone_and_edge_scorer(trainable)
+    wrapper = RelativeRouteV4Inference(frozen, trainable)
+
+    bundle = build_transformer_graph_bundle(_toy_candidate_sets(), context_mode="full_event")
+    node_std, edge_std = fit_graph_standardizers(bundle)
+    batch = _make_route_batch(bundle.graphs, node_std, edge_std, torch.device("cpu"))
+    frozen.eval()
+    wrapper.eval()
+    with torch.no_grad():
+        frozen_out = _forward_route_batch(frozen, batch)
+        wrap_out = _forward_route_batch(wrapper, batch)
+    assert wrap_out.delta_route_logits is not None
+    assert float(wrap_out.delta_route_logits.abs().max()) > 0.0
+    torch.testing.assert_close(wrap_out.edge_logits, frozen_out.edge_logits, atol=0.0, rtol=0.0)
+    production_edge_sum = frozen_out.edge_logits[batch.route_score_edge_indices].sum(dim=-1)
+    torch.testing.assert_close(
+        wrap_out.route_logits, production_edge_sum + wrap_out.delta_route_logits, atol=1e-6, rtol=1e-6
+    )
+
+
+# -----------------------------------------------------------------------------
+# Test 19: Zero-init wrapper recovers Workbook-64 L_edge as L_corrected
+# -----------------------------------------------------------------------------
+def test_zero_init_wrapper_matches_workbook64_complete_route_logit():
+    wrapper = _v4_wrapper(relative=True)
+    bundle = build_transformer_graph_bundle(_toy_candidate_sets(), context_mode="full_event")
+    node_std, edge_std = fit_graph_standardizers(bundle)
+    batch = _make_route_batch(bundle.graphs, node_std, edge_std, torch.device("cpu"))
+    wrapper.eval()
+    with torch.no_grad():
+        wrap_out = _forward_route_batch(wrapper, batch)
+        frozen_out = _forward_route_batch(wrapper.frozen_workbook64, batch)
+    assert float(wrap_out.delta_route_logits.abs().max()) == 0.0
+    torch.testing.assert_close(wrap_out.edge_logits, frozen_out.edge_logits, atol=0.0, rtol=0.0)
+    production_edge_sum = frozen_out.edge_logits[batch.route_score_edge_indices].sum(dim=-1)
+    torch.testing.assert_close(wrap_out.route_logits, production_edge_sum, atol=1e-6, rtol=1e-6)
+
+
+# -----------------------------------------------------------------------------
+# Test 20: Head-only artifact save/load preserves wrapper contract
+# -----------------------------------------------------------------------------
+def test_relative_route_v4_artifact_roundtrip(tmp_path: Path):
+    wrapper = _v4_wrapper(relative=True)
+    bundle = build_transformer_graph_bundle(_toy_candidate_sets(), context_mode="full_event")
+    node_std, edge_std = fit_graph_standardizers(bundle)
+    artifact = RouteAwareTransformerArtifact(
+        node_feature_names=NODE_FEATURE_NAMES,
+        edge_feature_names=EDGE_FEATURE_NAMES,
+        all_station_pairs=ALL_STATION_PAIRS,
+        output_station_pairs=ADJACENT_STATION_PAIRS,
+        node_standardizer=node_std,
+        edge_standardizer=edge_std,
+        model_config=wrapper.trainable.config,
+        context_mode="full_event",
+        training_summary={"epochs": 0},
+    )
+    path = tmp_path / "v4_head_only.pt"
+    save_relative_route_v4_head_only_artifact(
+        path,
+        wrapper.frozen_workbook64,
+        wrapper.trainable,
+        artifact,
+        frozen_workbook64_sha256="test",
+    )
+    loaded, loaded_artifact = load_relative_route_v4_head_only_artifact(path, device="cpu")
+    assert loaded_artifact.context_mode == "full_event"
+    batch = _make_route_batch(bundle.graphs, node_std, edge_std, torch.device("cpu"))
+    wrapper.eval()
+    loaded.eval()
+    with torch.no_grad():
+        original = _forward_route_batch(wrapper, batch)
+        restored = _forward_route_batch(loaded, batch)
+    torch.testing.assert_close(original.edge_logits, restored.edge_logits, atol=0.0, rtol=0.0)
+    torch.testing.assert_close(original.route_logits, restored.route_logits, atol=0.0, rtol=0.0)
+
+
+# -----------------------------------------------------------------------------
+# Test 21: Historical V2 edge path is unchanged when additive correction is off
+# -----------------------------------------------------------------------------
+def test_historical_v2_route_query_still_feeds_edge_correction():
+    model = _historical_v2_model()
+    assert model.config.use_additive_route_correction is False
+    torch.nn.init.ones_(model.route_edge_correction[-1].weight)
+    torch.nn.init.zeros_(model.route_edge_correction[-1].bias)
+    bundle = build_transformer_graph_bundle(_toy_candidate_sets(), context_mode="full_event")
+    node_std, edge_std = fit_graph_standardizers(bundle)
+    batch = _make_route_batch(bundle.graphs, node_std, edge_std, torch.device("cpu"))
+    model.eval()
+    with torch.no_grad():
+        torch.nn.init.zeros_(model.route_score.weight)
+        torch.nn.init.zeros_(model.route_score.bias)
+        out_zero = _forward_route_batch(model, batch)
+        torch.nn.init.ones_(model.route_score.weight)
+        torch.nn.init.ones_(model.route_score.bias)
+        out_ones = _forward_route_batch(model, batch)
+    assert torch.isfinite(out_zero.edge_logits).all()
+    assert torch.isfinite(out_ones.edge_logits).all()
+    assert not torch.equal(out_zero.edge_logits, out_ones.edge_logits)
+
+
+def test_workbook64_checkpoint_defaults_to_historical_edge_path():
+    historical = RouteAwareTransformerConfig(node_feature_dim=17, edge_feature_dim=11)
+    assert historical.use_additive_route_correction is False
+    assert historical.use_relative_route_representation is False
+    v4 = RelativeRouteTransformerConfig(node_feature_dim=17, edge_feature_dim=11)
+    assert v4.use_additive_route_correction is True
+    assert v4.use_relative_route_representation is True
+    checkpoint = Path("outputs/mc24_four_station_source_diversity_v1/checkpoint/route_aware_transformer_v2.pt")
+    assert checkpoint.is_file()
+    model, _artifact = load_route_aware_transformer_artifact(checkpoint, device="cpu")
+    assert model.config.use_additive_route_correction is False
+    assert model.config.use_relative_route_representation is False

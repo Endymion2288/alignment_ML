@@ -29,6 +29,7 @@ from evaluation.pairwise_metrics import (
 from models.route_transformer import (
     RelativeRouteSparseTransformer,
     RelativeRouteTransformerConfig,
+    RelativeRouteV4Inference,
     RouteAwareSparseTransformer,
     RouteAwareTransformerConfig,
     freeze_backbone_and_edge_scorer,
@@ -956,6 +957,101 @@ def load_route_aware_transformer_artifact(
     if artifact.context_mode != "full_event":
         raise ValueError("route-aware V2 checkpoint is not full-event context")
     return model, artifact
+
+
+RELATIVE_ROUTE_V4_HEAD_ONLY_SCHEMA = "faser-relative-route-v4-head-only-v1"
+
+
+def save_relative_route_v4_head_only_artifact(
+    path: str | Path,
+    frozen_workbook64: RouteAwareSparseTransformer,
+    trainable: RouteAwareSparseTransformer,
+    artifact: RouteAwareTransformerArtifact,
+    *,
+    frozen_workbook64_sha256: str,
+) -> None:
+    """Save the paired frozen Workbook-64 replica and trainable V4 head."""
+    target = Path(path).expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "schema_version": RELATIVE_ROUTE_V4_HEAD_ONLY_SCHEMA,
+            "model_state_dict": trainable.state_dict(),
+            "frozen_workbook64_state_dict": frozen_workbook64.state_dict(),
+            "frozen_workbook64_model_config": frozen_workbook64.config.as_dict(),
+            "frozen_workbook64_sha256": str(frozen_workbook64_sha256),
+            "node_feature_names": list(artifact.node_feature_names),
+            "edge_feature_names": list(artifact.edge_feature_names),
+            "all_station_pairs": [list(pair) for pair in artifact.all_station_pairs],
+            "output_station_pairs": [list(pair) for pair in artifact.output_station_pairs],
+            "node_standardizer_mean": artifact.node_standardizer.mean,
+            "node_standardizer_scale": artifact.node_standardizer.scale,
+            "edge_standardizer_mean": artifact.edge_standardizer.mean,
+            "edge_standardizer_scale": artifact.edge_standardizer.scale,
+            "model_config": artifact.model_config.as_dict(),
+            "context_mode": artifact.context_mode,
+            "training_summary": dict(artifact.training_summary),
+        },
+        target,
+    )
+
+
+def load_relative_route_v4_head_only_artifact(
+    path: str | Path,
+    *,
+    device: str = "auto",
+) -> tuple[RelativeRouteV4Inference, RouteAwareTransformerArtifact]:
+    """Restore frozen Workbook-64 edges plus the trainable complete-route head."""
+    source = Path(path).expanduser().resolve()
+    try:
+        payload = torch.load(source, map_location="cpu", weights_only=False)
+    except TypeError:  # Compatibility with the LCG PyTorch build.
+        payload = torch.load(source, map_location="cpu")
+    if payload.get("schema_version") != RELATIVE_ROUTE_V4_HEAD_ONLY_SCHEMA:
+        raise ValueError("unexpected RelativeRoute V4 head-only checkpoint schema")
+    frozen_config = RouteAwareTransformerConfig(**dict(payload["frozen_workbook64_model_config"]))
+    if frozen_config.use_additive_route_correction:
+        raise ValueError("stored Workbook-64 replica is not the historical V2 edge path")
+    frozen = RouteAwareSparseTransformer(frozen_config)
+    frozen.load_state_dict(payload["frozen_workbook64_state_dict"])
+    model_config = RouteAwareTransformerConfig(**dict(payload["model_config"]))
+    if model_config.use_relative_route_representation:
+        trainable: RouteAwareSparseTransformer = RelativeRouteSparseTransformer(
+            RelativeRouteTransformerConfig(**dict(payload["model_config"]))
+        )
+    else:
+        trainable = RouteAwareSparseTransformer(model_config)
+    trainable.load_state_dict(payload["model_state_dict"])
+    freeze_backbone_and_edge_scorer(trainable)
+    wrapper = RelativeRouteV4Inference(frozen, trainable)
+    resolved = resolve_device(device)
+    wrapper.to(resolved)
+    artifact = RouteAwareTransformerArtifact(
+        node_feature_names=tuple(payload["node_feature_names"]),
+        edge_feature_names=tuple(payload["edge_feature_names"]),
+        all_station_pairs=tuple(tuple(int(value) for value in pair) for pair in payload["all_station_pairs"]),
+        output_station_pairs=tuple(
+            tuple(int(value) for value in pair) for pair in payload["output_station_pairs"]
+        ),
+        node_standardizer=FeatureStandardizer(
+            mean=np.asarray(payload["node_standardizer_mean"], dtype=np.float64),
+            scale=np.asarray(payload["node_standardizer_scale"], dtype=np.float64),
+        ),
+        edge_standardizer=FeatureStandardizer(
+            mean=np.asarray(payload["edge_standardizer_mean"], dtype=np.float64),
+            scale=np.asarray(payload["edge_standardizer_scale"], dtype=np.float64),
+        ),
+        model_config=model_config,
+        context_mode=str(payload["context_mode"]),
+        training_summary=dict(payload["training_summary"]),
+    )
+    if artifact.node_feature_names != NODE_FEATURE_NAMES or artifact.edge_feature_names != EDGE_FEATURE_NAMES:
+        raise ValueError("V4 checkpoint feature schema is incompatible with the physical candidate graph")
+    if artifact.all_station_pairs != ALL_STATION_PAIRS or artifact.output_station_pairs != ADJACENT_STATION_PAIRS:
+        raise ValueError("V4 checkpoint station-pair schema is incompatible with route assignment")
+    if artifact.context_mode != "full_event":
+        raise ValueError("RelativeRoute V4 checkpoint is not full-event context")
+    return wrapper, artifact
 
 
 def route_aware_artifact_summary(artifact: RouteAwareTransformerArtifact) -> dict[str, object]:

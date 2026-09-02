@@ -160,3 +160,11 @@ continue_to_15d_relative_wls = false
 sealed_test_accessed = false
 new_final_blind_content_accessed = false
 ```
+
+---
+
+> **Erratum: see Workbook 68B** (`workbook/2026-09-02_68B_四站RelativeRoute冻结边接线与Head-Only保存合同勘误.md`)
+>
+> 1. 68A 的 C/D 梯度审计成立，但当时的单模块 additive 前向把可训练 `delta_route_logit` 送进了 `route_edge_correction`，因此生产边不是冻结的 Workbook-64 边。
+> 2. Condor cluster `9254670` / `9254671` 两臂都跑完 30 epoch，但 `RouteAwareTransformerArtifact` 保存接口写错，checkpoint 未落盘。这两次作业的权重不存在，禁止当作 Workbook 69 结果，也禁止从它们 resume。
+> 3. 68A 的 `training_authorized=true` 被 68B 冻结边接线合同取代；在 68B 通过前不得再训。

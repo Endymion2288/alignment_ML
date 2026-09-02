@@ -23,12 +23,20 @@ source "$project_root/scripts/setup_environment.sh" ml
 set -u
 cd "$project_root"
 
+echo "hostname $(hostname)"
+echo "date_utc $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "git_commit $(git rev-parse HEAD)"
+echo "git_status_porcelain:"
+git status --porcelain || true
+echo "cvmfs_lcg /cvmfs/sft.cern.ch/lcg/views/LCG_110_cuda/x86_64-el9-gcc13-opt/setup.sh"
+
 # Verify GPU availability
 python - <<'PY'
 import torch
 if not torch.cuda.is_available():
     raise SystemExit("RelativeRoute V4 head-only training is GPU-only; CUDA is unavailable on this slot")
 print("cuda_device", torch.cuda.get_device_name(0), flush=True)
+print("torch", torch.__version__, "cuda", torch.version.cuda, flush=True)
 PY
 
 base_checkpoint="outputs/mc24_four_station_source_diversity_v1/checkpoint/route_aware_transformer_v2.pt"

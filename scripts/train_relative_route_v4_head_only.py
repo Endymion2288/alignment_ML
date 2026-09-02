@@ -20,6 +20,9 @@ import csv
 import hashlib
 import json
 import math
+import os
+import socket
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -41,6 +44,7 @@ from datasets.physical_curriculum import (
 from models.route_transformer import (
     RelativeRouteTransformerConfig,
     RelativeRouteSparseTransformer,
+    RelativeRouteV4Inference,
     RouteAwareTransformerConfig,
     RouteAwareSparseTransformer,
     freeze_backbone_and_edge_scorer,
@@ -48,12 +52,16 @@ from models.route_transformer import (
 from scripts.config_loader import load_yaml_with_base
 from training.curriculum_mlp import build_candidate_sets
 from training.geometry_aware_transformer import (
+    ADJACENT_STATION_PAIRS,
     ALL_STATION_PAIRS,
+    EDGE_FEATURE_NAMES,
+    NODE_FEATURE_NAMES,
     CurriculumStage,
     TransformerGraph,
     TransformerGraphBundle,
     build_transformer_graph_bundle,
     fit_graph_standardizers,
+    graph_bundle_summary,
     stages_from_payload,
 )
 from training.gauge_consistent_route import (
@@ -68,9 +76,10 @@ from training.gauge_consistent_route import (
 from training.route_aware_transformer import (
     RouteAwareTrainingConfig,
     RouteAwareTransformerArtifact,
+    load_route_aware_transformer_artifact,
     materialize_route_candidate_tables,
-    save_route_aware_transformer_artifact,
     route_aware_artifact_summary,
+    save_relative_route_v4_head_only_artifact,
     _edge_positive_weight,
     _forward_route_batch,
     _make_route_batch,
@@ -242,13 +251,28 @@ def main() -> None:
         q_over_p_mode=int(args.q_over_p_mode),
     )
     train_bundle = build_transformer_graph_bundle(train_sets, context_mode="full_event")
-    node_standardizer, edge_standardizer = fit_graph_standardizers(train_bundle)
     train_route_tables = materialize_route_candidate_tables(train_bundle.graphs)
     print(f"Built transformer graph bundle with {len(train_bundle.graphs)} graphs.", flush=True)
 
-    # 3. Model construction and paired initialization
-    _seed_everything(int(train_cfg_dict["seed"]))
+    # 3. Frozen Workbook-64 replica + trainable additive route head
+    print(f"Loading frozen Workbook-64 replica from {checkpoint_path}...", flush=True)
+    frozen_w64, frozen_artifact = load_route_aware_transformer_artifact(checkpoint_path, device="cpu")
+    if frozen_w64.config.use_additive_route_correction:
+        raise RuntimeError("Workbook-64 replica unexpectedly uses additive route correction")
+    if frozen_artifact.node_standardizer is None or frozen_artifact.edge_standardizer is None:
+        raise RuntimeError("Workbook-64 checkpoint is missing train-only standardizers")
+    node_standardizer = frozen_artifact.node_standardizer
+    edge_standardizer = frozen_artifact.edge_standardizer
+    refit_node, refit_edge = fit_graph_standardizers(train_bundle)
+    node_std_delta = float(np.max(np.abs(refit_node.mean - node_standardizer.mean)))
+    edge_std_delta = float(np.max(np.abs(refit_edge.mean - edge_standardizer.mean)))
+    print(
+        f"Using frozen Workbook-64 standardizers. Six-source refit max-abs mean delta: "
+        f"node={node_std_delta:.6e} edge={edge_std_delta:.6e}",
+        flush=True,
+    )
 
+    _seed_everything(int(train_cfg_dict["seed"]))
     use_rel = bool(arch_cfg.get("use_relative_route_representation", True))
     if use_rel:
         model_config = RelativeRouteTransformerConfig(
@@ -256,22 +280,17 @@ def main() -> None:
             edge_feature_dim=11,
             **arch_cfg,
         )
-        model = RelativeRouteSparseTransformer(model_config)
+        trainable = RelativeRouteSparseTransformer(model_config)
     else:
         model_config = RouteAwareTransformerConfig(
             node_feature_dim=17,
             edge_feature_dim=11,
             **arch_cfg,
         )
-        model = RouteAwareSparseTransformer(model_config)
+        trainable = RouteAwareSparseTransformer(model_config)
+    if not model_config.use_additive_route_correction:
+        raise RuntimeError("Head-only V4 configs must set use_additive_route_correction=true")
 
-    # Load frozen weights from base checkpoint
-    print(f"Loading base checkpoint weights from {checkpoint_path}...", flush=True)
-    base_state = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    if "model_state_dict" in base_state:
-        base_state = base_state["model_state_dict"]
-    
-    # Load matching backbone layers (excluding trainable route head)
     ROUTE_HEAD_PREFIXES = (
         "route_query",
         "route_node_key",
@@ -280,35 +299,37 @@ def main() -> None:
         "route_encoder",
         "route_score",
     )
-    model_state = model.state_dict()
+    frozen_state = frozen_w64.state_dict()
+    trainable_state = trainable.state_dict()
     loaded_keys = []
-    for k, v in base_state.items():
-        is_route_head = any(k == prefix or k.startswith(f"{prefix}.") for prefix in ROUTE_HEAD_PREFIXES)
-        if not is_route_head and k in model_state and model_state[k].shape == v.shape:
-            model_state[k] = v
-            loaded_keys.append(k)
-    model.load_state_dict(model_state)
-    print(f"Loaded {len(loaded_keys)} backbone parameter tensors from base checkpoint.", flush=True)
+    for key, value in frozen_state.items():
+        is_route_head = any(key == prefix or key.startswith(f"{prefix}.") for prefix in ROUTE_HEAD_PREFIXES)
+        if not is_route_head and key in trainable_state and trainable_state[key].shape == value.shape:
+            trainable_state[key] = value
+            loaded_keys.append(key)
+    trainable.load_state_dict(trainable_state)
+    print(f"Copied {len(loaded_keys)} frozen backbone/edge tensors into the trainable replica.", flush=True)
+    nn.init.zeros_(trainable.route_score.weight)
+    nn.init.zeros_(trainable.route_score.bias)
+    freeze_backbone_and_edge_scorer(trainable)
+    for param in frozen_w64.parameters():
+        param.requires_grad = False
+    frozen_w64.eval()
 
-    # Zero-initialize route_score
-    nn.init.zeros_(model.route_score.weight)
-    nn.init.zeros_(model.route_score.bias)
-
-    # Freeze backbone and edge scorer
-    freeze_backbone_and_edge_scorer(model)
+    model = RelativeRouteV4Inference(frozen_w64, trainable)
     model.to(device)
 
-    trainable_count = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    frozen_count = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+    trainable_count = sum(p.numel() for p in trainable.parameters() if p.requires_grad)
+    frozen_count = sum(p.numel() for p in trainable.parameters() if not p.requires_grad)
     print(f"Parameter Audit: Trainable = {trainable_count:,} | Frozen = {frozen_count:,}", flush=True)
     if trainable_count != 172513:
         raise ValueError(f"Expected 172,513 trainable parameters, got {trainable_count}")
     if frozen_count != 614947:
         raise ValueError(f"Expected 614,947 frozen parameters, got {frozen_count}")
 
-    # Compute initial hashes
-    frozen_hash_before = _compute_frozen_hash(model)
-    initial_param_hashes = _compute_parameter_hashes(model)
+    frozen_hash_before = _compute_frozen_hash(trainable)
+    frozen_w64_hash_before = _compute_frozen_hash(frozen_w64)
+    initial_param_hashes = _compute_parameter_hashes(trainable)
 
     # 4. Pre-training Baseline Replay Audit
     model.eval()
@@ -316,13 +337,35 @@ def main() -> None:
         test_graphs = train_bundle.graphs[:4]
         test_batch = _make_route_batch(test_graphs, node_standardizer, edge_standardizer, device, train_route_tables)
         init_output = _forward_route_batch(model, test_batch)
-        if init_output.delta_route_logits is not None:
-            delta_max = float(init_output.delta_route_logits.abs().max().item())
-        else:
-            delta_max = 0.0
+        frozen_output = _forward_route_batch(frozen_w64, test_batch)
+        delta_max = (
+            0.0
+            if init_output.delta_route_logits is None
+            else float(init_output.delta_route_logits.abs().max().item())
+        )
+        edge_delta = float((init_output.edge_logits - frozen_output.edge_logits).abs().max().item())
         print(f"Zero-Init Baseline Replay Audit: max(|delta_route_logits|) = {delta_max:.10f}", flush=True)
+        print(f"Frozen W64 edge identity: max(|edge_v4 - edge_w64|) = {edge_delta:.10e}", flush=True)
         if delta_max > 1e-12:
             raise RuntimeError(f"Zero-init guarantee broken: delta_route_logits max is {delta_max}")
+        # Two separate GPU attention forwards are not bit-identical in float32.
+        # 1e-5 covers observed H100 MIG residuals (~1e-6) without relaxing the
+        # scientific claim that wrapper edges are the frozen Workbook-64 edges.
+        if edge_delta > 1.0e-5:
+            raise RuntimeError("Head-only wrapper does not reproduce Workbook-64 production edges")
+        if int(init_output.route_logits.numel()):
+            production_edge_sum = init_output.edge_logits[test_batch.route_score_edge_indices].sum(dim=-1)
+            same_forward_delta = init_output.delta_route_logits
+            if same_forward_delta is None:
+                same_forward_delta = production_edge_sum.new_zeros(production_edge_sum.shape)
+            route_delta = float((init_output.route_logits - production_edge_sum - same_forward_delta).abs().max().item())
+            print(
+                f"Zero-init L_corrected identity (same forward): "
+                f"max(|L_corrected - L_edge_W64 - delta|) = {route_delta:.10e}",
+                flush=True,
+            )
+            if route_delta > 1e-12:
+                raise RuntimeError("L_corrected is not L_edge_W64 + delta_route_logit on the wrapper forward")
 
     # 5. Training Loop setup
     training_config = RouteAwareTrainingConfig(
@@ -448,21 +491,35 @@ def main() -> None:
     print("\n----------------- 30-Epoch Training Complete -----------------", flush=True)
 
     # 6. Post-training parameter and frozen invariant audits
-    frozen_hash_after = _compute_frozen_hash(model)
-    print(f"Frozen Parameter Hash Before: {frozen_hash_before}", flush=True)
-    print(f"Frozen Parameter Hash After:  {frozen_hash_after}", flush=True)
+    frozen_hash_after = _compute_frozen_hash(trainable)
+    frozen_w64_hash_after = _compute_frozen_hash(frozen_w64)
+    print(f"Trainable-replica frozen hash before: {frozen_hash_before}", flush=True)
+    print(f"Trainable-replica frozen hash after:  {frozen_hash_after}", flush=True)
+    print(f"Workbook-64 replica hash before: {frozen_w64_hash_before}", flush=True)
+    print(f"Workbook-64 replica hash after:  {frozen_w64_hash_after}", flush=True)
     if frozen_hash_before != frozen_hash_after:
-        raise RuntimeError("CRITICAL: Frozen backbone weights changed during training!")
+        raise RuntimeError("CRITICAL: Frozen backbone weights in the trainable replica changed!")
+    if frozen_w64_hash_before != frozen_w64_hash_after:
+        raise RuntimeError("CRITICAL: Frozen Workbook-64 replica weights changed!")
 
-    # Audit delta_route_logits distribution on train split
+    # Audit delta_route_logits distribution and frozen-edge identity on train split
     model.eval()
     delta_vals = []
+    edge_max_abs = 0.0
     with torch.no_grad():
         for batch_graphs in _iter_training_batches(pairs, leftovers, training_config.batch_size, np.random.default_rng(20260822)):
             batch = _make_route_batch(batch_graphs, node_standardizer, edge_standardizer, device, train_route_tables)
             out = _forward_route_batch(model, batch)
+            frozen_out = _forward_route_batch(frozen_w64, batch)
+            edge_max_abs = max(
+                edge_max_abs,
+                float((out.edge_logits - frozen_out.edge_logits).abs().max().item()),
+            )
             if out.delta_route_logits is not None:
                 delta_vals.extend(out.delta_route_logits.detach().cpu().numpy().tolist())
+    print(f"Post-training frozen W64 edge identity: max(|edge_v4 - edge_w64|) = {edge_max_abs:.10e}", flush=True)
+    if edge_max_abs > 1.0e-5:
+        raise RuntimeError("Post-training production edges drifted from Workbook-64")
 
     if delta_vals:
         delta_arr = np.array(delta_vals, dtype=np.float64)
@@ -484,16 +541,57 @@ def main() -> None:
     # 7. Save Checkpoint & Artifacts
     checkpoint_file = output_root / "checkpoint_last.pt"
     artifact = RouteAwareTransformerArtifact(
-        model_config=model_config,
+        node_feature_names=NODE_FEATURE_NAMES,
+        edge_feature_names=EDGE_FEATURE_NAMES,
+        all_station_pairs=train_bundle.all_station_pairs,
+        output_station_pairs=ADJACENT_STATION_PAIRS,
         node_standardizer=node_standardizer,
         edge_standardizer=edge_standardizer,
-        station_path=tuple(train_bundle.station_path),
-        feature_names=list(train_bundle.graphs[0].node_features.shape[1:]),
+        model_config=model_config,
+        context_mode="full_event",
+        training_summary={
+            "arm": arm_num,
+            "arm_name": arm_name,
+            "best_global_epoch": 30,
+            "training_global_epochs_completed": 30,
+            "checkpoint_selection": "last_completed_epoch_of_fixed_30_epoch_budget",
+            "development_validation_used": False,
+            "device": str(device),
+            "train_bundle": graph_bundle_summary(train_bundle),
+            "loss": {
+                "edge": "weighted_focal_binary_cross_entropy_frozen_workbook64_edges",
+                "route_truth_consistency": "weighted_focal_binary_cross_entropy_on_L_corrected",
+                "one_to_one_competition": "endpoint_incident_route_logsumexp_on_L_corrected",
+                "fake_route_penalty": "softplus_on_fake_endpoint_routes_on_L_corrected",
+                "gauge_twin_consistency": "mse_origin_matched_raw_logits_and_complete_route_utilities",
+                "packing_route_competition": "relu_local_packing_utility_margin",
+                "dustbin_aware_route_margin": "relu_max_fragment_or_dustbin_plus_margin_minus_truth",
+                "complete_route_logit": "L_edge_W64_plus_delta_route_logit",
+                "edge_loss_weight": training_config.edge_loss_weight,
+                "route_consistency_weight": training_config.route_consistency_weight,
+                "one_to_one_competition_weight": training_config.one_to_one_competition_weight,
+                "fake_route_penalty_weight": training_config.fake_route_penalty_weight,
+                "packing_route_competition_weight": packing_comp_weight,
+                "dustbin_aware_route_margin_weight": dustbin_margin_weight,
+                "gauge_twin_consistency_weight": gauge_twin_weight,
+            },
+        },
     )
-    save_route_aware_transformer_artifact(checkpoint_file, model, artifact)
-    
-    # Save a copy as route_aware_transformer_v2.pt for downstream compatibility
-    save_route_aware_transformer_artifact(output_root / "route_aware_transformer_v2.pt", model, artifact)
+    frozen_w64_sha = _sha256(checkpoint_path)
+    save_relative_route_v4_head_only_artifact(
+        checkpoint_file,
+        frozen_w64,
+        trainable,
+        artifact,
+        frozen_workbook64_sha256=frozen_w64_sha,
+    )
+    save_relative_route_v4_head_only_artifact(
+        output_root / "relative_route_v4_head_only.pt",
+        frozen_w64,
+        trainable,
+        artifact,
+        frozen_workbook64_sha256=frozen_w64_sha,
+    )
     checkpoint_sha = _sha256(checkpoint_file)
     print(f"Saved Checkpoint: {checkpoint_file} (SHA256: {checkpoint_sha})", flush=True)
 
@@ -510,11 +608,15 @@ def main() -> None:
             "selection_policy": "last_completed_epoch_of_fixed_30_epoch_budget",
             "epochs_completed": 30,
             "early_stopping": False,
-            "frozen_backbone_sha256": _sha256(checkpoint_path),
+            "frozen_backbone_sha256": frozen_w64_sha,
             "frozen_parameter_hash_invariant": bool(frozen_hash_before == frozen_hash_after),
+            "frozen_workbook64_replica_hash_invariant": bool(frozen_w64_hash_before == frozen_w64_hash_after),
+            "post_training_max_abs_edge_delta_vs_workbook64": edge_max_abs,
             "trainable_parameters": trainable_count,
             "frozen_parameters": frozen_count,
             "delta_route_logit_distribution": delta_distribution,
+            "complete_route_logit": "L_edge_W64_plus_delta_route_logit",
+            "schema_version": "faser-relative-route-v4-head-only-v1",
         },
     )
 
@@ -542,6 +644,8 @@ def main() -> None:
             "trainable_parameters": trainable_count,
             "frozen_parameters": frozen_count,
             "early_stopping": False,
+            "complete_route_logit": "L_edge_W64_plus_delta_route_logit",
+            "continue_to_15d_relative_wls": False,
             "objective_weights": {
                 "edge_loss_weight": training_config.edge_loss_weight,
                 "route_consistency_weight": training_config.route_consistency_weight,
@@ -568,16 +672,28 @@ def main() -> None:
             "frozen_hash_before": frozen_hash_before,
             "frozen_hash_after": frozen_hash_after,
             "frozen_invariance_verified": bool(frozen_hash_before == frozen_hash_after),
+            "frozen_workbook64_hash_before": frozen_w64_hash_before,
+            "frozen_workbook64_hash_after": frozen_w64_hash_after,
+            "frozen_workbook64_invariance_verified": bool(frozen_w64_hash_before == frozen_w64_hash_after),
+            "post_training_max_abs_edge_delta_vs_workbook64": edge_max_abs,
+            "complete_route_logit": "L_edge_W64_plus_delta_route_logit",
         },
     )
 
+    git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, text=True).strip()
+    git_status = subprocess.check_output(["git", "status", "--porcelain"], cwd=PROJECT_ROOT, text=True)
     _write_json(
         output_root / "environment.json",
         {
+            "hostname": socket.gethostname(),
             "device": str(device),
             "device_name": torch.cuda.get_device_name(0),
             "torch_version": torch.__version__,
             "cuda_version": torch.version.cuda,
+            "git_commit": git_commit,
+            "git_dirty": bool(git_status.strip()),
+            "git_status_porcelain": git_status,
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         },
     )
 
