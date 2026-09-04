@@ -505,3 +505,77 @@ continue_to_15d_relative_wls = false
 8. 若 PASS：full-six-source V5A + 冻结 development eval；若 FAIL：stop head-only mainline；
 9. Final Blind / sealed test 全程未打开；
 10. 最终报告 §21 各项。
+
+---
+
+## 20. 执行状态台账（2026-09-04，训练已提交、评估待跑）
+
+> 本节为执行日志，追加于预注册（§1–§19）之后，不改变任何预注册合同。
+
+### 20.1 Git 状态
+
+```text
+branch        = 4station
+HEAD          = 5a61d14 (Workbook 72 eval + Condor eval wrapper)
+历史链         = cc8d220(remote) -> 8043888 -> 714671f -> 2b2fb89(WB71 doc) -> f90b2bd(WB72 scaffolding) -> 5a61d14
+git_dirty     = false（提交时）
+push          = 暂缓（用户已知晓；SSH publickey 在非交互环境不可用，本地 commits 安全）
+```
+
+### 20.2 Phase A 审计（训练前，全过）
+
+- 新增 `tests/test_relative_route_v5a_bounded.py`：13 项单测全 PASS（delta_bounded ∈ [-4,4]、zero-init delta=0、zero-init L_corrected==L_edge_W64、零点导数=1、frozen W64 无梯度、frozen edge 不变、生产 solver 消费 bounded L_corrected、save/load 保持 bound、source-holdout guard、development/final-blind/sealed 禁止）。
+- 现有 regression：`test_relative_route_v4.py` + `test_route_aware_transformer.py` + `test_gauge_consistent_route.py` + `test_route_operating_audit.py` 共 48 项 PASS（训练脚本改动后再跑 `test_relative_route_v5a_bounded.py`+`test_relative_route_v4.py` 37 项 PASS）。
+- 结论：`training_authorized = true`（仅限本 CV）。
+
+### 20.3 按 fold 重生成 source-pure 语料（已完成并验证）
+
+现有 6 源 synthetic corpus 每个 event 由 `tracks_per_event=3` 从全部 6 源 pooled truth tracks 抽取（`source_pooling=within_split_same_payload`），单 event 混合多 family → 无法 event 级 holdout。故按 §6.4 重生成：
+
+```text
+corpora/family1/overlay_synthetic_v1   4 源(100043×2,100044×2)  480 ev/payload × 7 = 3360 events
+corpora/family2/overlay_synthetic_v1   2 源(100047,100048)      240 ev/payload × 7 = 1680 events
+```
+
+- 生成 recipe 与 Workbook 64 完全一致（events_per_payload=120、tracks_per_event=3、missing=0.1、hard_negative 0.5/station chi2∈[1,1000]、random_easy 0.25/station、seed=20260813、overlay_seed_scope、synthetic_run_id_base=996000、mode-0 propagation），**仅 source pool 受限**。
+- tracklet 级纯度已验证（`synthetic_tracklets.root` 的 namespaced `origin_run_id`）：family1 truth 仅落 namespace base {0,1,2,3}，family2 仅 {0,1}，均 PURE。
+- 两个 corpus 复用于两个 fold（family1 corpus = Fold1 holdout = Fold2 train；family2 corpus = Fold1 train = Fold2 holdout）。
+
+### 20.4 配对训练实现与提交
+
+- `scripts/train_relative_route_v4_head_only.py` 新增可选 `--expected-train-sources`（缺省 = 历史六源行为，Workbook 69 复现性不变）；fold 训练时校验 constituents == fold 训练源（即 source-holdout guard，held-out family 缺席）。
+- 训练脚本端到端 smoke test 通过（family2 corpus：2 源、1680 graphs、zero-init max|delta|=0、frozen W64 edge identity ~1e-7、L_corrected identity=0、30-epoch loop 正常进入）。
+- 4 个配对训练 job 已提交 Condor（schedd=bigbird24，GPU，job_flavour=tomorrow）：
+
+```text
+1108927  holdout_family1 control    (train family2, unbounded)
+1108928  holdout_family1 primary    (train family2, bounded B=4)
+1108929  holdout_family2 control    (train family1, unbounded)
+1108930  holdout_family2 primary    (train family1, bounded B=4)
+```
+
+每个 fold 内 control/primary 除 `route_correction_bound`（null vs 4.0）外全部相同（同一 frozen W64 parent、seed=20260822、zero-init、30 epochs、last-epoch、no early stopping）。
+
+### 20.5 评估实现与 smoke test
+
+- `scripts/evaluate_relative_route_v5a_source_transfer.py` 复用 Workbook 70/71 的 solver / C-D / transition 机制（`_evaluate_arm`、`_produce_truth_rows`、`_predict_route_details`、`cd_counts`、`frozen_packing_config`），按 held-out family corpus 计算 C/D/selected/efficiency/purity/fake、selected→C 与 D→C transition、catastrophic_truth_destruction、bounded-delta 分布与 ±B 饱和份额，并给出预注册 gate。
+- 端到端 smoke test（以 Workbook 69 Arm1 unbounded checkpoint 作占位、2 events/payload）通过：输出结构完整；safety 检查正确识别出占位 unbounded head 的 fake delta 超出 [-4,4]（`safety_bounds_ok=false`），证明 bound 检查有效。
+- 评估 Condor wrapper/submit 已就绪（`run_/submit_relative_route_v5a_source_transfer_eval_condor.*`），待 4 个训练 checkpoint 到位后提交。
+
+### 20.6 当前边界状态
+
+```text
+training_authorized              = true（仅限本 CV 的 4 个配对 job）
+final_blind_eval_authorized      = false
+development_used_for_selection   = false（00350_00399 未进入任何选择）
+new_final_blind_content_accessed = false
+sealed_test_accessed             = false
+continue_to_15d_relative_wls     = false
+```
+
+### 20.7 待办
+
+1. 等 4 个训练 job 完成（Condor 队列当前拥挤，GPU job 排队中）；
+2. 跑 source-transfer 评估（Condor），得每 fold gate；
+3. gate PASS → full-six-source V5A + 冻结 development eval；FAIL → stop head-only mainline；
+4. 最终报告 §21。
