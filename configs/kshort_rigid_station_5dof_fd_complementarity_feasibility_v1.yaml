@@ -1,0 +1,425 @@
+# Physically-Distinct K-short Rigid-Station 5DoF FD Complementarity
+# Feasibility V1 (workbook 76).
+#
+# Pre-registered before any K-short FD reconstruction is submitted.  No
+# criterion in this file may be revised after inspecting any K-short FD
+# singular spectrum.
+#
+# Scientific question (the only one this campaign answers):
+# does the physically-distinct angular/topological support of the K-short
+# charged-pion daughter population provide stable, source-disjoint and
+# coverage-disjoint NEW alignment information complementary to the canonical
+# population, resolving the workbook-73 rigid-station 5DoF portability
+# failure?  The question is NOT "is K-short alone rank 5" and NOT "is the
+# pooled canonical+K-short rank 5".  Pooled rank 5 alone is never a success
+# criterion here.
+#
+# Frozen inheritance (verified at load time):
+#   workbook 73 config SHA256 80b5ebebe71e6d2bb20604c8593b97540cd998cbafee86e94d201dd6b00719ba
+#   workbook 74 config SHA256 2a8b17a362fa38c4fb9ad16fdb379bf4c7f8046fb38f1bc1f345776e21936caf
+#   workbook 75 config SHA256 52bb9c36eeb2c92b178f0319dab90bb96a3ce67d30b55ff29a08c6cedfbf76ff
+#   workbook 75 input manifest SHA256 d7048fadec1ce03b5eed9bf5388e42d2f1b67a0722835f2771807fe0cc384ab6
+#   workbook 75 reinventory SHA256 75c7a649df01197059edc03b2d44996b60e0b5161327b73084df380742f2b50d
+#   canonical iteration manifest SHA256 58cf10117996e590db119219781a1a65e7b17213bb23e76a77fa5eefb5b51356
+
+schema_version: faser-kshort-rigid-station-5dof-fd-complementarity-feasibility-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+three_arm_authorized: false
+frozen_v2_alignment_loop_authorized: false
+real_data_correction_authorized: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_reopen_workbook_51_reduced_station_mode: true
+do_not_reopen_workbook_36_as_this_campaign: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_rescue_seven_d_observable: true
+do_not_rescue_cluster_local_observable: true
+do_not_redefine_tracklet_stable_core_criterion: true
+do_not_drop_failed_sources_to_recover_rank_five: true
+do_not_delete_dz_or_cdx_columns_from_seven_d_svd: true
+do_not_force_write_old_survey_central_values: true
+do_not_open_three_arm_unless_identifiability_passes: true
+do_not_open_frozen_v2_alignment_loop: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+cdx_fixed_is_not_a_measurement_of_zero: true
+dz_is_not_a_tracker_free_parameter: true
+pooled_rank_is_not_portability: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+this_is_not_seven_d_column_deletion: true
+this_is_not_workbook_36_survey_dz_curriculum: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+# Workbook-76 specific prohibitions.
+do_not_change_pion_track_or_event_selection_after_fd: true
+do_not_pool_kshort_with_muon_floor_100120: true
+do_not_use_fuzzy_or_nearest_neighbour_join: true
+do_not_use_residual_proximity_join: true
+do_not_use_sorted_run_event_grouping_for_merged_rec: true
+do_not_merge_kshort_sources_into_one: true
+do_not_rerun_physics_sources_to_improve_rank: true
+joint_pooled_rank_five_alone_is_not_success: true
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_entry_68_decision: tracker_only_identifiable_basis_unstable_solve_stopped
+inherited_entry_69_decision: cross_source_stable_core_independent_validation_fail
+inherited_entry_70_decision: cluster_local_transfer_exact_join_restored_not_an_identifiability_campaign
+inherited_entry_71_decision: cluster_local_observable_not_cross_run_portable
+inherited_entry_72_decision: tracklet_independent_failure_provenance_audit_complete_sources_not_dropped
+inherited_entry_73_decision: rigid_station_five_dof_not_source_or_coverage_portable
+inherited_entry_74_decision: residual_blind_export_authorized_fd_not_opened
+inherited_entry_75_decision: kshort_admitted_muon_floor_not_observed_distinct
+
+inheritance_sha256:
+  workbook_73_config: 80b5ebebe71e6d2bb20604c8593b97540cd998cbafee86e94d201dd6b00719ba
+  workbook_74_config: 2a8b17a362fa38c4fb9ad16fdb379bf4c7f8046fb38f1bc1f345776e21936caf
+  workbook_75_config: 52bb9c36eeb2c92b178f0319dab90bb96a3ce67d30b55ff29a08c6cedfbf76ff
+  workbook_75_input_manifest: d7048fadec1ce03b5eed9bf5388e42d2f1b67a0722835f2771807fe0cc384ab6
+  workbook_75_reinventory: 75c7a649df01197059edc03b2d44996b60e0b5161327b73084df380742f2b50d
+  canonical_iteration_manifest: 58cf10117996e590db119219781a1a65e7b17213bb23e76a77fa5eefb5b51356
+
+# Frozen relative rank cut inherited from workbook 57-73.  Never retuned.
+rank_tolerance: 0.01
+normal_matrix_rcond: 1.0e-10
+
+# Rigid-station 5DoF parameter vector, frozen from workbook 73.
+parameter_names:
+  - ift_dx_mm
+  - ift_dy_mm
+  - ift_rx_mrad
+  - ift_ry_mrad
+  - ift_rz_mrad
+
+parameter_units:
+  - mm
+  - mm
+  - mrad
+  - mrad
+  - mrad
+
+excluded_from_tracker_fit:
+  ift_dz_mm:
+    reason: track_unidentifiable_survey_or_gauge_constrained
+    inherited_from: workbook_33_36
+    not_given_to_tracks: true
+  C_dx:
+    reason: internal_geometry_fixed_at_current_reconstruction_state
+    interpretation: model_boundary_not_a_measurement
+    not_a_measurement_of_zero: true
+    survey_did_not_verify_current_value: true
+    do_not_force_write_old_survey_central_value: true
+
+scale_matrix_S:
+  ift_dx_mm: 5.0
+  ift_dy_mm: 5.0
+  ift_rx_mrad: 60.0
+  ift_ry_mrad: 60.0
+  ift_rz_mrad: 60.0
+
+weighted_matrix: "A = W^{1/2} J S"
+residual_weight: nominal_WLS_inverse_4x4_pair_covariance
+sign_convention: largest_abs_right_vector_entry_positive
+
+# Physical central finite-difference steps, frozen from the hierarchical V1
+# iteration-00 bank (workbook 44) and reused by workbook 73.
+finite_difference_steps:
+  ift_dx_mm: 0.5
+  ift_dy_mm: 0.5
+  ift_rx_mrad: 10.0
+  ift_ry_mrad: 10.0
+  ift_rz_mrad: 10.0
+
+# Physical-event identity contract for the merged-rec K-short population.
+# Workbook 75 proved (run_id, event_id) is not a unique physical-event key
+# in these files: each rec file merges ten generator jobs that restart event
+# numbering.  Every cross-geometry FD join must therefore use the
+# occurrence-augmented identity: within one source file, the k-th
+# consecutive (run_id, event_id) block in file order is physical occurrence
+# k-1, and the synthetic unique key folds occurrence into the event id.
+# All FD points of one source read the same xAOD through the same
+# deterministic chain, so occurrence indices are identical across points and
+# the join stays exact.  For files without collisions the augmented key
+# equals the raw event id, so canonical behaviour is bit-identical.
+physical_event_identity:
+  contract: occurrence_augmented_file_order
+  uid_stride: 1048576
+  duplicate_physical_event_identity: hard_failure
+  fuzzy_join_allowed: false
+  nearest_neighbour_join_allowed: false
+  residual_proximity_join_allowed: false
+  sorted_run_event_grouping_allowed: false
+
+# Canonical population: reuse the frozen hierarchical V1 iteration-00
+# physical FD bank exactly as workbook 73 did (only_parameters over the five
+# station-free names).  No canonical Athena job is rerun.  The manifest SHA
+# is pinned above; parameter order, S, residual/W definition, rank
+# tolerance, and units are verified at load time against this config.
+canonical_corpus:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  iteration_manifest_sha256: 58cf10117996e590db119219781a1a65e7b17213bb23e76a77fa5eefb5b51356
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+  reconstruction_method: native_five_column_only_parameters
+  forbidden_reconstruction: drop_dz_cdx_from_previous_seven_d_svd
+  physical_event_identity: raw_unique_run_event
+  train_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100043_00500_00599
+    - mc24_100043_00600_00699
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+    - mc24_100044_00400_00499
+    - mc24_100044_00500_00599
+    - mc24_100044_00600_00699
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100047_00100_00149
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+    - mc24_100048_00100_00149
+    - mc24_100048_00150_00199
+  # Workbook-73 frozen artifacts used as the canonical-only regression
+  # negative control.  The rebuilt canonical-only analysis must reproduce
+  # the frozen per-source ranks, the pooled rank, and the frozen decision.
+  regression_artifacts:
+    identifiable_basis: outputs/rigid_station_only_tracker_alignment_identifiability_v1/identifiable_basis.json
+    identifiable_basis_sha256: f8a8a92b02e99c17151b5c7a8918253df823ddd79e385a340fcd8dfae7664229
+    next_stage_decision: outputs/rigid_station_only_tracker_alignment_identifiability_v1/next_stage_decision.json
+    next_stage_decision_sha256: 93715ba626f7c459d1a30af18d95a7d591ed6c6a0a8f43b4529aa6807a2f36dc
+    expected_decision: rigid_station_five_dof_not_source_or_coverage_portable
+    singular_value_rtol: 1.0e-10
+
+# K-short population: the ten file-level independent sources admitted by the
+# workbook-75 residual-blind reinventory.  The physical FD bank is produced
+# by the same hierarchical V1 compiler and the same Calypso refit/propagation
+# chain as the canonical bank, on the template
+# configs/physical_refit_mc24_kshort_5dof_fd_iteration.yaml with every event
+# of every source (nevents=10000, the exact frozen per-file count).
+kshort_corpus:
+  kind: physical_central_finite_difference
+  candidate_id: mc24_100130_kshort_end_fasernu
+  source_config: configs/physical_curriculum_mc24_kshort_trainval.yaml
+  iteration_template: configs/physical_refit_mc24_kshort_5dof_fd_iteration.yaml
+  iteration_manifest: outputs/mc24_kshort_5dof_fd_iteration00_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  nevents_per_source: 10000
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+  reconstruction_method: native_five_column_only_parameters
+  forbidden_reconstruction: drop_dz_cdx_from_previous_seven_d_svd
+  physical_event_identity: occurrence_augmented_file_order
+  train_source_ids:
+    - mc24_100130_00000_00009
+    - mc24_100130_00010_00019
+    - mc24_100130_00020_00029
+    - mc24_100130_00030_00039
+    - mc24_100130_00040_00049
+  validation_source_ids:
+    - mc24_100130_00050_00059
+    - mc24_100130_00060_00069
+    - mc24_100130_00070_00079
+    - mc24_100130_00080_00089
+    - mc24_100130_00090_00099
+  # The workbook-75 |pdg|=211 mask defined the residual-blind angular
+  # population only.  The FD observable below is the workbook-73
+  # truth-selected mode-0 pair residual; it carries no PDG mask.  Truth
+  # matching is majority-barcode and particle-generic (workbook-75
+  # exporter-contract audit), so the contract applies to K-short decay
+  # daughters unchanged.  No pion-specific residual is introduced.
+  fd_observable_truth_selection: particle_generic_majority_barcode
+  fd_observable_pdg_mask: none
+
+coverage:
+  slope_definition: hypot_source_tracklet_tx_ty
+  slope_source: canonical_tracklet_local_state_at_fd_anchor
+  slope_is_not_leftover_residual_rtx_rty: true
+  slope_is_not_spectrometer_delta_x_over_delta_z: true
+  n_slope_bins: 3
+  min_tertile_events: 8
+  topology_definition: complete_four_station_truth_routes
+  require_no_slope_tertile_rank_drop: true
+  require_topology_same_rank: true
+
+jacobian_validity:
+  min_pairs: 20
+  require_plus_minus_probes: true
+  require_plus_minus_population_aligned: true
+  require_finite_residuals: true
+  require_finite_jacobian: true
+  require_native_five_parameters: true
+  min_column_norm_relative: 1.0e-6
+  covariance_condition_warn: 1.0e12
+
+# Event-level bootstrap, frozen method from workbook 68/73.  The seed
+# follows the frozen date-derived convention (workbook date), as workbook 68
+# used 20260902 and workbook 73 used 20260903.
+bootstrap:
+  n_event_replicates: 40
+  n_half_splits: 12
+  seed: 20260905
+  min_pairs: 20
+
+# Cross-source stable-core protocol, frozen from workbook 69.  The
+# hypothesis set is the eighteen canonical sources; the independent
+# validation set is the ten K-short sources.  Consensus weighting is equal
+# per source, so a high-track-count pion population cannot reweight the
+# consensus by statistics.
+stable_core:
+  min_consensus_eigenvalue: 0.70
+  min_mode_persistence: 0.85
+  min_hypothesis_source_support_fraction: 0.80
+  source_weighting: equal_per_source
+  independent_min_source_support_fraction: 0.80
+  independent_min_mode_persistence: 0.85
+  independent_max_principal_angle_deg: 15.0
+  independent_max_missing_frobenius: 0.75
+  require_independent_same_core_dimension_as_hypothesis: true
+
+gates:
+  required_identifiable_rank: 5
+  require_same_identifiable_rank: true
+  pooled_rank_is_not_portability: true
+  max_source_principal_angle_deg: 15.0
+  max_source_projector_frobenius: 1.0
+  max_train_validation_principal_angle_deg: 15.0
+  max_train_validation_projector_frobenius: 1.0
+  max_source_disjoint_principal_angle_deg: 15.0
+  max_source_disjoint_projector_frobenius: 1.0
+  max_topology_principal_angle_deg: 15.0
+  max_topology_projector_frobenius: 1.0
+  max_bootstrap_principal_angle_deg: 20.0
+  max_bootstrap_projector_frobenius: 1.2
+  require_no_slope_tertile_rank_drop: true
+  require_jacobian_validity: true
+
+# Pre-registered complementarity decision.  complementarity_pass is true
+# only if EVERY condition below holds.  All numeric thresholds are inherited
+# from the frozen workbook 68/69/73 contracts above; none is invented here.
+complementarity_contract:
+  # 1. Physical closure and provenance for the K-short FD bank: every
+  #    pre-declared source x FD point complete, per-source Jacobian validity
+  #    audit passes the frozen gates, exact-join duplicate physical-event
+  #    identity count is zero, no geometry or official-conditions write.
+  require_physical_closure: true
+  # 2. Canonical-only regression: the rebuilt canonical analysis reproduces
+  #    the workbook-73 frozen per-source ranks, pooled rank, and decision
+  #    (singular values within singular_value_rtol).  This is a negative
+  #    control on the analysis harness, not a retune.
+  require_canonical_regression: true
+  # 3. K-short information present: K-short-only pooled identifiable rank
+  #    >= 1.  K-short-only is NOT required to reach rank 5.
+  require_kshort_pooled_rank_at_least: 1
+  # 4. K-short internal source stability at its native pooled rank: every
+  #    K-short source reaches the K-short pooled rank and its identifiable
+  #    subspace matches the K-short pooled subspace within the frozen
+  #    source-stability gates (same rank, 15 deg, 1.0 Frobenius).
+  require_kshort_source_stability_at_native_rank: true
+  # 5. K-short coverage stability at its native pooled rank: no slope
+  #    tertile rank drop, every usable tertile reaches the K-short pooled
+  #    rank, and the complete-route topology slice reaches the K-short
+  #    pooled rank with subspace within the frozen topology gates.
+  require_kshort_coverage_stability_at_native_rank: true
+  # 6. Joint pooled identifiable structure reaches the frozen rank
+  #    criterion.  Necessary but never sufficient by itself.
+  require_joint_pooled_rank: 5
+  # 7. Joint subspace source stability: for every one of the 28 sources,
+  #    the joint pooled subspace rebuilt WITHOUT that source matches the
+  #    full joint pooled subspace (same rank 5, 15 deg, 1.0 Frobenius).
+  #    This pooled-remainder LOSO is the well-defined joint stability
+  #    question; the workbook-73 remaining-vs-left-out-source direction is
+  #    still reported but is not the joint gate, because low-rank canonical
+  #    sources stay in the pool by construction.
+  require_joint_source_stability: true
+  joint_source_stability_loso_mode: pooled_remainder
+  # 8. Joint coverage stability on the pooled canonical+K-short bank:
+  #    no slope-tertile rank drop, every usable tertile rank 5, complete
+  #    four-station truth-route slice rank 5 with subspace within the
+  #    frozen topology gates.
+  require_joint_coverage_stability: true
+  # 9. Joint event bootstrap and half-split stability pass the frozen
+  #    gates (40 replicas, 12 half-splits, same rank, 20 deg, 1.2).
+  require_joint_bootstrap_stability: true
+  # 10. K-short independent validation of the canonical stable core
+  #     (workbook-69 gate with roles pre-registered: hypothesis = eighteen
+  #     canonical sources, independent = ten K-short sources): the
+  #     canonical hypothesis core has dimension 5, and the K-short
+  #     independent set passes the frozen support/persistence/angle/
+  #     missing-frobenius thresholds.
+  require_kshort_independent_validation_of_canonical_core: true
+  require_canonical_hypothesis_core_dimension: 5
+  # Reported but not gated (no frozen threshold exists; inventing one is
+  # forbidden): canonical<->K-short pooled subspace principal angles, and
+  # the K-short information content along the weakest canonical pooled
+  # singular direction.
+  report_only_metrics:
+    - canonical_kshort_pooled_subspace_principal_angles
+    - kshort_information_along_weakest_canonical_direction
+
+assumptions:
+  - "Physical Jacobian columns are central finite differences of truth-selected mode-0 pair residuals, reconstructed with only_parameters equal to the five station-free names; the K-short bank is produced by the same hierarchical V1 compiler and Calypso chain as the canonical bank."
+  - "Native units remain mm for translations and mrad for rotations, matching /Tracker/Align payload conversion in physical_jacobian.COMPONENT_INDEX_AND_PAYLOAD_SCALE."
+  - "Scale matrix S is the frozen station-free severity scale (5 mm / 60 mrad), declared before SVD and never retuned from singular values."
+  - "Residual weight W is the nominal 4x4 pair covariance already used by solve_physical_finite_difference; it is a WLS weight, not an independent same-cluster covariance."
+  - "Rank tolerance 1e-2 is the frozen leakage/Fisher relative cut applied to singular values of A = W^{1/2} J S."
+  - "The workbook-75 |pdg|=211 mask defined only the residual-blind angular population for admission.  The FD observable is the workbook-73 truth-selected mode-0 pair residual with no PDG mask; truth matching is majority-barcode and particle-generic, audited applicable to K-short decay daughters."
+  - "Merged-rec (run_id, event_id) is not a unique physical-event key for mc24_100130.  All cross-geometry joins use the occurrence-augmented physical-event identity in file order; sorted (run,event) grouping, fuzzy join, nearest-neighbour join, and residual-proximity join are forbidden.  Duplicate physical-event identity is a hard failure."
+  - "The ten K-short sources stay file-level independent and are never merged; the pre-registered train/validation split follows file-name order and is never revised."
+  - "The canonical bank is reused, not rerun; its manifest SHA256, parameter order, S, residual/W definition, rank tolerance, and units are verified at load time."
+  - "Pooled rank=5 is not portability and joint pooled rank=5 alone is not complementarity success."
+  - "K-short-only is not required to reach rank 5; its value is providing information directions that are stable across its own sources and coverage and that validate the canonical identifiable core independently."
+  - "Equal-per-source consensus weighting prevents the high-statistics pion population from reweighting the stable core by track count."
+  - "Survey/metrology remains an external cross-check only; real data remains residual_dq_monitoring_only; no geometry or official-conditions write is authorized."
+  - "If complementarity fails, no rank-tolerance/S/residual/selection change, no source dropping, and no further nearby-MC trial is permitted; the only allowed continuation is a separately pre-registered Gauge-Constrained / External-Constraint Alignment Feasibility campaign."
+
+output_dir: outputs/kshort_rigid_station_5dof_fd_complementarity_feasibility_v1

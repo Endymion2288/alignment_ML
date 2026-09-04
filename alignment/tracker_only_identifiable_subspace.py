@@ -238,12 +238,18 @@ def load_fd_only_bank(
     anchor_point: str,
     min_truth_match_fraction: float,
     only_parameters: Sequence[str],
+    evaluation_fn: Any = None,
 ) -> dict[str, Any]:
     """Load reference + axial FD probes.  Held-out physical points are not needed.
 
     Three-arm closure is linear on the validated Jacobian, so the unused
     ``reference_residual`` is the nominal residual.  Truth is used only to
     keep pair identities fixed.
+
+    ``evaluation_fn`` defaults to the frozen ``_evaluation`` chain.  The
+    workbook-76 merged-rec K-short campaign injects its occurrence-augmented
+    physical-event-identity evaluation through this hook; canonical banks
+    must keep the default so their behaviour stays bit-identical.
     """
     source_id = str(entry["source_id"])
     root = Path(str(entry["physical_scan_root"])).expanduser().resolve()
@@ -255,12 +261,13 @@ def load_fd_only_bank(
         only_parameters=tuple(str(name) for name in only_parameters),
         require_targets=False,
     )
+    evaluate = _evaluation if evaluation_fn is None else evaluation_fn
     payloads = []
     evaluations = []
     for point in ordered:
         payload, tracklets, propagations = _payload_for_point(root, point)
         payloads.append(payload)
-        evaluations.append(_evaluation(tracklets, propagations, min_truth_match_fraction))
+        evaluations.append(evaluate(tracklets, propagations, min_truth_match_fraction))
     keys, indexes, overlap = _aligned_rows(evaluations, movable)
     rows = [np.asarray([index[key] for key in keys], dtype=np.intp) for index in indexes]
     nested_layers = [

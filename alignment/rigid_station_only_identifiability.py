@@ -266,11 +266,17 @@ def attach_source_tracklet_slopes(
     *,
     iteration_manifest: Mapping[str, Any],
     anchor_point: str,
+    physical_event_identity: bool = False,
 ) -> dict[str, Any]:
     """Attach hypot(source_tx, source_ty) from the FD-anchor tracklet ROOT.
 
     The slope is local SegmentFit state at the source station, not leftover
     residual ``(rtx, rty)`` and not spectrometer ``Δx/Δz``.
+
+    With ``physical_event_identity=True`` the anchor tracklets are loaded
+    through the workbook-76 ntuple-bridged occurrence-augmented identity so
+    their keys match banks loaded with the same contract.  Canonical banks
+    keep the default and stay bit-identical.
     """
     work = dict(bank)
     if "source_tx" in work and "source_ty" in work and "source_slope" in work:
@@ -286,7 +292,18 @@ def attach_source_tracklet_slopes(
         raise ValueError(f"scan plan lacks anchor {anchor_point}")
     relative = points[anchor_point].get("relative_point_dir")
     tracklets_path = root / str(relative) / "refit" / "tracklets.root"
-    events = load_events(tracklets_path, require_mc_labels=True)
+    if physical_event_identity:
+        from datasets.physical_event_identity import (
+            load_events_ntuple_identity,
+            read_ntuple_event_index,
+        )
+
+        index = read_ntuple_event_index(
+            root / str(relative) / "refit" / "enhanced_tracklets.root"
+        )
+        events = load_events_ntuple_identity(tracklets_path, index, require_mc_labels=True)
+    else:
+        events = load_events(tracklets_path, require_mc_labels=True)
     by_tracklet: dict[tuple[int, int, int, int], tuple[float, float]] = {}
     by_truth: dict[tuple[int, int, int, int], list[tuple[float, float]]] = {}
     for event in events:

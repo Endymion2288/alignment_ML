@@ -1,0 +1,86 @@
+# Workbook-76 K-short rigid-station 5DoF physical FD production template.
+#
+# The physical_refit_capture_scan block is inherited verbatim from the frozen
+# hierarchical V1 iteration template
+# configs/physical_refit_ift_hierarchical_v1_iteration.yaml (workbook 44/73):
+# same scan_mode, fit_basis, station ids, q_over_p_mode, truth-match fraction,
+# chi2 gate, refinement iterations, and the same seven alignment parameter
+# specs with the same finite-difference steps and severity scales.  The
+# hierarchical V1 compiler requires the full seven-spec list; the ift_dz_mm
+# and C_dx probes are produced for plan symmetry with the canonical bank but
+# are never loaded by the workbook-76 analysis (only_parameters equals the
+# five station-free names, exactly as workbook 73).
+#
+# nevents is 10000, the exact frozen per-file event count of every
+# mc24_100130 source in the workbook-75 input manifest, i.e. every source is
+# reconstructed in full at every FD point.  No event, track, or pion
+# selection is applied beyond the frozen mode-0 truth-match contract.
+#
+# No held-out closure points are configured: this campaign opens no
+# three-arm and no Newton update; it only measures physical FD information.
+physical_refit_capture_scan:
+  scan_mode: ift_layer_hierarchy
+  fit_basis: hierarchical_v1
+  input_xaod: /unused/per-source/override.root
+  nevents: 10000
+  station_ids: [0, 1, 2, 3]
+  reference_station_ids: [1, 2, 3]
+  movable_station_ids: [0]
+  movable_layer_ids: [0, 1, 2]
+  condition_axis: ift_hierarchical_v1_station_cdx_l2
+  q_over_p_mode: 0
+  min_truth_match_fraction: 0.99
+  chi2_gate: 25.0
+  refinement_iterations: 1
+  run_alignment_closure: false
+
+  alignment_parameter_specs:
+    - name: ift_dx_mm
+      scope: station
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dy_mm
+      scope: station
+      station_id: 0
+      component: dy_mm
+      unit: mm
+      finite_difference_step: 0.5
+      severity_scale: 5.0
+    - name: ift_dz_mm
+      scope: station
+      station_id: 0
+      component: dz_mm
+      unit: mm
+      finite_difference_step: 2.0
+      severity_scale: 5.0
+    - name: ift_rx_mrad
+      scope: station
+      station_id: 0
+      component: rx_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_ry_mrad
+      scope: station
+      station_id: 0
+      component: ry_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: ift_rz_mrad
+      scope: station
+      station_id: 0
+      component: rz_mrad
+      unit: mrad
+      finite_difference_step: 10.0
+      severity_scale: 60.0
+    - name: C_dx
+      scope: contrast
+      station_id: 0
+      component: dx_mm
+      unit: mm
+      finite_difference_step: 0.10
+      severity_scale: 0.12

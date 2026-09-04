@@ -1,0 +1,50 @@
+# Source-disjoint train/validation declaration for the workbook-76 K-short
+# rigid-station 5DoF FD complementarity campaign.
+#
+# The ten mc24_100130 rec files are the file-level independent sources frozen
+# by the workbook-75 residual-blind export manifest (SHA256
+# d7048fadec1ce03b5eed9bf5388e42d2f1b67a0722835f2771807fe0cc384ab6).
+# The train/validation assignment is pre-registered by file-name order before
+# any FD reconstruction: 00000-00049 train, 00050-00099 validation.  It is
+# never revised after inspecting any singular spectrum.
+#
+# Sealed test stays forbidden.  These merged-rec files reuse event numbers
+# across generator jobs, so every consumer must use the workbook-76
+# physical-event-identity contract (occurrence-augmented exact join in file
+# order); sorted (run,event) grouping is forbidden for this population.
+physical_curriculum_mlp:
+  allowed_splits: [train, validation]
+  forbidden_splits: [test]
+  source_split_unit: original_xaod_file
+  physical_event_identity: occurrence_augmented_file_order
+  sources:
+    - id: mc24_100130_00000_00009
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000-00009-s0013-xAOD.root
+    - id: mc24_100130_00010_00019
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00010-00019-s0013-xAOD.root
+    - id: mc24_100130_00020_00029
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00020-00029-s0013-xAOD.root
+    - id: mc24_100130_00030_00039
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00030-00039-s0013-xAOD.root
+    - id: mc24_100130_00040_00049
+      split: train
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00040-00049-s0013-xAOD.root
+    - id: mc24_100130_00050_00059
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00050-00059-s0013-xAOD.root
+    - id: mc24_100130_00060_00069
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00060-00069-s0013-xAOD.root
+    - id: mc24_100130_00070_00079
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00070-00079-s0013-xAOD.root
+    - id: mc24_100130_00080_00089
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00080-00089-s0013-xAOD.root
+    - id: mc24_100130_00090_00099
+      split: validation
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00090-00099-s0013-xAOD.root

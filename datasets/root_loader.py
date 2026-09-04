@@ -172,29 +172,12 @@ def _event_from_indices(
     return event
 
 
-def load_events(
+def _read_tracklet_columns(
     root_path: str | Path,
     tree_name: str = CANONICAL_TREE_NAME,
-    max_events: Optional[int] = None,
     require_mc_labels: bool = False,
-    preserve_file_order: bool = False,
-) -> list[EventTracklets]:
-    """Load canonical tracklets grouped by event.
-
-    This initial loader intentionally reads a complete debug-scale sample into
-    memory. Training-scale sharding and streaming will be added only after the
-    physics baseline has been validated.
-
-    By default rows are sorted by ``(run_id, event_id, tracklet_id)`` and
-    grouped by identical ``(run_id, event_id)``.  With
-    ``preserve_file_order=True`` no sort is applied and each maximal
-    consecutive block of equal ``(run_id, event_id)`` rows in file order is
-    one event.  That is the correct physical-event grouping for merged MC24
-    rec productions, which reuse generator-job event numbers so the same
-    ``(run_id, event_id)`` pair appears once per merged generator job;
-    sorting would merge those distinct physical events into one logical
-    event and trip the duplicate-tracklet-id check.
-    """
+) -> tuple[dict[str, np.ndarray], np.ndarray, bool]:
+    """Read validated flat tracklet columns without any event grouping."""
     path = Path(root_path).expanduser().resolve()
     if not path.is_file():
         raise FileNotFoundError(path)
@@ -255,11 +238,40 @@ def load_events(
         raise DatasetSchemaError(
             "uproot returned an unsupported column container for canonical tracklets"
         )
+    covariance = covariance_from_columns(columns) if columns["run_id"].size else np.empty((0, 4, 4))
+    return columns, covariance, report.has_mc_labels
+
+
+def load_events(
+    root_path: str | Path,
+    tree_name: str = CANONICAL_TREE_NAME,
+    max_events: Optional[int] = None,
+    require_mc_labels: bool = False,
+    preserve_file_order: bool = False,
+) -> list[EventTracklets]:
+    """Load canonical tracklets grouped by event.
+
+    This initial loader intentionally reads a complete debug-scale sample into
+    memory. Training-scale sharding and streaming will be added only after the
+    physics baseline has been validated.
+
+    By default rows are sorted by ``(run_id, event_id, tracklet_id)`` and
+    grouped by identical ``(run_id, event_id)``.  With
+    ``preserve_file_order=True`` no sort is applied and each maximal
+    consecutive block of equal ``(run_id, event_id)`` rows in file order is
+    one event.  That is the correct physical-event grouping for merged MC24
+    rec productions, which reuse generator-job event numbers so the same
+    ``(run_id, event_id)`` pair appears once per merged generator job;
+    sorting would merge those distinct physical events into one logical
+    event and trip the duplicate-tracklet-id check.
+    """
+    columns, covariance, has_mc_labels = _read_tracklet_columns(
+        root_path, tree_name=tree_name, require_mc_labels=require_mc_labels
+    )
 
     if not columns["run_id"].size:
         return []
 
-    covariance = covariance_from_columns(columns)
     if not preserve_file_order:
         order = np.lexsort(
             (
@@ -279,10 +291,66 @@ def load_events(
     ) + 1
     groups = np.split(np.arange(run_ids.size), boundaries)
 
-    has_mc_labels = report.has_mc_labels
     events: list[EventTracklets] = []
     for group in groups:
         events.append(_event_from_indices(columns, covariance, group, has_mc_labels))
         if max_events is not None and len(events) >= max_events:
             break
     return events
+
+
+# Workbook-76 physical-event identity contract for merged-rec productions.
+# Merged MC24 rec files reuse generator-job event numbers, so the same
+# (run_id, event_id) pair appears once per merged generator job.  The
+# physical-event identity is the occurrence index of each maximal
+# consecutive equal-(run_id, event_id) block in file order, folded into a
+# synthetic unique event id.  All FD points of one source read the same
+# xAOD through the same deterministic chain, so occurrence indices are
+# identical across points and the cross-geometry join stays exact.  For
+# files without collisions the occurrence is always zero and the augmented
+# id equals the raw event id, leaving canonical behaviour bit-identical.
+PHYSICAL_EVENT_UID_STRIDE = 1 << 20
+
+
+def physical_event_occurrence_uids(
+    run_ids: np.ndarray,
+    event_ids: np.ndarray,
+    *,
+    stride: int = PHYSICAL_EVENT_UID_STRIDE,
+) -> np.ndarray:
+    """Return per-row occurrence-augmented unique event ids in file order.
+
+    ``uid = event_id + occurrence * stride`` where ``occurrence`` counts how
+    many earlier maximal consecutive blocks share the same
+    ``(run_id, event_id)``.  Rows must be in file order (no sort).  Raises
+    ``DatasetSchemaError`` if any event id is negative or >= ``stride``.
+    """
+    runs = np.asarray(run_ids, dtype=np.int64)
+    events = np.asarray(event_ids, dtype=np.int64)
+    if runs.shape != events.shape:
+        raise DatasetSchemaError(
+            f"run/event length mismatch for physical identity: {runs.shape} vs {events.shape}"
+        )
+    if runs.size == 0:
+        return np.empty(0, dtype=np.int64)
+    if int(events.min()) < 0 or int(events.max()) >= int(stride):
+        raise DatasetSchemaError(
+            f"event_id range [{int(events.min())}, {int(events.max())}] exceeds "
+            f"physical-identity stride {int(stride)}"
+        )
+    boundaries = (
+        np.flatnonzero((runs[1:] != runs[:-1]) | (events[1:] != events[:-1])) + 1
+    )
+    block_of_row = np.zeros(runs.size, dtype=np.int64)
+    block_of_row[boundaries] = 1
+    block_of_row = np.cumsum(block_of_row)
+    block_starts = np.concatenate(([0], boundaries))
+    occurrence_of_block = np.zeros(block_starts.size, dtype=np.int64)
+    seen: dict[tuple[int, int], int] = {}
+    for block_index, start in enumerate(block_starts.tolist()):
+        key = (int(runs[start]), int(events[start]))
+        occurrence = seen.get(key, 0)
+        occurrence_of_block[block_index] = occurrence
+        seen[key] = occurrence + 1
+    occurrences = occurrence_of_block[block_of_row]
+    return events + occurrences * np.int64(stride)
