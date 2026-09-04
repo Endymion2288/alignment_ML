@@ -1,0 +1,429 @@
+# Workbook-77 Gauge-Constrained / External-Constraint Alignment Feasibility V1.
+#
+# Pre-registered BEFORE any gauge-fixed solve is run.  This campaign strictly
+# separates two concepts:
+#   A) software/reconstruction gauge constraint - chooses one definite
+#      mathematical representative inside the tracker-unidentifiable
+#      directions; it is NOT a physical measurement and gauge-fixed
+#      parameters must never be reported as "measured to be 0";
+#   B) external physical constraint - only a truly independent
+#      survey/metrology measurement with validated frame mapping, known
+#      measurement covariance, and identified IOV/mechanical-stability
+#      provenance may be promoted to a physical constraint.
+#
+# Hard inheritance (all frozen, verified by SHA256 below):
+#   - workbook 68: 7D tracker-only identifiable subspace; pooled rank 5,
+#     null dimension 2; basis not portable; A = W^{1/2} J S with frozen S
+#     and rank_tolerance=0.01; "V_null^T u_hat = 0 is the minimum-norm/gauge
+#     representative in scaled coordinates, not a measurement".
+#   - workbook 69: cross-source stable core dim 5; independent validation
+#     failed (8/11 < 0.80).
+#   - workbook 73: rigid-station-only 5DoF pooled rank 5 but not
+#     source/coverage portable.
+#   - workbook 76: physically-distinct K-short 5DoF complementarity failed
+#     at physical closure (too_few_pairs only); no rank claimed; report-only
+#     observables must not be reinterpreted as identifiability success.
+#   - workbooks 61-67: existing survey/metrology evidence is NOT an
+#     ingestable physical constraint (slots stay feasibility_only /
+#     unavailable; population Sigma is not a measurement sigma; Kabsch /
+#     dz-vs-x / conditions constants are forbidden as Stations ry priors).
+#
+# This campaign is constraint-space design / feasibility ONLY.  It must not
+# solve real-data corrections, must not write geometry or official
+# conditions, and must not use the workbook-76 K-short FD spectrum to design
+# or tune any gauge criterion.
+
+schema_version: faser-gauge-constraint-external-constraint-feasibility-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+survey_is_alignment_input: false
+survey_is_external_cross_check_only: true
+
+# --- hard prohibitions (all must be true) ---
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_geometry_pool_or_cool: true
+do_not_write_official_conditions: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_lower_min_pairs_post_hoc: true
+do_not_use_kshort_wb76_spectrum_to_design_gauges: true
+do_not_use_population_spread_as_measurement_sigma: true
+do_not_use_conditions_constants_as_physical_prior: true
+do_not_use_kabsch_or_dz_vs_x_tilt_as_station_ry: true
+do_not_compare_gauge_dependent_absolute_parameters_across_gauges: true
+do_not_use_full_truth_recovery_as_success_gate: true
+do_not_reopen_7d_cluster_local_stable_core_or_rigid_5dof_rescue: true
+do_not_add_more_tracker_data_to_chase_rank: true
+solver_restricted_to_constrained_kkt_or_nullspace_projection: true
+solver_restricted_to_identifiable_subspace: true
+gauge_fixed_parameters_are_not_measurements: true
+null_zero_is_minimum_norm_gauge_not_a_measurement: true
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+inheritance_sha256:
+  workbook_68_config: 1657019a2c0746835d490fcf58ce91b70b1cb846f73bc29e2ad69e0b5a2f7237
+  workbook_68_identifiable_basis: 367773837eda2d8cb30ee4b0a6f75e3fb49530315e9680e7c964de9bd399e645
+  workbook_68_next_stage_decision: c205f5685ff3b409abded26dc66afbc442be41544c9dcbb5238aad0d26b28c9f
+  workbook_66_config: a392f36dd73baf585b8796ea3689db047dad018e19aa1d766087abea2ab34e1b
+  workbook_66_official_constraint_slots: 782783837bed0266cf2118bd8082fc061011d32e03544a972339627541b92abc
+  workbook_66_next_stage_decision: 2bc88eb347833506f23a5c011bed30596ef2e3ebbb6558978c49779efd5401b2
+  workbook_67_config: 446d87eb322b9d2b60ae5bda7c87ee361662e354845b79bc4aa752553d3c3008
+  workbook_67_official_constraint_slots: 19299f9673f13b1502c40d4c5f644ca640788f674b20c3df69c0430743689472
+  workbook_67_station_ry_contract: f741a34de2cda01a2a4fa10d231a5cf1f90ae224727df00d94bfbb3440c6ddb3
+  workbook_73_config: 80b5ebebe71e6d2bb20604c8593b97540cd998cbafee86e94d201dd6b00719ba
+  workbook_76_config: 28722f3409e05d83afc5e6b2f6312f65af7f2c1ef950c46692d01c958fee465a
+  workbook_76_next_stage_decision: 7894195c36cbb24f88fd4d0117ddf5010bfa0328d6ce760904fb1ba8ee52aefd
+
+# --- parameter space: frozen hierarchical V1 7D (workbook 44/68) ---
+parameter_space:
+  basis: hierarchical_v1
+  parameter_names: [ift_dx_mm, ift_dy_mm, ift_dz_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad, C_dx]
+  parameter_units: [mm, mm, mm, mrad, mrad, mrad, mm]
+  scale_matrix_S:
+    ift_dx_mm: 5.0
+    ift_dy_mm: 5.0
+    ift_dz_mm: 5.0
+    ift_rx_mrad: 60.0
+    ift_ry_mrad: 60.0
+    ift_rz_mrad: 60.0
+    C_dx: 0.12
+  rank_tolerance: 0.01
+  normal_matrix_rcond: 1.0e-10
+
+# --- tracker information contract: rebuild the pooled 7D normal matrix from
+# the frozen workbook-68 corpus and regress it against the frozen workbook-68
+# identifiable_basis artifact (negative control).  No new reconstruction. ---
+tracker_information:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names: [ift_dx_mm, ift_dy_mm, ift_dz_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad, C_dx]
+  source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00600_00699
+    - mc24_100044_00300_00399
+    - mc24_100047_00000_00049
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00150_00199
+  regression_artifact: outputs/tracker_only_identifiable_subspace_three_arm_closure_v1/identifiable_basis.json
+  regression_singular_value_rtol: 1.0e-6
+  regression_max_principal_angle_deg: 1.0e-6
+  expected_pooled_identifiable_rank: 5
+  expected_pooled_null_dimension: 2
+
+# --- candidate mathematical gauges (all linear G theta = 0 in the native
+# 7-parameter order above).  Each must complement the frozen null space:
+# rank(G)=2 and det(G . S . V_null) != 0.  Remaining degrees of freedom are
+# 7 - 2 = 5 in every case. ---
+gauge_candidates:
+  - id: named_parameter_zero_gauge
+    kind: fixed_reference_rigid_mode
+    constraint_rows_native:
+      - {parameter: ift_dz_mm, value: 0.0}
+      - {parameter: C_dx, value: 0.0}
+    remaining_dof: 5
+    changes_tracker_observable_prediction: false
+    calypso_convention_relation: >-
+      Station-mode dz is already treated as a software gauge in the frozen
+      contract (workbook 61-62: dz is not returned to tracks; dz=0+/-5 mm is
+      a software gauge that does not constrain ry/C_dx).  C_dx =
+      (dx_L0 - dx_L2)/2 is a gauge definition (workbook 61), not a
+      measurement.  Fixing both at zero freezes the design/nominal
+      representative.
+    parameters_without_independent_interpretation: [ift_dz_mm, C_dx]
+    interpretation_note: >-
+      ift_dx_mm then means "dx given dz=0 and C_dx=0"; dz and C_dx are
+      defined, not measured.  Never report them as measured-to-be-zero.
+  - id: minimum_norm_scaled_gauge
+    kind: minimum_norm_representative
+    metric: severity_scaled
+    constraint: V_null^T S^{-1} theta = 0
+    remaining_dof: 5
+    changes_tracker_observable_prediction: false
+    calypso_convention_relation: >-
+      No Calypso payload convention; this is the representative already
+      named in the frozen workbook-68 assumption "V_null^T u_hat = 0 is the
+      minimum-norm/gauge representative in scaled coordinates, not a
+      measurement that null modes are physically zero".
+    parameters_without_independent_interpretation: [ift_dz_mm, ift_dx_mm, C_dx]
+    interpretation_note: >-
+      All parameters with null-space content (dx, dz, C_dx mixture) carry
+      gauge-dependent absolute components; only the identifiable projection
+      is gauge-invariant.
+  - id: minimum_norm_native_gauge
+    kind: minimum_norm_representative
+    metric: native
+    constraint: (S V_null)^T theta = 0
+    remaining_dof: 5
+    changes_tracker_observable_prediction: false
+    calypso_convention_relation: >-
+      No Calypso payload convention; minimises the native-unit Euclidean
+      norm of theta over the gauge orbit instead of the severity-scaled
+      norm.
+    parameters_without_independent_interpretation: [ift_dz_mm, ift_dx_mm, C_dx]
+    interpretation_note: >-
+      Same caveat as the scaled minimum-norm gauge; the two minimum-norm
+      representatives differ whenever S is not proportional to the identity
+      on the null block.
+
+# --- pure-gauge closure (MC/control linear algebra only; no Athena, no new
+# reconstruction, no real data).  Following the frozen
+# solver_restricted_to_identifiable_subspace doctrine (workbook 68), the
+# solve uses the identifiable restriction A_eff = A P_id of the frozen
+# tracker information: the two near-null directions (singular values 28.16
+# and 2.52, below the frozen rank_tolerance=0.01 cut) are excluded from the
+# solve, so the gauge space is exactly null(A_eff) by construction and
+# observable-equivalent representatives produce exactly identical
+# measurements.  Measurement model: r_w = A_eff u + eps with
+# eps ~ N(0, I) in the already W-weighted space. ---
+closure:
+  measurement_noise_sigma_weighted: 1.0
+  identifiable_scaled_amplitude: 0.10
+  null_scaled_amplitude: 0.10
+  observable_equivalent_null_offset_scaled_amplitude: 0.10
+  n_replicates: 8
+  n_null_offsets_per_replicate: 4
+  seed: 20260905
+  held_out_pair_fraction: 0.5
+  held_out_seed: 20260905
+  gates:
+    gauge_residual_max_abs: 1.0e-9
+    representative_uniqueness_max_abs: 1.0e-8
+    observable_prediction_max_relative_diff: 1.0e-8
+    identifiable_projection_max_abs_diff: 1.0e-8
+    held_out_prediction_max_relative_diff: 1.0e-8
+    kkt_solve_residual_max_relative: 1.0e-8
+    kkt_condition_max: 1.0e12
+  full_truth_recovery_is_not_a_gate: true
+  gauge_dependent_absolute_components_expected_to_differ: true
+
+# --- external-constraint eligibility audit.  Every candidate quantity is
+# evaluated mechanically against four pre-registered gates; only a row
+# passing ALL four may be marked eligible_physical_constraint=true. ---
+external_constraint_eligibility:
+  gates:
+    parameter_mapping_validated: true
+    measurement_covariance_has_independent_provenance: true
+    measurement_year_conditions_iov_identified: true
+    independent_of_tracks_and_conditions: true
+  slot_artifacts:
+    workbook_66_slots: outputs/cad_survey_nov22_frame_covariance_audit_v1/official_constraint_slots.json
+    workbook_67_slots: outputs/nov22_metrology_provenance_station_ry_contract_v1/official_constraint_slots.json
+    workbook_67_station_ry_contract: outputs/nov22_metrology_provenance_station_ry_contract_v1/calypso_station_ry_transform_contract.json
+  # Pre-registered expectation from the frozen workbook 61-67 chain: no
+  # existing quantity passes all four gates.  The audit must still be
+  # evaluated mechanically from the frozen artifacts, not hard-coded.
+  expected_eligible: []
+  if_none_eligible_freeze: no_ingestable_external_physical_constraint_available
+  # Audit rows restate the frozen workbook 61-67 evidence in the unified
+  # eligibility schema.  The three official slots are additionally
+  # cross-checked against the frozen workbook 66/67 slot artifacts (SHA
+  # pinned above); the diagnostic rows are frozen documentation whose
+  # ineligibility was already decided in workbook 61-67 and is restated
+  # here, not re-derived.
+  audit_rows:
+    - id: ift_C_dx
+      value: 0.2541169
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: layer-mean x contrast (dx_L0 - dx_L2)/2, side=0
+      calypso_parameter_mapping: validated_as_C_dx_contrast
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only_not_a_2024_2025_conditions_iov
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_66_official_constraint_slots
+    - id: ift_l0_minus_l2_dx
+      value: 0.5082339
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: layer-mean x difference, side=0
+      calypso_parameter_mapping: same_dof_as_ift_C_dx_not_independent
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only_not_a_2024_2025_conditions_iov
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_66_official_constraint_slots
+    - id: ift_station0_ry
+      value: null
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: calypso_global
+      pivot_rotation_convention: faser_origin_left_multiply_T_Rz_Ry_Rx
+      calypso_parameter_mapping: software_contract_resolved_survey_mapping_unresolved
+      measurement_date: null
+      iov_mechanical_stability_provenance: none
+      independent_of_tracks_and_conditions: null
+      evidence_source: workbook_67_official_constraint_slots
+    - id: nov22_kabsch_ift_ry
+      value: -7.7537
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: sensor_centroid_kabsch_extractAlphaBetaGamma
+      calypso_parameter_mapping: forbidden_not_stations_ry_absorbs_C_dx
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_66_diagnostic_frozen_forbidden
+    - id: nov22_dz_vs_x_ry
+      value: -7.6956
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: linear_dz_vs_x_about_centroid
+      calypso_parameter_mapping: forbidden_not_stations_ry_wrong_pivot
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_66_diagnostic_frozen_forbidden
+    - id: nov22_layer_mean_coherent_tilt
+      value: -8.07
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: layer_x_vs_LAYERPITCH_31.5mm_design_slope
+      calypso_parameter_mapping: same_dof_as_ift_C_dx_not_station_ry
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_64_66_frozen_forbidden
+    - id: nov22_station0_mean_offset
+      value: [0.726775, -0.982135, -27.772185]
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: station_mean_after_stations_1_to_3_translation
+      calypso_parameter_mapping: translation_only_no_rotation_mapping
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_64_66
+    - id: nov22_station_population_sigma
+      value: [0.314779, 0.213260, 0.594830]
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: population_std_ddof0_of_side0_offsets
+      calypso_parameter_mapping: none_population_spread_not_measurement_sigma
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: none
+      independent_of_tracks_and_conditions: null
+      evidence_source: workbook_66_covariance_audit_frozen_forbidden
+    - id: nov22_support_beam_tilt
+      value: 0.350
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2022_survey_adjusted_FASER
+      pivot_rotation_convention: residual_cad_to_faser_support_beam_stations_1_to_3
+      calypso_parameter_mapping: not_ift_station_ry
+      measurement_date: "2022-11-04"
+      iov_mechanical_stability_provenance: 2022_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_64_66_frozen_forbidden
+    - id: dec21_interface_normal_total_tilt
+      value: 5.00
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2021_CAD_y_beam_z_vertical
+      pivot_rotation_convention: plane_normal_vs_n0_00m1
+      calypso_parameter_mapping: default_permutation_maps_to_calypso_rx_rz_not_ry_frame_not_reconciled
+      measurement_date: "2021-11-25"
+      iov_mechanical_stability_provenance: 2021_survey_only
+      independent_of_tracks_and_conditions: true
+      evidence_source: workbook_64_65_frozen_unresolved
+    - id: dec21_in_plane_yaw
+      value: null
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: 2021_CAD
+      pivot_rotation_convention: in_plane_yaw_unquantified_on_slide
+      calypso_parameter_mapping: unavailable_no_value_no_unique_transform
+      measurement_date: "2021-11-25"
+      iov_mechanical_stability_provenance: none
+      independent_of_tracks_and_conditions: null
+      evidence_source: workbook_64_65_frozen_unavailable
+    - id: tracker_align_conditions_station0_ry
+      value: 0.0
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: calypso_global
+      pivot_rotation_convention: official_stations_folder
+      calypso_parameter_mapping: reconstruction_alignment_state_not_independent_survey
+      measurement_date: null
+      iov_mechanical_stability_provenance: conditions_iov_but_not_metrology
+      independent_of_tracks_and_conditions: false
+      evidence_source: workbook_63_frozen
+    - id: tracker_align_conditions_planes_ry_mean
+      value: 74.64
+      unit: mrad
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: calypso_planes
+      pivot_rotation_convention: planes_level2_global_coupled_to_plane_dx
+      calypso_parameter_mapping: reconstruction_alignment_state_not_independent_survey
+      measurement_date: null
+      iov_mechanical_stability_provenance: conditions_iov_but_not_metrology
+      independent_of_tracks_and_conditions: false
+      evidence_source: workbook_63_frozen
+    - id: tracker_align_conditions_cdx_cond
+      value: 3.58
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: calypso_planes
+      pivot_rotation_convention: derived_from_plane_dx_coupled_to_plane_ry_times_z
+      calypso_parameter_mapping: reconstruction_alignment_state_not_independent_layer_metrology
+      measurement_date: null
+      iov_mechanical_stability_provenance: conditions_iov_but_not_metrology
+      independent_of_tracks_and_conditions: false
+      evidence_source: workbook_63_frozen
+    - id: interface_local_module_x
+      value: null
+      unit: mm
+      real_measurement_sigma_or_covariance: null
+      coordinate_frame: interface_local
+      pivot_rotation_convention: module_in_plane_level1_local
+      calypso_parameter_mapping: survey_origin_candidate_only_no_cool_provenance
+      measurement_date: null
+      iov_mechanical_stability_provenance: unknown
+      independent_of_tracks_and_conditions: null
+      evidence_source: workbook_63_frozen_candidate_only
+
+# --- decisions this stage freezes ---
+decision_contract:
+  gauge_constraint_contract_valid: null
+  gauge_fixed_solver_well_posed: null
+  gauge_invariant_observable_closure: null
+  eligible_external_physical_constraints: []
+  external_constraint_ingest_authorized: false
+  real_data_candidate_alignment_authorized: false
+  geometry_write_allowed: false
+  official_conditions_write_allowed: false
+  next_stage_if_gauge_closure_passes: gauge_fixed_real_data_alignment_diagnostic_v1_requires_separate_preregistration
+  next_stage_if_gauge_closure_fails: gauge_feasibility_failure_frozen_no_real_data_branch
+
+assumptions:
+  - "A = W^{1/2} J S with frozen S and rank_tolerance=0.01; the tracker information is the rebuilt pooled workbook-68 normal matrix, regressed against the frozen workbook-68 artifact before any gauge use."
+  - "Gauge constraints G theta = 0 select a mathematical representative inside tracker-unobservable directions; they are not physical measurements and gauge-fixed parameters are never 'measured to be 0'."
+  - "Different legal gauges must give identical tracker-observable predictions; only gauge-invariant quantities (observable prediction, identifiable projection, relative transforms) may be compared across gauges."
+  - "Stations ry software contract (workbook 67) is global left-multiply about the FASER origin; this campaign fills no survey prior and runs no Fisher/posterior ingest because no measurement covariance exists."
+  - "The workbook-76 K-short FD spectrum is report-only and is never consulted to design or tune any gauge criterion."
+  - "Closure uses synthetic measurements on the frozen tracker information; recovering the full injected theta truth is impossible by construction (gauge-equivalent truths are non-unique) and is not a success gate."
+
+output_dir: outputs/gauge_constraint_external_constraint_feasibility_v1
