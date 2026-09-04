@@ -825,3 +825,42 @@ def test_workbook64_checkpoint_defaults_to_historical_edge_path():
     model, _artifact = load_route_aware_transformer_artifact(checkpoint, device="cpu")
     assert model.config.use_additive_route_correction is False
     assert model.config.use_relative_route_representation is False
+
+
+def test_workbook70_eval_contract_freezes_checkpoints_and_refuses_final_blind():
+    from scripts.evaluate_relative_route_v4_development import (
+        ARM1_SHA256,
+        ARM2_SHA256,
+        WORKBOOK64_SHA256,
+        frozen_packing_config,
+        refuse_forbidden_paths,
+    )
+
+    payload = yaml.safe_load(
+        Path("configs/relative_route_v4_head_only_development_eval.yaml").read_text(encoding="utf-8")
+    )
+    root = payload["relative_route_v4_head_only_development_eval"]
+    assert int(root["workbook"]) == 70
+    assert root["continue_to_15d_relative_wls"] is False
+    assert root["arms"]["arm0"]["checkpoint_sha256"] == WORKBOOK64_SHA256
+    assert root["arms"]["arm1"]["checkpoint_sha256"] == ARM1_SHA256
+    assert root["arms"]["arm2"]["checkpoint_sha256"] == ARM2_SHA256
+    assert root["arms"]["arm0"]["inject_complete_route_scores"] is False
+    assert root["arms"]["arm1"]["inject_complete_route_scores"] is True
+    assert root["arms"]["arm2"]["inject_complete_route_scores"] is True
+    assert "00800_00849" in " ".join(root["forbidden"]["unused_final_blind"])
+    config = frozen_packing_config()
+    assert config.unmatched_penalty == -1.0
+    assert config.complete_route_score_composition == "replace"
+    assert config.score_threshold_by_pair[(0, 1)] == 0.001
+    with pytest.raises(SystemExit, match="unused final-blind"):
+        refuse_forbidden_paths([Path("/tmp/mc24_100047_00800_00849/overlay")])
+
+
+def test_workbook70_compare_cd_is_later_minus_earlier():
+    from scripts.evaluate_relative_route_v4_development import compare_cd
+
+    left = {"C": 200, "D": 170}
+    right = {"C": 327, "D": 123}
+    assert compare_cd(left, right) == {"C": 127, "D": -47}
+    # Job 1108310 wrote Arm0-Arm1 into arm1_minus_arm0_*; do not treat that JSON as signed truth.

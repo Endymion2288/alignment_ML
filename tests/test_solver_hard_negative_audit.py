@@ -5,7 +5,7 @@ import pytest
 
 from baselines.field_chi2_matching import FieldCandidate
 from baselines.global_assignment import full_score_matrix
-from baselines.route_assignment import RouteAssignmentConfig, adjacent_route_assignment
+from baselines.route_assignment import RouteAssignmentConfig, _CONTINUATION_TIE_BREAK, adjacent_route_assignment
 from datasets.root_loader import EventTracklets
 from evaluation.route_metrics import _unique_truth_by_station
 from training.route_operating_audit import DUSTBIN_UTILITY, pair_tables_from_sets, solver_log_odds
@@ -297,6 +297,145 @@ def test_recommend_full_coverage_does_not_train_second_model():
     assert decision["pre_register_solver_in_the_loop_control"] is False
     assert decision["next_step"] == "diagnose_loss_weighting_per_event_reduction_and_route_length_bias"
     assert decision["new_checkpoint_authorized"] is False
+
+
+def test_production_hypotheses_replace_complete_route_scores_and_leave_fragments():
+    event = _event()
+    scores = {
+        (0, 1): [0.90, 0.20],
+        (1, 2): [0.90, 0.20],
+        (2, 3): [0.90, 0.20],
+    }
+    _, sets, raw = _pair_tables_and_sets(event, scores)
+    config = RouteAssignmentConfig(
+        score_threshold_by_pair={pair: 0.001 for pair in ADJACENT},
+        unmatched_penalty=-1.0,
+        complete_route_score_composition="replace",
+    )
+    matrices = {}
+    for candidate_set, values in zip(sets, raw):
+        pair = tuple(int(item) for item in candidate_set.station_pair)
+        matrices[pair] = (
+            full_score_matrix(event, candidate_set.candidates, values.tolist(), pair[0], pair[1]),
+            candidate_set.candidates,
+        )
+    complete_map = {(0, 2, 4, 6): 0.999, (1, 3, 5, 7): 0.999}
+    routes_none = production_hypotheses(event, matrices, config)
+    routes_v4 = production_hypotheses(event, matrices, config, complete_route_scores=complete_map)
+    truth = ((0, 0), (1, 2), (2, 4), (3, 6))
+    r4_none = next(route for route in routes_none if tuple(route.endpoints) == truth)
+    r4_v4 = next(route for route in routes_v4 if tuple(route.endpoints) == truth)
+    assert r4_none.complete_route_score is None
+    assert r4_v4.complete_route_score == pytest.approx(0.999)
+    expected = solver_log_odds(0.999) + 4.0 * (-1.0) + 3.0 * _CONTINUATION_TIE_BREAK
+    assert r4_v4.utility == pytest.approx(expected)
+    assert r4_v4.utility != pytest.approx(r4_none.utility)
+    frags_none = [route for route in routes_none if len(route.endpoints) < 4]
+    frags_v4 = [route for route in routes_v4 if len(route.endpoints) < 4]
+    assert len(frags_none) == len(frags_v4)
+    for left, right in zip(frags_none, frags_v4):
+        assert left.endpoints == right.endpoints
+        assert left.utility == pytest.approx(right.utility)
+        assert right.complete_route_score is None
+
+
+def test_competing_four_station_winner_physical_uses_l_corrected_not_edge_hops():
+    event = _event()
+    _, unique = _unique_truth_by_station(event, (0, 1, 2, 3))
+    sample = type("S", (), {"source_id": "src", "payload_id": "iteration_00_draw_00"})()
+    sets = []
+    raw = []
+    extras = {
+        (2, 3): [((4, 7), 0.20)],
+    }
+    for pair in ADJACENT:
+        source = event.indices_for_station(pair[0]).tolist()
+        target = event.indices_for_station(pair[1]).tolist()
+        candidates = [
+            _candidate(source[0], target[0], pair[0], pair[1]),
+            _candidate(source[1], target[1], pair[0], pair[1]),
+        ]
+        scores = [0.90, 0.20]
+        labels = [
+            bool(event.truth_particle_id[source[0]] == event.truth_particle_id[target[0]]),
+            bool(event.truth_particle_id[source[1]] == event.truth_particle_id[target[1]]),
+        ]
+        for (src, tgt), score in extras.get(pair, []):
+            candidates.append(_candidate(src, tgt, pair[0], pair[1]))
+            scores.append(score)
+            labels.append(bool(event.truth_particle_id[src] == event.truth_particle_id[tgt]))
+        sets.append(
+            type(
+                "C",
+                (),
+                {
+                    "sample": sample,
+                    "event": event,
+                    "station_pair": pair,
+                    "candidates": candidates,
+                    "labels": np.asarray(labels, dtype=bool),
+                },
+            )()
+        )
+        raw.append(np.asarray(scores, dtype=np.float64))
+    tables = pair_tables_from_sets(sets, raw, raw)
+    pair_tables = next(iter(tables.values()))
+    config = RouteAssignmentConfig(
+        score_threshold_by_pair={pair: 0.001 for pair in ADJACENT},
+        unmatched_penalty=-1.0,
+        complete_route_score_composition="replace",
+    )
+    matrices = {}
+    for candidate_set, values in zip(sets, raw):
+        pair = tuple(int(item) for item in candidate_set.station_pair)
+        matrices[pair] = (
+            full_score_matrix(event, candidate_set.candidates, values.tolist(), pair[0], pair[1]),
+            candidate_set.candidates,
+        )
+    complete_map = {
+        (0, 2, 4, 6): 0.985,
+        (1, 3, 5, 7): 0.50,
+        (0, 2, 4, 7): 0.999,
+    }
+    routes_none = production_hypotheses(event, matrices, config)
+    routes_v4 = production_hypotheses(event, matrices, config, complete_route_scores=complete_map)
+    competitor = ((0, 0), (1, 2), (2, 4), (3, 7))
+    assert not any(tuple(route.endpoints) == competitor for route in routes_none)
+    winner = next(route for route in routes_v4 if tuple(route.endpoints) == competitor)
+    assert winner.complete_route_score == pytest.approx(0.999)
+    assigned = adjacent_route_assignment(event, matrices, config, complete_route_scores=complete_map)
+    u_truth = solver_log_odds(0.985) + 4.0 * (-1.0)
+    row = attach_solver_hard_negative(
+        {
+            "endpoints": [
+                {"station": 0, "index": 0},
+                {"station": 1, "index": 2},
+                {"station": 2, "index": 4},
+                {"station": 3, "index": 6},
+            ],
+            "complete_truth_route_utility": u_truth,
+            "selected": False,
+            "truth_id": 1,
+            "sample_id": "src",
+            "payload_id": "iteration_00_draw_00",
+            "run_id": 1,
+            "event_id": 2,
+        },
+        event=event,
+        unique_by_index=unique,
+        pair_tables=pair_tables,
+        hypotheses=routes_v4,
+        selected_routes=assigned.routes,
+        n_complete_truth_in_event=2,
+        margin=PACKING_MARGIN,
+    )
+    packing_physical = float(winner.utility) - _CONTINUATION_TIE_BREAK * 3.0
+    hop_physical = 2.0 * solver_log_odds(0.90) + solver_log_odds(0.20) + 4.0 * (-1.0)
+    assert packing_physical == pytest.approx(solver_log_odds(0.999) + 4.0 * (-1.0))
+    assert packing_physical != pytest.approx(hop_physical)
+    assert row["u_best_solver_fragment"] == pytest.approx(packing_physical)
+    assert row["solver_competitor"]["physical_utility"] == pytest.approx(packing_physical)
+    assert row["solver_competitor"]["n_stations"] == 4
 
 
 def _origin_row(truth_id: int, *, selected: bool, u_truth: float, u_fragment: float, run_id: int = 1, event_id: int = 2):

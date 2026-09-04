@@ -1,0 +1,49 @@
+relative_route_v4_head_only_development_eval:
+  workbook: 70
+  description: >
+    Frozen Arm 0/1/2 reserved-blind development evaluation.  Does not train,
+    does not retune the operating point, and does not open 15D WLS or the
+    unused final-blind pair 00800_00849.
+  arms:
+    arm0:
+      name: workbook64_edge_only
+      checkpoint: outputs/mc24_four_station_source_diversity_v1/checkpoint/route_aware_transformer_v2.pt
+      checkpoint_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236
+      inject_complete_route_scores: false
+    arm1:
+      name: absolute_route_control
+      checkpoint: outputs/mc24_four_station_relative_route_v4_head_only/absolute_control/checkpoint_last.pt
+      checkpoint_sha256: e8a6d6c6e26545de91d9ded59c7b4f9b7840de2e9c94b88d56e1857d6aebd3c8
+      inject_complete_route_scores: true
+    arm2:
+      name: relative_route_v4_primary
+      checkpoint: outputs/mc24_four_station_relative_route_v4_head_only/relative_primary/checkpoint_last.pt
+      checkpoint_sha256: a52037ead07555ef937a7e02b65adc9526b509e765341e8af31992552f1fdd3a
+      inject_complete_route_scores: true
+  overlay:
+    synthetic_manifest: outputs/mc24_four_station_source_diversity_blind_v1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+    iteration_manifest: outputs/mc24_four_station_source_diversity_blind_v1/iteration_manifest.json
+    split: validation
+    reserved_blind_sources:
+      - mc24_100047_00350_00399
+      - mc24_100048_00350_00399
+  forbidden:
+    unused_final_blind:
+      - mc24_100047_00800_00849
+      - mc24_100048_00800_00849
+    sealed_test: permanently_closed
+  frozen_operating_point:
+    identity_platt: true
+    thresholds:
+      0->1: 0.001
+      1->2: 0.001
+      2->3: 0.001
+    unmatched_penalty: -1.0
+    complete_route_score_composition: replace
+    complete_route_query_injected_into_packing_arm0: false
+    complete_route_query_injected_into_packing_arm12: true
+  gates_file: configs/physical_four_station_diversity_training.yaml
+  continue_to_15d_relative_wls: false
+  do_not_retune_after_seeing_development: true
+  device: cuda
+  cpu_fallback: false

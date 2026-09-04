@@ -270,3 +270,45 @@ def test_train_only_calibration_tag_cannot_be_read_as_validation_platt():
         maximum_track_fake_rate=0.05,
         minimum_complete_track_purity=0.95,
     )["ok"]
+
+
+def test_audit_event_truth_chains_uses_complete_route_query_for_packing_utility():
+    event = _event()
+    scores = {
+        (0, 1): [0.90, 0.90],
+        (1, 2): [0.90, 0.90],
+        (2, 3): [0.90, 0.90],
+    }
+    matrices = _matrices(event, scores)
+    config = RouteAssignmentConfig(
+        score_threshold_by_pair={pair: 0.001 for pair in ADJACENT},
+        unmatched_penalty=-1.0,
+        complete_route_score_composition="replace",
+    )
+    complete_map = {(0, 2, 4, 6): 0.40, (1, 3, 5, 7): 0.99}
+    result = adjacent_route_assignment(event, matrices, config, complete_route_scores=complete_map)
+    rows = audit_event_truth_chains(
+        event,
+        matrices,
+        _tables(event, matrices),
+        config,
+        result,
+        complete_route_scores=complete_map,
+    )
+    by_truth = {int(row["truth_id"]): row for row in rows}
+    assert by_truth[1]["complete_route_query_score"] == pytest.approx(0.40)
+    query_utility = solver_log_odds(0.40) + 4.0 * (-1.0)
+    assert by_truth[1]["complete_truth_route_utility"] == pytest.approx(query_utility)
+    assert query_utility <= DUSTBIN_UTILITY
+    assert by_truth[1]["loss_stage"] == "utility_nonpositive"
+    edge_only = complete_route_packing_utility([0.90, 0.90, 0.90], unmatched_penalty=-1.0)
+    assert by_truth[1]["complete_truth_route_utility"] != pytest.approx(edge_only)
+    with pytest.raises(RuntimeError, match="score map and adjacent candidate graph disagree"):
+        audit_event_truth_chains(
+            event,
+            matrices,
+            _tables(event, matrices),
+            config,
+            result,
+            complete_route_scores={(0, 2, 4, 6): 0.40},
+        )

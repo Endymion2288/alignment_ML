@@ -310,6 +310,10 @@ def audit_event_truth_chains(
         edge_lookups,
         float(config.unmatched_penalty),
         int(config.maximum_hypotheses),
+        complete_route_scores,
+        config.complete_route_score_threshold,
+        config.complete_route_score_composition,
+        config.complete_route_context_weight,
     )
     selected = {_endpoint_tuple(route) for route in result.routes}
     selected_utility = {_endpoint_tuple(route): float(route.utility) for route in result.routes}
@@ -348,6 +352,17 @@ def audit_event_truth_chains(
             pairs, by_station, pair_tables, float(config.unmatched_penalty)
         )
         endpoint_tuple = _normalize_endpoints(endpoints)
+        query_score = None
+        if complete_route_scores is not None:
+            query_key = tuple(int(index) for _, index in endpoint_tuple)
+            if query_key not in complete_route_scores:
+                raise RuntimeError(
+                    "complete physical truth route has no route-query score; "
+                    "the V4 score map and adjacent candidate graph disagree"
+                )
+            query_score = float(complete_route_scores[query_key])
+            if candidate_retained:
+                packing_utility = solver_log_odds(query_score) + 4.0 * float(config.unmatched_penalty)
         is_selected = endpoint_tuple in selected
         stage = classify_truth_chain_loss(
             candidate_retained=candidate_retained,
@@ -369,9 +384,6 @@ def audit_event_truth_chains(
             for block in selected
             if block != endpoint_tuple and set(block).intersection(endpoint_tuple)
         ]
-        query_score = None
-        if complete_route_scores is not None:
-            query_score = complete_route_scores.get(tuple(int(index) for _, index in endpoint_tuple))
         ranking_stable = all(
             row.get("platt_preserves_source_rank", True) for row in pair_rows if row.get("in_candidate_graph")
         )
@@ -603,7 +615,7 @@ def assign_and_audit_payload(
         config,
         calibration_bins,
         context=context,
-        complete_route_scores_by_event=None,
+        complete_route_scores_by_event=complete_route_scores_by_event,
     )
     tables = pair_tables_from_sets(candidate_sets, raw_scores, calibrated_scores)
     truth_rows: list[dict[str, object]] = []

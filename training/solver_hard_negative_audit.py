@@ -244,6 +244,7 @@ def production_hypotheses(
     event: EventTracklets,
     station_matrices: Mapping[tuple[int, int], tuple[object, Sequence[object]]],
     config: RouteAssignmentConfig,
+    complete_route_scores: Mapping[tuple[int, ...], float] | None = None,
 ) -> list[Route]:
     """Call the production enumerator.  Only ``U > 0`` hypotheses are returned."""
     pairs = adjacent_station_pairs(tuple(int(station) for station in config.station_path))
@@ -261,6 +262,10 @@ def production_hypotheses(
         lookups,
         float(config.unmatched_penalty),
         int(config.maximum_hypotheses),
+        complete_route_scores,
+        config.complete_route_score_threshold,
+        config.complete_route_score_composition,
+        config.complete_route_context_weight,
     )
 
 
@@ -336,7 +341,11 @@ def attach_solver_hard_negative(
                 complete = False
                 break
             hops.append(record)
-        if complete:
+        if getattr(winner, "complete_route_score", None) is not None:
+            # Production packing consumed L_corrected for this 4-station
+            # hypothesis.  Do not reconstruct utility from adjacent edges.
+            winner_physical = float(winner.utility) - 1.0e-9 * (len(winner_endpoints) - 1)
+        elif complete:
             winner_physical = physical_utility(hops, unmatched_penalty)
         else:
             winner_physical = float(winner.utility) - 1.0e-9 * (len(winner_endpoints) - 1)
