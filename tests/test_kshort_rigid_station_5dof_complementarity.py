@@ -169,23 +169,32 @@ def test_occurrence_uids_reject_overflow():
 # ---------------------------------------------------------------------------
 
 
-def _write_enhanced_ntuple(path: Path, entries) -> None:
-    """entries: list of (run, event_id, n_tracklet_rows, n_propagation_rows)."""
+def _write_enhanced_ntuple(path: Path, entries, validity_masks=None) -> None:
+    """entries: list of (run, event_id, n_tracklet_rows, n_propagation_rows).
+
+    ``validity_masks`` optionally gives one bool list per entry for
+    ``Tracklet_has_covariance`` (length must equal n_tracklet_rows).
+    """
     import awkward as ak
     import uproot
 
     path.parent.mkdir(parents=True, exist_ok=True)
+    branches = {
+        "run": ak.Array([int(entry[0]) for entry in entries]),
+        "eventID": ak.Array([int(entry[1]) for entry in entries]),
+        "Tracklet_z_mm": ak.Array(
+            [np.full(int(entry[2]), -1860.15).tolist() for entry in entries]
+        ),
+        "TrackletPropagation_success": ak.Array(
+            [[True] * int(entry[3]) for entry in entries]
+        ),
+    }
+    if validity_masks is not None:
+        branches["Tracklet_has_covariance"] = ak.Array(
+            [[bool(value) for value in mask] for mask in validity_masks]
+        )
     with uproot.recreate(path) as handle:
-        handle["nt"] = {
-            "run": ak.Array([int(entry[0]) for entry in entries]),
-            "eventID": ak.Array([int(entry[1]) for entry in entries]),
-            "Tracklet_z_mm": ak.Array(
-                [np.full(int(entry[2]), -1860.15).tolist() for entry in entries]
-            ),
-            "TrackletPropagation_success": ak.Array(
-                [[True] * int(entry[3]) for entry in entries]
-            ),
-        }
+        handle["nt"] = branches
 
 
 def _write_tracklets(path: Path, blocks) -> None:
@@ -304,6 +313,43 @@ def test_ntuple_bridge_keeps_files_consistent_with_tracklet_only_event(tmp_path)
         records.event_id,
         [7, 7 + 2 * PHYSICAL_EVENT_UID_STRIDE],
     )
+
+
+def test_ntuple_bridge_follows_has_covariance_drop_mask(tmp_path):
+    # The canonical converter drops tracklets with missing covariance.  The
+    # bridge must count per-entry tracklet rows through the same mask, or a
+    # dropped tracklet would shift every later block.
+    entries = [
+        (100130, 7, 2, 1),
+        (100130, 7, 2, 1),
+    ]
+    enhanced = tmp_path / "enhanced_tracklets.root"
+    _write_enhanced_ntuple(
+        enhanced,
+        entries,
+        validity_masks=[[True, True], [False, True]],
+    )
+    index = read_ntuple_event_index(enhanced)
+    assert index.tracklet_count_rule == "has_covariance_mask"
+    assert np.array_equal(index.n_tracklet_rows, [2, 1])
+
+    # Flat file contains the surviving rows only: both tracklets of
+    # occurrence 0, then the single valid tracklet (id 1) of occurrence 1.
+    tracklets = tmp_path / "tracklets.root"
+    _write_tracklets(
+        tracklets,
+        [
+            (100130, 7, [(0, 0, 1.0, 5), (1, 1, 10.0, 5)]),
+            (100130, 7, [(1, 1, 20.0, 5)]),
+        ],
+    )
+    events = load_events_ntuple_identity(tracklets, index)
+    assert [int(event.event_id) for event in events] == [
+        7,
+        7 + PHYSICAL_EVENT_UID_STRIDE,
+    ]
+    assert [int(event.size) for event in events] == [2, 1]
+    assert_no_duplicate_physical_identity(events)
 
 
 def test_ntuple_bridge_rejects_row_count_mismatch(tmp_path):

@@ -48,7 +48,17 @@ NTUPLE_TREE_NAME = "nt"
 NTUPLE_RUN_BRANCH = "run"
 NTUPLE_EVENT_BRANCH = "eventID"
 NTUPLE_TRACKLET_COUNT_BRANCH = "Tracklet_z_mm"
+NTUPLE_TRACKLET_VALIDITY_BRANCH = "Tracklet_has_covariance"
 NTUPLE_PROPAGATION_COUNT_BRANCH = "TrackletPropagation_success"
+
+# The canonical tracklet converter drops tracklets whose covariance is
+# absent (``convert_ntuple_tracklets(..., drop_missing_covariance=True)``,
+# the only mode the physical FD chain uses).  The per-entry tracklet row
+# count of the bridge must therefore follow the validity mask whenever the
+# exporter writes ``Tracklet_has_covariance``; otherwise every
+# ``Tracklet_z_mm`` element becomes one flat row.  The propagation
+# converter never drops rows, so ``TrackletPropagation_success`` element
+# counts are always exact.
 
 
 @dataclass(frozen=True)
@@ -62,6 +72,7 @@ class NtupleEventIndex:
     uid: np.ndarray
     n_tracklet_rows: np.ndarray
     n_propagation_rows: np.ndarray
+    tracklet_count_rule: str
 
     @property
     def size(self) -> int:
@@ -141,26 +152,52 @@ def read_ntuple_event_index(
             raise DatasetSchemaError(
                 f"enhanced ntuple {path} lacks physical-identity branches: {missing}"
             )
-        arrays = tree.arrays(
-            [
-                NTUPLE_RUN_BRANCH,
-                NTUPLE_EVENT_BRANCH,
-                NTUPLE_TRACKLET_COUNT_BRANCH,
-                NTUPLE_PROPAGATION_COUNT_BRANCH,
-            ],
-            library="ak",
-        )
+        branches = [
+            NTUPLE_RUN_BRANCH,
+            NTUPLE_EVENT_BRANCH,
+            NTUPLE_TRACKLET_COUNT_BRANCH,
+            NTUPLE_PROPAGATION_COUNT_BRANCH,
+        ]
+        has_validity = NTUPLE_TRACKLET_VALIDITY_BRANCH in available
+        if has_validity:
+            branches.append(NTUPLE_TRACKLET_VALIDITY_BRANCH)
+        arrays = tree.arrays(branches, library="ak")
     run_id = np.asarray(arrays[NTUPLE_RUN_BRANCH].to_numpy(), dtype=np.int64)
     event_id = np.asarray(arrays[NTUPLE_EVENT_BRANCH].to_numpy(), dtype=np.int64)
     occurrence, uid = _entry_level_occurrence_uids(run_id, event_id, stride=stride)
+    if has_validity:
+        import awkward as ak
+
+        z_lengths = np.asarray(
+            ak.to_numpy(ak.num(arrays[NTUPLE_TRACKLET_COUNT_BRANCH], axis=1)),
+            dtype=np.int64,
+        )
+        validity_lengths = np.asarray(
+            ak.to_numpy(ak.num(arrays[NTUPLE_TRACKLET_VALIDITY_BRANCH], axis=1)),
+            dtype=np.int64,
+        )
+        if not np.array_equal(validity_lengths, z_lengths):
+            raise DatasetSchemaError(
+                f"enhanced ntuple {path}: {NTUPLE_TRACKLET_VALIDITY_BRANCH} entry "
+                f"lengths disagree with {NTUPLE_TRACKLET_COUNT_BRANCH}"
+            )
+        n_tracklet_rows = np.asarray(
+            ak.to_numpy(ak.sum(arrays[NTUPLE_TRACKLET_VALIDITY_BRANCH], axis=1)),
+            dtype=np.int64,
+        )
+        tracklet_count_rule = "has_covariance_mask"
+    else:
+        n_tracklet_rows = _entry_count(arrays, NTUPLE_TRACKLET_COUNT_BRANCH)
+        tracklet_count_rule = "z_mm_element_count"
     return NtupleEventIndex(
         source=str(path),
         run_id=run_id,
         event_id=event_id,
         occurrence=occurrence,
         uid=uid,
-        n_tracklet_rows=_entry_count(arrays, NTUPLE_TRACKLET_COUNT_BRANCH),
+        n_tracklet_rows=n_tracklet_rows,
         n_propagation_rows=_entry_count(arrays, NTUPLE_PROPAGATION_COUNT_BRANCH),
+        tracklet_count_rule=tracklet_count_rule,
     )
 
 
