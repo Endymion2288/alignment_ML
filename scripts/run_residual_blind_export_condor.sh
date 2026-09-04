@@ -97,8 +97,10 @@ if [[ "$export_exit" -eq 0 ]]; then
       python -m scripts.inspect_root_schema "$canonical_root"
       schema_exit=$?
       export_step="content_audit"
+      # Merged MC24 rec files reuse generator-job event numbers; the audit
+      # must group physical events in file order, not sorted (run, event).
       python -m scripts.audit_tracklets "$canonical_root" \
-        --output "$content_audit"
+        --output "$content_audit" --physical-order
       audit_exit=$?
     fi
   fi
@@ -150,7 +152,7 @@ payload = {
         "--nevents -1 --outfile enhanced_tracklets.root && "
         "python -m scripts.convert_ntuple_tracklets --include-truth && "
         "python -m scripts.inspect_root_schema && "
-        "python -m scripts.audit_tracklets"
+        "python -m scripts.audit_tracklets --physical-order"
     ),
     "project_root": project_root,
     "git_head": git_head,

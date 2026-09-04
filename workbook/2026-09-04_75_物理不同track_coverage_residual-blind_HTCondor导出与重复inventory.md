@@ -50,8 +50,9 @@ spectrometer wide-angle gate。
 
 ## Immutable input manifest（仅 EOS/xAOD metadata）
 
-`input_manifest.json`（SHA256
-`17ea99b5f56c1741f3facd1086f6bf92221812fdc80a0b61571a8a0eb2b24c85`）
+`input_manifest.json`（SHA256 见 sidecar `input_manifest.sha256`：
+`d7048fadec1ce03b5eed9bf5388e42d2f1b67a0722835f2771807fe0cc384ab6`；
+manifest 一旦写出即不可变，hash 不内嵌自身）
 记录每个输入文件的完整 EOS path、source/production ID、event 数、
 generator/reconstruction provenance、geometry/reco tag、文件大小与
 EOS adler32 checksum：
@@ -128,14 +129,34 @@ converter → schema 检查 → content audit；不跑 chi-square baseline。
 environment/Calypso revision、git SHA、各步 exit code、输出 ROOT
 路径）；失败作业非零退出并由 report 显式分类，不静默跳过。
 
+**失败分类与显式重试**：20/20 作业的 Calypso 导出、转换与 schema
+检查全部成功（100120 每文件约 9 分钟/100k events），但 content
+audit 步骤全部失败——`scripts/audit_tracklets.py` 使用排序分组
+`load_events`，把 merged-rec 文件内复用 event number 的 10 个不同
+physical event 错误合并并触发 duplicate tracklet_id 拒绝。分类为
+`audit_loader_event_id_collision`（下游诊断工具与 merged-rec event
+编号不兼容；导出与转换本身成功）。修复：`datasets/root_loader.py`
+新增 `preserve_file_order=True` 分组模式（默认行为不变），
+`audit_tracklets.py` 新增 `--physical-order`，Stage 75 loader 改为
+委托该实现。随后用 `scripts/retry_residual_blind_export_audit.py`
+对 20 个 source 仅重跑 audit 步骤（Calypso 导出不重跑），20/20 重试
+成功，每 source 写 `content_audit_retry.json`，汇总于
+`audit_retry_summary.json`。原始 `job_provenance.json` 保持不修改。
+
 ## Deterministic provenance validation（导出完成后）
 
-每个导出 source 必须：`metadata/source_file` 与声明输入精确相等、
-run id 等于 production DSID、station z 在冻结容差内映射到
-IFT/0/1/2/3 z 表、enhanced-ntuple entry 数等于作业 processed-event
-数、tracklet `(tx,ty)` 有限。负对照：wrong-source 必须检测为不匹配、
-missing-output 必须分类为 `missing_output`、empty-SegmentFit 必须
-分类为 `segmentfit_empty`。重复 inventory 必须给出一致统计。
+每个导出 source 必须满足精确两跳反查（无 fuzzy join）：
+`tracklets.root` 的 `metadata/source_file` 等于同目录
+`enhanced_tracklets.root`（converter 记录的精确输入），且
+`job_provenance.json` 的 `input_xaod` 等于 config 声明的输入 xAOD；
+run id 等于 production DSID；station z 在冻结容差内映射到
+IFT/0/1/2/3 z 表；enhanced-ntuple entry 数与 physical-event 数一致
+（100120：100,000 entries/文件，约 84k 含 tracklet 的 physical
+events；100130：10,000 entries/文件，约 4.7k）；tracklet `(tx,ty)`
+有限。负对照全部通过：wrong-source 检测为不匹配、missing-output
+分类为 `missing_output`、empty-SegmentFit 分类为
+`segmentfit_empty`。**结果：20/20 source provenance valid，全部负
+对照通过**（`provenance_validation.json`）。
 
 ## 重复 inventory 与逐 candidate verdict
 
@@ -149,36 +170,90 @@ histogram intersection、outside canonical box fraction、
 slope/azimuth/quadrant。禁止读取 residual、Jacobian、singular
 value、cosine、rank。
 
-最终 verdict 逐 candidate 独立给出
-（`admitted_for_separate_5dof_fd_preregistration` /
-`insufficient_statistics` / `not_observed_phase_space_distinct` /
-`segmentfit_empty` / `exporter_contract_incompatible` /
-`provenance_failure` / `missing_output` / `export_job_failed`），
-不合并 candidate 重新判定。Stage 75 自身不做 FD/SVD。
+最终 verdict 逐 candidate 独立给出，不合并重新判定。Stage 75 自身
+不做 FD/SVD。Canonical envelope 重建与 workbook-74
+`canonical_coverage.json` 逐位一致（回归通过）。
 
-**（导出与 verdict 结果待 HTCondor 作业完成后回填。）**
+### 重复 inventory 结果（`reinventory.json`）
 
-## 条件分支（预注册）
+**`mc24_100120_muon_floor`** → **`not_observed_phase_space_distinct`**
 
-- 若至少一个 candidate 通过全部冻结门：先冻结本条目、config SHA、
-  export manifest/hash 与全部 coverage artifact，然后另开单独预注册
-  的 `Physically-Distinct <candidate> Rigid-Station 5DoF FD
-  Complementarity Feasibility V1` config 与 workbook 条目，继承
-  `ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad`、
-  `S=(5,5,60,60,60)`、`rank_tolerance=0.01` 与现有 WLS 定义；必须
-  分别分析 canonical-only、candidate-only 与预注册
-  joint-information 子空间，pooled rank=5 不算成功；长时 physical
-  FD reconstruction 用 HTCondor。三臂、Frozen-V2
-  unknown-association、真实数据 correction 在 identifiability gate
-  通过前仍关闭。
-- 若两 candidate 均不通过：冻结
-  `current_track_coverage_insufficient_for_unconstrained_rigid_station_5dof`，
-  不降低 200/200/80 门，不重开任何 7D / cluster-local /
-  stable-core / rigid-5DoF threshold rescue；只有在此之后才允许预
-  注册 `Gauge-Constrained / External-Constraint Alignment
-  Feasibility` 新战役，且严格区分 reconstruction gauge 约定与真实
-  survey/metrology 测量（缺 validated frame + measurement covariance
-  + IOV 的 survey 数字不能冒充 physical prior）。
+- 840,967 physical events（10 独立 source，每 source 约 84k）、
+  IFT events 43,751、complete-four-station 19,962、tracklets
+  2,367,368、angular（|pdg|=13）818,571 —— 统计门全部远超冻结值。
+- 但 observed distinctness 不满足：
+  `outside_canonical_quantile_box_fraction = 0.0972 < 0.20` 且
+  `histogram_intersection = 0.8167 > 0.80`。floor-origin muon 在
+  station 0 的 `(tx,ty)` 与 canonical envelope 显著重叠
+  （tx p01/p99 = ∓0.0635/±0.0635 vs canonical ∓0.0560/±0.0531；
+  ty p01/p99 = -0.0152/+0.0237 vs canonical ∓0.0191/±0.0187）。
+- metadata 假设不同，但观测到的 tracklet `(tx,ty)` 仍与 canonical
+  envelope 重叠 → 按冻结定义判定
+  `not_observed_phase_space_distinct`。不降低门、不改定义。
+
+**`mc24_100130_kshort_end_fasernu`** →
+**`admitted_for_separate_5dof_fd_preregistration`**
+
+- 47,075 physical events（10 独立 source，每 source 约 4.7k）、IFT
+  events 4,451、complete-four-station 278（≥80）、tracklets
+  206,654、angular（预注册 |pdg|=211 pion daughters）33,120。
+- Observed distinctness 满足：
+  `outside_canonical_quantile_box_fraction = 0.4986 ≥ 0.20` 且
+  `histogram_intersection = 0.6894 ≤ 0.80`。pion daughter 的 `ty`
+  分布（p01=-0.241、p99=+0.260、extrema [-1.48, +3.36]）远宽于
+  canonical（±0.019），是 canonical 缺失的物理不同 phase space。
+- 严格 `|pdg|=13` cross-check（非 admission 输入）：256 条 angular
+  tracklet（全统计下少量次级 muon），与预注册一致。
+- 全部冻结门满足：metadata-distinct、observed-(tx,ty)-distinct、
+  47,075 ≥ 200 events、4,451 ≥ 200 IFT events、278 ≥ 80
+  complete-four-station、10 ≥ 2 独立 file-level source、IFT 与
+  stations 0–3 coverage 齐全、无 metadata prohibition。
+
+### Stage 75 冻结决策
+
+`next_stage_decision.json`：
+**`candidate_admitted_for_separate_5dof_fd_preregistration`**
+（admitted: `mc24_100130_kshort_end_fasernu`）。Stage 75 不打开 FD；
+`fd_identifiability_executed=false`、`svd_or_rank_computed=false`。
+`current_track_coverage_insufficient_for_unconstrained_rigid_station_5dof`
+**不**冻结（存在一个通过全部冻结门的 candidate）。
+
+## 条件分支（按冻结 gate 落入第一分支）
+
+两 candidate 中 `mc24_100130_kshort_end_fasernu` 通过全部冻结门，
+因此落入第一分支：
+
+- **本条目、config SHA、export manifest/hash 与全部 coverage
+  artifact 在本条目提交时冻结**（artifact SHA256 见下节）。
+- 下一步允许（且仅允许）另开单独预注册的连续新战役
+  `Physically-Distinct mc24_100130_kshort_end_fasernu Rigid-Station
+  5DoF FD Complementarity Feasibility V1`（新 config + 新 workbook
+  条目），继承 `ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad,
+  ift_rz_mrad`、`S=(5,5,60,60,60)`、`rank_tolerance=0.01` 与现有
+  WLS 定义；必须分别分析 canonical-only、candidate-only 与预注册
+  joint-information 的 singular/information 子空间，验证 candidate
+  是否真正补充 canonical 缺失方向，并继续做 source/coverage
+  portability；不能只 pool 后看 rank=5 就宣布成功；长时 physical
+  FD reconstruction 必须用 HTCondor。三臂、Frozen-V2
+  unknown-association、真实数据 correction 在该 identifiability
+  gate 通过前仍关闭。**该 FD 战役的预注册不属于本条目范围。**
+- 第二分支（冻结
+  `current_track_coverage_insufficient_for_unconstrained_rigid_station_5dof`
+  并转向 gauge/external constraint）本次不触发；若后续 FD
+  complementarity 战役失败，gauge 分支的预注册条件不变。
+
+## 冻结 artifact SHA256
+
+```text
+config.yaml                 52bb9c36eeb2c92b178f0319dab90bb96a3ce67d30b55ff29a08c6cedfbf76ff
+input_manifest.json         d7048fadec1ce03b5eed9bf5388e42d2f1b67a0722835f2771807fe0cc384ab6
+export_gate.json            91eb18317617996e93f5f4c0a3f7fac93bd24831be9107c70b3e32f0f42a8ddb
+exporter_contract_audit.json 64beca9a74a13f4e6a14b96227f83b8702958601931c39517ffd3cef76a04a84
+provenance_validation.json  a4f2baa454292c6840d5c3ebf3681f518e35b854e17c656a8a048d38a80933b7
+reinventory.json            75c7a649df01197059edc03b2d44996b60e0b5161327b73084df380742f2b50d
+next_stage_decision.json    9a477d1f25821609fd9ef8738d9f9bdc724eb840a3c57188bff98cc260790176
+audit_retry_summary.json    e605cc4ce01dfe9108db94b6bc51208a4e33d37a64524b99e302195f25f37db7
+```
 
 ## 仓库状态
 
@@ -194,14 +269,19 @@ HEAD:   0c8a6ca Add physically-distinct track-coverage identifiability feasibili
 - `scripts/run_residual_blind_export_condor.sh`
 - `scripts/submit_residual_blind_export_condor.py`
 - `scripts/report_residual_blind_export_reinventory.py`
+- `scripts/retry_residual_blind_export_audit.py`
+- `datasets/root_loader.py`（新增 `preserve_file_order` 分组模式，
+  默认行为不变）
+- `scripts/audit_tracklets.py`（新增 `--physical-order`）
 - `tests/test_physically_distinct_track_coverage_export.py`
 - `docs/physically_distinct_track_coverage_residual_blind_export_reinventory.md`
   / `_cn.md`
 - `outputs/physically_distinct_track_coverage_residual_blind_export_reinventory_v1/`：
-  `config.yaml`、`input_manifest.json`、`export_gate.json`、
-  `exporter_contract_audit.json`、`condor_submit/`、
-  `exports/<candidate>/<source_id>/`、`provenance_validation.json`、
+  `config.yaml`、`input_manifest.json` + `input_manifest.sha256`、
+  `export_gate.json`、`exporter_contract_audit.json`、
+  `condor_submit/`、`exports/<candidate>/<source_id>/`、
+  `audit_retry_summary.json`、`provenance_validation.json`、
   `reinventory.json`、`next_stage_decision.json`
 
 测试：`tests/test_physically_distinct_track_coverage_export.py`（11
-项）与既有 508 项全量回归全部通过。
+项）与既有全量回归（508 项）全部通过。

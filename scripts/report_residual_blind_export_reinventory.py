@@ -108,9 +108,15 @@ def _job_provenance(export_dir: Path) -> dict[str, Any] | None:
 def stage_manifest(config: Mapping[str, Any], output: Path) -> dict[str, Any]:
     manifest = build_input_manifest(config)
     payload = {**manifest, **_extras(config)}
-    _write_json(output / "input_manifest.json", payload)
-    payload["input_manifest_sha256"] = sha256_file(output / "input_manifest.json")
-    _write_json(output / "input_manifest.json", payload)
+    manifest_path = output / "input_manifest.json"
+    _write_json(manifest_path, payload)
+    # The manifest is immutable once written; its SHA256 lives in a sidecar
+    # so the manifest never embeds a hash of itself.
+    digest = sha256_file(manifest_path)
+    (output / "input_manifest.sha256").write_text(
+        f"{digest}  input_manifest.json\n", encoding="utf-8"
+    )
+    payload["input_manifest_sha256"] = digest
     return payload
 
 

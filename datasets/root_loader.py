@@ -177,12 +177,23 @@ def load_events(
     tree_name: str = CANONICAL_TREE_NAME,
     max_events: Optional[int] = None,
     require_mc_labels: bool = False,
+    preserve_file_order: bool = False,
 ) -> list[EventTracklets]:
     """Load canonical tracklets grouped by event.
 
     This initial loader intentionally reads a complete debug-scale sample into
     memory. Training-scale sharding and streaming will be added only after the
     physics baseline has been validated.
+
+    By default rows are sorted by ``(run_id, event_id, tracklet_id)`` and
+    grouped by identical ``(run_id, event_id)``.  With
+    ``preserve_file_order=True`` no sort is applied and each maximal
+    consecutive block of equal ``(run_id, event_id)`` rows in file order is
+    one event.  That is the correct physical-event grouping for merged MC24
+    rec productions, which reuse generator-job event numbers so the same
+    ``(run_id, event_id)`` pair appears once per merged generator job;
+    sorting would merge those distinct physical events into one logical
+    event and trip the duplicate-tracklet-id check.
     """
     path = Path(root_path).expanduser().resolve()
     if not path.is_file():
@@ -249,16 +260,17 @@ def load_events(
         return []
 
     covariance = covariance_from_columns(columns)
-    order = np.lexsort(
-        (
-            np.asarray(columns["tracklet_id"]),
-            np.asarray(columns["event_id"]),
-            np.asarray(columns["run_id"]),
+    if not preserve_file_order:
+        order = np.lexsort(
+            (
+                np.asarray(columns["tracklet_id"]),
+                np.asarray(columns["event_id"]),
+                np.asarray(columns["run_id"]),
+            )
         )
-    )
-    for name in tuple(columns):
-        columns[name] = np.asarray(columns[name])[order]
-    covariance = covariance[order]
+        for name in tuple(columns):
+            columns[name] = np.asarray(columns[name])[order]
+        covariance = covariance[order]
 
     run_ids = np.asarray(columns["run_id"])
     event_ids = np.asarray(columns["event_id"])

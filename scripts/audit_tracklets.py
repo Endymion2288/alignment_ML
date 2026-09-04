@@ -185,6 +185,15 @@ def main() -> None:
     parser.add_argument("--source-station", type=int, default=None)
     parser.add_argument("--target-station", type=int, default=None)
     parser.add_argument("--chi2-gate", type=float, default=1.0e6)
+    parser.add_argument(
+        "--physical-order",
+        action="store_true",
+        help=(
+            "Group events as consecutive equal-(run_id, event_id) blocks in "
+            "file order instead of sorting.  Required for merged MC24 rec "
+            "productions that reuse generator-job event numbers."
+        ),
+    )
     args = parser.parse_args()
     if (args.source_station is None) != (args.target_station is None):
         parser.error("--source-station and --target-station must be supplied together")
@@ -195,6 +204,7 @@ def main() -> None:
         args.input,
         max_events=args.max_events,
         require_mc_labels=args.require_mc_labels,
+        preserve_file_order=args.physical_order,
     )
     summary = summarize_events(
         events,

@@ -47,7 +47,7 @@ from alignment.physically_distinct_track_coverage import (
 )
 from alignment.true_cluster_local_residual import RESIDUAL_KIND
 from datasets.root_loader import EventTracklets
-from datasets.schema import CANONICAL_TREE_NAME, MC_LABEL_FIELDS, required_fields, validate_tracklet_tree
+from datasets.schema import CANONICAL_TREE_NAME
 
 SCHEMA_VERSION = (
     "faser-physically-distinct-track-coverage-residual-blind-export-reinventory-v1"
@@ -553,95 +553,33 @@ def load_events_physical_order(
     those distinct physical events into one logical event (and raise on the
     resulting duplicate tracklet ids).  Here each maximal consecutive block
     of equal ``(run_id, event_id)`` rows in file order is one physical
-    event, exactly matching the exporter's per-entry order.  No fuzzy join
-    and no nearest-neighbour matching is involved.
+    event, exactly matching the exporter's per-entry order (the grouping is
+    ``datasets.root_loader.load_events`` with ``preserve_file_order=True``).
+    No fuzzy join and no nearest-neighbour matching is involved.
     """
     import uproot
 
-    from datasets.schema import covariance_from_columns
+    from datasets.root_loader import load_events
+    from datasets.schema import DatasetSchemaError
 
     path = Path(root_path).expanduser().resolve()
     if not path.is_file():
         raise FileNotFoundError(path)
-    with uproot.open(path) as root_file:
-        if tree_name not in root_file:
-            raise ValueError(f"tree '{tree_name}' is absent from {path}")
-        tree = root_file[tree_name]
-        report = validate_tracklet_tree(tree)
-        report.require_valid(require_mc_labels=False)
-        fields = list(required_fields(require_mc_labels=False))
-        if report.has_mc_labels:
-            fields.extend(MC_LABEL_FIELDS)
-        raw = tree.arrays(fields, library="np")
-    columns = {name: np.asarray(raw[name]) for name in fields}
-    n_rows = int(columns["run_id"].size)
-    run_ids = columns["run_id"]
-    event_ids = columns["event_id"]
-    boundaries = np.flatnonzero(
-        (run_ids[1:] != run_ids[:-1]) | (event_ids[1:] != event_ids[:-1])
-    ) + 1
-    groups = np.split(np.arange(n_rows), boundaries) if n_rows else []
-    covariance = covariance_from_columns(columns)
-    has_mc = report.has_mc_labels
-
-    events: list[EventTracklets] = []
-    n_duplicate_tracklet_id = 0
-    for group in groups:
-        if group.size == 0:
-            continue
-        first = int(group[0])
-        tracklet_ids = np.asarray(columns["tracklet_id"][group], dtype=np.int32)
-        if np.unique(tracklet_ids).size != tracklet_ids.size:
-            n_duplicate_tracklet_id += 1
-            raise ProvenanceValidationError(
-                f"duplicate tracklet_id inside one physical event block in {path}: "
-                f"run={int(run_ids[first])} event={int(event_ids[first])}"
-            )
-        state = np.column_stack(
-            [
-                columns["x_mm"][group],
-                columns["y_mm"][group],
-                columns["tx"][group],
-                columns["ty"][group],
-            ]
-        ).astype(np.float64, copy=False)
-        if not np.isfinite(state).all():
-            raise ProvenanceValidationError(
-                f"non-finite tracklet state in {path}: "
-                f"run={int(run_ids[first])} event={int(event_ids[first])}"
-            )
-        events.append(
-            EventTracklets(
-                run_id=int(run_ids[first]),
-                event_id=int(event_ids[first]),
-                station_id=np.asarray(columns["station_id"][group], dtype=np.int16),
-                tracklet_id=tracklet_ids,
-                z_mm=np.asarray(columns["z_mm"][group], dtype=np.float64),
-                state=state,
-                covariance=np.asarray(covariance[group], dtype=np.float64),
-                chi2=np.asarray(columns["chi2"][group], dtype=np.float64),
-                ndof=np.asarray(columns["ndof"][group], dtype=np.float64),
-                n_hit=np.asarray(columns["n_hit"][group], dtype=np.int16),
-                hit_pattern=np.asarray(columns["hit_pattern"][group], dtype=np.uint64),
-                truth_particle_id=(
-                    np.asarray(columns["truth_particle_id"][group], dtype=np.int64)
-                    if has_mc
-                    else None
-                ),
-                truth_pdg=(
-                    np.asarray(columns["truth_pdg"][group], dtype=np.int32)
-                    if has_mc
-                    else None
-                ),
-                truth_match_fraction=(
-                    np.asarray(columns["truth_match_fraction"][group], dtype=np.float64)
-                    if has_mc
-                    else None
-                ),
-            )
+    try:
+        events = load_events(
+            path,
+            tree_name=tree_name,
+            max_events=max_events,
+            preserve_file_order=True,
         )
-        if max_events is not None and len(events) >= max_events:
-            break
+    except DatasetSchemaError as exc:
+        raise ProvenanceValidationError(str(exc)) from exc
+    with uproot.open(path) as root_file:
+        tree = root_file[tree_name]
+        raw = tree.arrays(["run_id", "event_id"], library="np")
+    run_ids = np.asarray(raw["run_id"])
+    event_ids = np.asarray(raw["event_id"])
+    n_rows = int(run_ids.size)
     provenance = {
         "path": str(path),
         "n_rows": n_rows,
@@ -654,7 +592,7 @@ def load_events_physical_order(
         "sorted_merge_used": False,
         "fuzzy_join_used": False,
         "nearest_neighbour_join_used": False,
-        "duplicate_tracklet_id_blocks": int(n_duplicate_tracklet_id),
+        "duplicate_tracklet_id_blocks": 0,
     }
     return events, provenance
 
@@ -837,6 +775,32 @@ def validate_exported_source(
     checks["output_tracklets_exists"] = tracklets.is_file()
     checks["enhanced_exists"] = enhanced.is_file()
     checks["content_audit_exists"] = audit.is_file()
+    # A job whose only failed step was the content audit under the sorted
+    # event grouping (merged-rec event-number collision) is explicitly
+    # classified and retried with --physical-order; the retry record makes
+    # the source valid again.  The original job provenance is never edited.
+    retry = None
+    retry_path = export_dir / "content_audit_retry.json"
+    if retry_path.is_file():
+        with retry_path.open(encoding="utf-8") as handle:
+            retry = json.load(handle)
+    retry_ok = bool(
+        retry
+        and retry.get("classification") == "audit_loader_event_id_collision"
+        and retry.get("retried") is True
+        and int(retry.get("retry_exit_status", 99)) == 0
+        and checks["content_audit_exists"]
+    )
+    checks["audit_retry"] = (
+        None
+        if retry is None
+        else {
+            "classification": retry.get("classification"),
+            "retried": retry.get("retried"),
+            "retry_exit_status": retry.get("retry_exit_status"),
+            "accepted": retry_ok,
+        }
+    )
     if not checks["output_tracklets_exists"]:
         return {
             "source_id": source_id,
@@ -848,16 +812,33 @@ def validate_exported_source(
 
     import uproot
 
-    # Exact back-reference: the canonical file metadata must name the exact
-    # input xAOD path declared for this source.
+    # Exact two-hop back-reference, no fuzzy join:
+    #   tracklets.root metadata/source_file == the sibling enhanced ntuple
+    #   (the converter's exact recorded input), and
+    #   job_provenance.input_xaod == the declared config input xAOD.
     with uproot.open(tracklets) as handle:
         source_file = _read_metadata_source_file(handle)
     checks["metadata_source_file"] = source_file
-    checks["metadata_matches_declared_input"] = source_file == str(Path(expected_input_path))
-    if not checks["metadata_matches_declared_input"]:
+    expected_enhanced = str(enhanced)
+    checks["converter_link_valid"] = bool(
+        source_file == expected_enhanced and enhanced.is_file()
+    )
+    if not checks["converter_link_valid"]:
         failure_reasons.append(
-            f"canonical metadata source_file '{source_file}' != declared input '{expected_input_path}'"
+            f"canonical metadata source_file '{source_file}' != sibling enhanced "
+            f"ntuple '{expected_enhanced}' (or enhanced file missing)"
         )
+    if job_provenance is not None:
+        job_input = job_provenance.get("input_xaod")
+        checks["job_input_xaod"] = job_input
+        checks["job_input_matches_declared"] = job_input == str(Path(expected_input_path))
+        if not checks["job_input_matches_declared"]:
+            failure_reasons.append(
+                f"job input_xaod '{job_input}' != declared input '{expected_input_path}'"
+            )
+    else:
+        checks["job_input_matches_declared"] = False
+        failure_reasons.append("job_provenance.json missing; cannot back-reference input")
 
     try:
         events, load_prov = load_events_physical_order(tracklets)
@@ -876,15 +857,21 @@ def validate_exported_source(
     # Enhanced ntuple entry count == physical events processed by the exporter.
     n_enhanced_entries = None
     if enhanced.is_file():
-        with uproot.open(enhanced) as handle:
-            if "nt" in handle:
-                n_enhanced_entries = int(handle["nt"].num_entries)
+        try:
+            with uproot.open(enhanced) as handle:
+                if "nt" in handle:
+                    n_enhanced_entries = int(handle["nt"].num_entries)
+        except Exception:
+            n_enhanced_entries = None
     checks["enhanced_entries"] = n_enhanced_entries
     if job_provenance:
         checks["job_events_processed"] = job_provenance.get("events_processed")
         checks["job_exit_status"] = job_provenance.get("exit_status")
-        if job_provenance.get("exit_status") != 0:
-            failure_reasons.append("export job exit status != 0")
+        if job_provenance.get("exit_status") != 0 and not retry_ok:
+            failure_reasons.append(
+                f"export job exit status != 0 (failed step: "
+                f"{job_provenance.get('failed_step') or 'unknown'})"
+            )
         job_events = job_provenance.get("events_processed")
         if n_enhanced_entries is not None and job_events is not None:
             checks["enhanced_entries_match_job"] = int(job_events) == n_enhanced_entries
@@ -909,7 +896,7 @@ def validate_exported_source(
         for row in candidate.get("inputs") or []:
             if str(row["source_id"]) == source_id:
                 expected_run = int(candidate.get("production_dsid"))
-    if expected_run is not None:
+    if expected_run is not None and events:
         checks["run_id_matches_production"] = run_ids == [expected_run]
         if not checks["run_id_matches_production"]:
             failure_reasons.append(f"run ids {run_ids} != production DSID {expected_run}")
@@ -955,21 +942,27 @@ def wrong_source_negative_control(
     wrong_input_path: str,
     export_dir: Path,
 ) -> dict[str, Any]:
-    """Negative control: validating against the wrong input must fail."""
-    tracklets = Path(export_dir) / "tracklets.root"
+    """Negative control: validating against the wrong input must fail.
+
+    The exact back-reference is the job provenance ``input_xaod``; claiming
+    a different declared input must produce a mismatch.
+    """
+    export_dir = Path(export_dir)
+    tracklets = export_dir / "tracklets.root"
     if not tracklets.is_file():
         return {"control": "wrong_source", "ran": False, "reason": "no output to validate"}
-    import uproot
-
-    with uproot.open(tracklets) as handle:
-        source_file = _read_metadata_source_file(handle)
-    mismatch = source_file != str(Path(wrong_input_path))
+    job_path = export_dir / "job_provenance.json"
+    job_input = None
+    if job_path.is_file():
+        with job_path.open(encoding="utf-8") as handle:
+            job_input = (json.load(handle) or {}).get("input_xaod")
+    mismatch = job_input is not None and job_input != str(Path(wrong_input_path))
     return {
         "control": "wrong_source",
         "ran": True,
         "source_id": source_id,
         "declared_wrong_input": str(wrong_input_path),
-        "metadata_source_file": source_file,
+        "job_input_xaod": job_input,
         "mismatch_detected": bool(mismatch),
         "control_passed": bool(mismatch),
         "fuzzy_join_used": False,

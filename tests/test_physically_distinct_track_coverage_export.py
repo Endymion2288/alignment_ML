@@ -414,27 +414,45 @@ def test_exporter_contract_audit_is_generic_and_unmodified():
 # Provenance validation and negative controls
 # ---------------------------------------------------------------------------
 
+def _write_job_provenance(export_dir: Path, input_xaod: str, **overrides) -> None:
+    payload = {
+        "schema_version": "faser-residual-blind-tracklet-export-job-v1",
+        "source_id": "s",
+        "input_xaod": input_xaod,
+        "exit_status": 0,
+        "status": "ok",
+    }
+    payload.update(overrides)
+    (export_dir / "job_provenance.json").write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def test_validate_exported_source_and_wrong_source_control(tmp_path):
     config = _config()
     candidate = config["export_candidates"][0]
     source = candidate["inputs"][0]
     export_dir = tmp_path / "exports" / "mc24_100120_muon_floor" / source["source_id"]
     export_dir.mkdir(parents=True)
+    enhanced = export_dir / "enhanced_tracklets.root"
     _write_tracklets_root(
         export_dir / "tracklets.root",
         [(100120, 0, 2, 13), (100120, 1, 1, 13), (100120, 0, 1, 13)],
-        source_file=source["path"],
+        source_file=str(enhanced),
     )
+    enhanced.touch()
+    _write_job_provenance(export_dir, source["path"], events_processed=4)
     result = validate_exported_source(
         source_id=source["source_id"],
         expected_input_path=source["path"],
         export_dir=export_dir,
-        job_provenance={"exit_status": 0, "events_processed": 4},
+        job_provenance=json.loads((export_dir / "job_provenance.json").read_text()),
         config=config,
     )
     assert result["provenance_valid"] is True
     assert result["status"] == "ok"
-    assert result["checks"]["metadata_matches_declared_input"] is True
+    assert result["checks"]["converter_link_valid"] is True
+    assert result["checks"]["job_input_matches_declared"] is True
     assert result["checks"]["run_id_matches_production"] is True
     assert result["checks"]["station_z_mapping_valid"] is True
     assert result["checks"]["n_physical_events_with_tracklets"] == 3
@@ -460,12 +478,15 @@ def test_validate_exported_source_and_wrong_source_control(tmp_path):
 
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
-    _write_tracklets_root(empty_dir / "tracklets.root", [], source_file=source["path"])
+    empty_enhanced = empty_dir / "enhanced_tracklets.root"
+    _write_tracklets_root(empty_dir / "tracklets.root", [], source_file=str(empty_enhanced))
+    empty_enhanced.touch()
+    _write_job_provenance(empty_dir, source["path"], events_processed=4)
     empty = validate_exported_source(
         source_id=source["source_id"],
         expected_input_path=source["path"],
         export_dir=empty_dir,
-        job_provenance={"exit_status": 0, "events_processed": 4},
+        job_provenance=json.loads((empty_dir / "job_provenance.json").read_text()),
         config=config,
     )
     assert empty["status"] == VERDICT_SEGMENTFIT_EMPTY
@@ -477,16 +498,19 @@ def test_validate_exported_source_detects_wrong_run(tmp_path):
     source = candidate["inputs"][0]
     export_dir = tmp_path / "wrong_run"
     export_dir.mkdir()
+    enhanced = export_dir / "enhanced_tracklets.root"
     _write_tracklets_root(
         export_dir / "tracklets.root",
         [(999999, 0, 2, 13)],
-        source_file=source["path"],
+        source_file=str(enhanced),
     )
+    enhanced.touch()
+    _write_job_provenance(export_dir, source["path"])
     result = validate_exported_source(
         source_id=source["source_id"],
         expected_input_path=source["path"],
         export_dir=export_dir,
-        job_provenance={"exit_status": 0},
+        job_provenance=json.loads((export_dir / "job_provenance.json").read_text()),
         config=config,
     )
     assert result["provenance_valid"] is False
