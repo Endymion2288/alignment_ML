@@ -206,15 +206,76 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def regression_against_frozen_basis(
+    subspace: IdentifiableSubspace,
+    frozen_pooled: Mapping[str, Any],
+    *,
+    singular_value_rtol: float,
+    max_projector_frobenius: float,
+    expected_identifiable_rank: int,
+    expected_null_dimension: int,
+) -> dict[str, Any]:
+    """Basis-independent regression of a rebuilt subspace against WB68.
+
+    The gated metric is the projector Frobenius distance (the frozen
+    workbook 68-69 ``subspace_distance`` convention), which has full
+    float64 resolution.  Principal angles are reported as diagnostics only:
+    arccos(1 - eps) quantizes angles below ~1.2e-6 deg, so they cannot
+    represent exact subspace agreement (workbook-77 amendment).
+    """
+    reasons = []
+    frozen_sv = np.asarray(frozen_pooled["singular_values"], dtype=np.float64)
+    rebuilt_sv = np.asarray(subspace.singular_values, dtype=np.float64)
+    if frozen_sv.shape != rebuilt_sv.shape or not np.allclose(
+        rebuilt_sv, frozen_sv, rtol=float(singular_value_rtol), atol=0.0
+    ):
+        reasons.append("pooled_singular_values_changed")
+    if int(subspace.identifiable_rank) != int(expected_identifiable_rank):
+        reasons.append("pooled_identifiable_rank_changed")
+    if int(subspace.null_dimension) != int(expected_null_dimension):
+        reasons.append("pooled_null_dimension_changed")
+    # The frozen artifact stores basis matrices as (modes x parameters);
+    # the IdentifiableSubspace dataclass uses (parameters x modes).
+    frozen_vid = np.asarray(frozen_pooled["v_id_scaled"], dtype=np.float64).T
+    frozen_vnull = np.asarray(frozen_pooled["v_null_scaled"], dtype=np.float64).T
+    projector_id_distance = float(
+        np.linalg.norm(subspace.projector_id - frozen_vid @ frozen_vid.T)
+    )
+    projector_null_distance = float(
+        np.linalg.norm(subspace.v_null @ subspace.v_null.T - frozen_vnull @ frozen_vnull.T)
+    )
+    if projector_id_distance > float(max_projector_frobenius):
+        reasons.append("pooled_identifiable_subspace_changed")
+    if projector_null_distance > float(max_projector_frobenius):
+        reasons.append("pooled_null_subspace_changed")
+    angle_id = float(np.max(principal_angles_deg(subspace.v_id, frozen_vid)))
+    angle_null = float(np.max(principal_angles_deg(subspace.v_null, frozen_vnull)))
+    return {
+        "rebuilt_singular_values": [float(v) for v in rebuilt_sv],
+        "frozen_singular_values": [float(v) for v in frozen_sv],
+        "singular_value_rtol": float(singular_value_rtol),
+        "identifiable_projector_frobenius_distance": projector_id_distance,
+        "null_projector_frobenius_distance": projector_null_distance,
+        "max_projector_frobenius": float(max_projector_frobenius),
+        "identifiable_basis_max_principal_angle_deg_diagnostic": angle_id,
+        "null_basis_max_principal_angle_deg_diagnostic": angle_null,
+        "principal_angles_are_arccos_quantized_diagnostics_only": True,
+        "identifiable_rank": int(subspace.identifiable_rank),
+        "null_dimension": int(subspace.null_dimension),
+        "pass": not reasons,
+        "failure_reasons": reasons,
+    }
+
+
 def load_tracker_information(
     config: Mapping[str, Any],
 ) -> tuple[list[dict[str, Any]], IdentifiableSubspace, dict[str, Any], dict[str, Any]]:
     """Rebuild the pooled 7D tracker information and regress it against WB68.
 
     Returns (banks, pooled_subspace, pooled_extras, regression_report).  The
-    regression report compares the rebuilt pooled spectrum and bases against
-    the frozen workbook-68 identifiable-basis artifact; any mismatch fails
-    the campaign before any gauge use.
+    regression report compares the rebuilt pooled spectrum and subspaces
+    against the frozen workbook-68 identifiable-basis artifact; any mismatch
+    fails the campaign before any gauge use.
     """
     corpus = dict(config["tracker_information"])
     banks = load_physical_banks({"jacobian_corpus": corpus})
@@ -230,43 +291,22 @@ def load_tracker_information(
     frozen = _read_json(
         resolve_under_root(project_root(), str(corpus["regression_artifact"]))
     )["pooled"]
-    rtol = float(corpus["regression_singular_value_rtol"])
-    max_angle = float(corpus["regression_max_principal_angle_deg"])
-    reasons = []
-    frozen_sv = np.asarray(frozen["singular_values"], dtype=np.float64)
-    rebuilt_sv = np.asarray(subspace.singular_values, dtype=np.float64)
-    if frozen_sv.shape != rebuilt_sv.shape or not np.allclose(
-        rebuilt_sv, frozen_sv, rtol=rtol, atol=0.0
-    ):
-        reasons.append("pooled_singular_values_changed")
-    if int(subspace.identifiable_rank) != int(corpus["expected_pooled_identifiable_rank"]):
-        reasons.append("pooled_identifiable_rank_changed")
-    if int(subspace.null_dimension) != int(corpus["expected_pooled_null_dimension"]):
-        reasons.append("pooled_null_dimension_changed")
-    frozen_vid = np.asarray(frozen["v_id_scaled"], dtype=np.float64)
-    frozen_vnull = np.asarray(frozen["v_null_scaled"], dtype=np.float64)
-    angle_id = float(np.max(principal_angles_deg(subspace.v_id, frozen_vid)))
-    angle_null = float(np.max(principal_angles_deg(subspace.v_null, frozen_vnull)))
-    if angle_id > max_angle:
-        reasons.append("pooled_identifiable_basis_changed")
-    if angle_null > max_angle:
-        reasons.append("pooled_null_basis_changed")
-
-    regression = {
-        "kind": "tracker_information_regression",
-        "regression_artifact": str(corpus["regression_artifact"]),
-        "n_sources": len(banks),
-        "n_pairs": int(extras["n_pairs"]),
-        "rebuilt_singular_values": [float(v) for v in rebuilt_sv],
-        "frozen_singular_values": [float(v) for v in frozen_sv],
-        "singular_value_rtol": rtol,
-        "identifiable_basis_max_principal_angle_deg": angle_id,
-        "null_basis_max_principal_angle_deg": angle_null,
-        "identifiable_rank": int(subspace.identifiable_rank),
-        "null_dimension": int(subspace.null_dimension),
-        "pass": not reasons,
-        "failure_reasons": reasons,
-    }
+    regression = regression_against_frozen_basis(
+        subspace,
+        frozen,
+        singular_value_rtol=float(corpus["regression_singular_value_rtol"]),
+        max_projector_frobenius=float(corpus["regression_max_projector_frobenius"]),
+        expected_identifiable_rank=int(corpus["expected_pooled_identifiable_rank"]),
+        expected_null_dimension=int(corpus["expected_pooled_null_dimension"]),
+    )
+    regression.update(
+        {
+            "kind": "tracker_information_regression",
+            "regression_artifact": str(corpus["regression_artifact"]),
+            "n_sources": len(banks),
+            "n_pairs": int(extras["n_pairs"]),
+        }
+    )
     return banks, subspace, extras, regression
 
 

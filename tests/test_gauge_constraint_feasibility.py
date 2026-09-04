@@ -30,6 +30,7 @@ from alignment.gauge_constraint_feasibility import (
     external_eligibility_table,
     gauge_invariant_closure,
     load_config,
+    regression_against_frozen_basis,
     solve_gauge_fixed_kkt,
 )
 from alignment.identifiable_subspace import (
@@ -313,6 +314,79 @@ def test_eligibility_rule_would_admit_a_real_measurement():
     table = external_eligibility_table(config2)
     assert table["eligible_external_physical_constraints"] == ["hypothetical_future_survey_ry"]
     assert table["no_ingestable_external_physical_constraint_available"] is False
+
+
+# ---------------------------------------------------------------------------
+# Tracker-information regression (workbook-77 amendment: projector metric)
+# ---------------------------------------------------------------------------
+
+
+def _frozen_pooled_from(subspace: IdentifiableSubspace) -> dict:
+    return {
+        "singular_values": list(subspace.singular_values),
+        "v_id_scaled": subspace.v_id.T.tolist(),
+        "v_null_scaled": subspace.v_null.T.tolist(),
+    }
+
+
+def test_regression_passes_for_identical_subspace():
+    subspace = _synthetic_subspace()
+    report = regression_against_frozen_basis(
+        subspace,
+        _frozen_pooled_from(subspace),
+        singular_value_rtol=1.0e-6,
+        max_projector_frobenius=1.0e-8,
+        expected_identifiable_rank=5,
+        expected_null_dimension=2,
+    )
+    assert report["pass"] is True
+    assert report["identifiable_projector_frobenius_distance"] == 0.0
+    assert report["null_projector_frobenius_distance"] == 0.0
+
+
+def test_regression_passes_for_within_subspace_rotated_basis():
+    """The amendment case: basis vectors rotated within the same span must
+    pass the projector gate even where arccos-quantized principal angles
+    cannot resolve the agreement."""
+    subspace = _synthetic_subspace()
+    rotation = np.eye(5)
+    theta = 1.0e-7
+    rotation[3, 3] = np.cos(theta)
+    rotation[3, 4] = -np.sin(theta)
+    rotation[4, 3] = np.sin(theta)
+    rotation[4, 4] = np.cos(theta)
+    rotated_vid = subspace.v_id @ rotation
+    frozen = _frozen_pooled_from(subspace)
+    frozen["v_id_scaled"] = rotated_vid.T.tolist()
+    report = regression_against_frozen_basis(
+        subspace,
+        frozen,
+        singular_value_rtol=1.0e-6,
+        max_projector_frobenius=1.0e-8,
+        expected_identifiable_rank=5,
+        expected_null_dimension=2,
+    )
+    assert report["identifiable_projector_frobenius_distance"] < 1e-12
+    assert report["pass"] is True
+
+
+def test_regression_fails_for_genuinely_rotated_subspace():
+    subspace = _synthetic_subspace()
+    frozen = _frozen_pooled_from(subspace)
+    # Rotate one identifiable direction into the null space by 1 mrad.
+    tilted = subspace.v_id.copy()
+    tilted[:, 0] = np.cos(1e-3) * subspace.v_id[:, 0] + np.sin(1e-3) * subspace.v_null[:, 0]
+    frozen["v_id_scaled"] = tilted.T.tolist()
+    report = regression_against_frozen_basis(
+        subspace,
+        frozen,
+        singular_value_rtol=1.0e-6,
+        max_projector_frobenius=1.0e-8,
+        expected_identifiable_rank=5,
+        expected_null_dimension=2,
+    )
+    assert report["pass"] is False
+    assert "pooled_identifiable_subspace_changed" in report["failure_reasons"]
 
 
 # ---------------------------------------------------------------------------

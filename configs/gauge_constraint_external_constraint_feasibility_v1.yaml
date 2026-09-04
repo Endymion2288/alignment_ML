@@ -124,7 +124,18 @@ tracker_information:
     - mc24_100048_00150_00199
   regression_artifact: outputs/tracker_only_identifiable_subspace_three_arm_closure_v1/identifiable_basis.json
   regression_singular_value_rtol: 1.0e-6
-  regression_max_principal_angle_deg: 1.0e-6
+  # Amendment 2026-09-05 (documented in workbook 77): the pre-registered
+  # principal-angle gate (1e-6 deg) was set below the float64 resolution of
+  # the arccos-based principal-angle metric itself - arccos(1 - eps) has a
+  # quantization floor of sqrt(2*ulp(1)) ~ 2.1e-8 rad ~ 1.2e-6 deg, so the
+  # metric cannot represent exact subspace agreement.  The first run failed
+  # at 1.2074e-6 deg with bit-identical singular values, bit-identical
+  # projectors (Frobenius distance exactly 0.0), and per-mode span residuals
+  # ~1e-16.  The regression therefore uses the basis-independent projector
+  # Frobenius distance (the frozen workbook 68-69 subspace_distance
+  # convention), which has full float64 resolution; principal angles remain
+  # as diagnostics only.
+  regression_max_projector_frobenius: 1.0e-8
   expected_pooled_identifiable_rank: 5
   expected_pooled_null_dimension: 2
 
