@@ -9,12 +9,14 @@ consulted anywhere in these tests.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from alignment.identifiable_subspace import FROZEN_RANK_TOLERANCE, frozen_scales_for
+from alignment.module_level_residual_poc import json_ready
 from alignment.kshort_rigid_station_5dof_complementarity import (
     DECISION_CANONICAL_REGRESSION_FAILED,
     DECISION_COMPLEMENTARITY_FAIL,
@@ -591,6 +593,11 @@ def test_joint_complementarity_passes_on_stable_rank_five_pair():
     assert report["canonical_hypothesis_core_dimension"] == 5
     assert report["independent_validation"]["pass"] is True
     assert all(bool(value) for value in report["checks"].values()), report["checks"]
+    # The report driver writes this payload as JSON; no IdentifiableSubspace
+    # or numpy object may leak through public keys.
+    from scripts.report_kshort_rigid_station_5dof_complementarity import _strip_private
+
+    json.dumps(json_ready(_strip_private(report)))
 
 
 def test_joint_complementarity_fails_when_canonical_core_collapses():

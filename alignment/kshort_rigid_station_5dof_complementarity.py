@@ -870,7 +870,7 @@ def joint_complementarity_report(
         "stable_core": {
             key: value
             for key, value in hypothesis_core.items()
-            if key not in {"v_core", "v_orthogonal", "projector_core"}
+            if key not in {"v_core", "v_orthogonal", "projector_core", "core_space"}
         },
         "canonical_hypothesis_core_dimension": hypothesis_dimension,
         "independent_validation": independent,

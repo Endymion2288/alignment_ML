@@ -211,3 +211,101 @@ reconstruction 链。
   artifact 含 SHA256、config SHA、source SHA、starting git SHA、
   Calypso revision、commands、Condor cluster/job IDs、provenance、
   pass/fail reason、final frozen decision。
+
+## 结果（2026-09-04 FD 完成后回填）
+
+### 执行时间线
+
+- 首次 HTCondor 提交（cluster 1108926，10 源 × 15 点）：全部 150 点的
+  Athena refit 与两个 converter 成功（每点 10000 events、约 8500
+  tracklets、约 5100 propagation records），但内容审计
+  `audit_tracklets.py` 因 merged-rec `(run,event)` 碰撞在 sorted 分组
+  下硬失败——纯基础设施缺陷（driver 未传 `--physical-order`）。
+- 修复：scan config 新增 `merged_rec_physical_order: true`（commit
+  `f7cf1f1`，canonical 模板不设该键、行为逐位不变，539 tests 通过），
+  就地修补 10 个 per-source config，resume 重提交（cluster 1108940）：
+  150/150 点完成，refit 产物全部复用。
+- 分析首次运行发现 JSON 序列化泄漏（`build_core_from_rows` 返回的
+  `core_space` 对象未从公开键剥离）；修复并加序列化回归测试后，完整
+  分析于 2026-09-04 21:57 UTC 完成。
+
+### Physical closure：失败
+
+- 全部 10 源仅因 `too_few_pairs` 失败：每源 movable-station 对数
+  6/8/8/9/10/11/12/16/19/19，冻结门 `min_pairs=20`（逐位继承条目 73，
+  预注册，禁止事后修改）。
+- 其余所有 Jacobian 有效性检查全部通过：FD 步长观测值与声明值精确一致
+  （|Δ|<1e-9）、±probes 齐全、population 对齐、残差/协方差/Jacobian
+  全部有限、无近零列、无 held-out 混入、无 test 访问。
+- 诊断（源 mc24_100130_00000_00009）：reference 单点仅 18 对
+  movable-station 对（1194 总对中），15 点交集 14——瓶颈是 Ks→ππ 子核
+  "一 π 在 station 0、sibling π 在 station 1-3"的固有接收度
+  （约 0.15%/event），而非跨点重建不稳定（交集保留率约 78%）。
+- 物理事件身份：每源 10000 entries 中 9000 个 `(run,event)` 碰撞全部由
+  ntuple 桥接 occurrence-augmented uid 唯一解析；全 bank 0 起重复身份
+  硬失败；仅 exact join（无 fuzzy/最近邻）。
+
+### Canonical-only regression（阴性对照）：通过
+
+- 从冻结 hierarchical V1 bank 重建的 canonical-only 分析精确复现条目
+  73 冻结 artifact：源集合一致、每源 rank 一致、奇异值在 rtol=1e-6 内
+  一致、pooled rank 5、decision 一致（两个冻结 artifact 的 SHA256 校验
+  通过）。
+
+### K-short-only（report-only，不可声明为结果）
+
+- pooled 奇异值 536.5 / 458.3 / 48.02 / 37.25 / 16.25，pooled rank 5。
+- 每源 rank：7 源 rank 5、3 源 rank 4（每源仅 6-19 对）。
+- 源稳定性（native rank 参照）：失败；coverage 稳定性：通过。
+
+### Joint complementarity（report-only）
+
+- joint pooled rank 5 通过；joint 源稳定性（`pooled_remainder` LOSO）
+  通过。
+- canonical↔K-short pooled 子空间几乎同一：最大可辨识主角 1.48e-6°，
+  projector Frobenius 距离 1.48e-15——canonical 每源数千对对 K-short
+  每源十余对，pooled 矩阵由 canonical 绝对主导，K-short 信息权重在
+  pooled 层面不可见。
+- canonical hypothesis stable core 维数 4（门要求 5：失败）；K-short
+  对该 core 的条目 69 独立验证 10/10 源通过。
+- 最弱 canonical 方向信息比 K-short/canonical = 0.175（仅报告，无冻结
+  阈值）；joint bootstrap/half-split 与 coverage 稳定性失败。
+
+### 最终冻结判定
+
+- `kshort_rigid_station_five_dof_physical_or_provenance_failure`，
+  `no_rank_claimed = true`。
+- 判定链严格按预注册：physical closure 先行短路；`joint pooled
+  rank == 5` 单独不构成成功；所有 report-only 观测值仅存档、不提升为
+  结论。
+- 失败性质：K-short 群体 movable-station 对的固有接收度稀疏性
+  （物理），而非基础设施、事件身份或重建链缺陷。
+
+### Artifact SHA256
+
+| artifact | SHA256 |
+|---|---|
+| physical_closure.json | 800817ce9edeeea5436ed53fa845ebe0b6c72df919d832aa56a260916a922c97 |
+| canonical_regression.json | b1ca95d0ec901fa4ba8d8fe967fb40c40569fd206fe7091cc7d9e7b8a5529427 |
+| canonical_only.json | a94d6b82496ec002c1a6ccfa97fb2394b1c97f8d692be5109672378fc11f3805 |
+| kshort_only.json | 1325403f0d1f1d42506c67a11d520b3fd4e4c4dbe5243589148d9e1d777f3767 |
+| joint.json | 2d39d72efc11f3d5181c74953ac2e62dbda90df976c6db2db361997d908e9567 |
+| complementarity.json | 8e8d96248d35b61d3d05598bf0800a96558031adc8b6edef376228b2c93044ad |
+| next_stage_decision.json | 7894195c36cbb24f88fd4d0117ddf5010bfa0328d6ce760904fb1ba8ee52aefd |
+| iteration_manifest.json | 315ba0a3916e80d9c89b2744524516584089592f0ac364a3854f324f8bb99bda |
+| smoke_reference_rz_probe.json | 4233224444b9abea1b2f22854b0d495a619ee26c825fcd5623a9d0b97a0fb46b |
+
+Condor：cluster 1108926（基础设施失败）、cluster 1108940（150/150
+完成）。关键 commit：`5329687`（预注册）、`b21ea23`（桥接匹配
+converter drop mask）、`f7cf1f1`（merged-rec 审计开关）。
+
+### 后续（按预注册分支）
+
+- 失败已冻结 → 解锁 `Gauge-Constrained / External-Constraint Alignment
+  Feasibility` 战役（须独立预注册 config + workbook，禁止复用本条目
+  的 FD 谱来设计其判据）。
+- 观察记录（不构成结论）：K-short pooled 谱达 rank 5 且独立验证通过；
+  若未来希望利用 K-short 信息，需要新 campaign 在看到任何新 FD 谱之前
+  重新预注册统计量门（例如以每源对数为先验设计 min_pairs，或改用不
+  要求 movable-station 对的观测量）；本条目内禁止事后放宽
+  `min_pairs=20`。
