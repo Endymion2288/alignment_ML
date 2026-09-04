@@ -185,10 +185,113 @@ gauge feasibility。若意外发现 eligible 候选，判定为
   solver method、condition metrics、gauge-invariant metrics、
   external-evidence eligibility 与 unresolved assumptions。
 
-## 结果（分析运行后回填）
+## 结果（2026-09-05 回填）
 
-- [ ] Tracker 信息回归（阴性对照）
-- [ ] Gauge 合同合法性（三类候选）
-- [ ] Gauge-invariant observable closure
-- [ ] External-constraint eligibility table
-- [ ] 最终冻结判定与 artifact SHA
+### 执行时间线
+
+1. 预注册提交 `9ba17c7`（全部 gate 在见结果前冻结）。
+2. 首次 `--stage all`：`tracker_information_regression_failed`——阴性
+   对照在 identifiable basis 主角门上失败（观测 1.2074e-6° vs 预注册
+   1e-6°）。
+3. 根因调查（先取证、后修正）：逐源 pair 数与冻结 artifact 完全一致
+   （共 1603）；奇异值逐位相同；identifiable/null **projector
+   Frobenius 距离精确为 0.0**；每个冻结 mode 在重建 span 中残差
+   ~1e-16；同进程重跑 SVD 复现同一 1.2e-6°。结论：子空间逐位相同，
+   差异是 `arccos(1-ε)` 在 ε≈1 ulp 处的量化台阶（√(2ε) ≈ 2.1e-8
+   rad ≈ 1.2e-6°）——预注册门设在所选度量的 float64 分辨极限之下，
+   该度量无法表示"完全一致"。
+4. 修正（amendment 提交 `ab608da`，透明记录、重跑前冻结）：回归改用
+   基无关的 projector Frobenius 距离（条目 68-69 冻结约定），门
+   1e-8；主角仅作诊断。新增 3 个 amendment 回归测试。原始失败
+   artifact 保留为证据。
+5. 重跑 `--stage all`：全部通过。
+
+### Tracker 信息回归（阴性对照，通过）
+
+- 重建 pooled 7D tracker 信息（条目 68 同 7 源 corpus，1603 pairs）：
+  奇异值与冻结 artifact 逐位一致
+  `[3729.82, 1747.30, 292.107, 170.813, 164.271, 28.1569, 2.51578]`；
+  rank 5 / null 2 精确；identifiable/null projector Frobenius 距离
+  均为 0.0（门 1e-8）。
+- 诊断主角（arccos 量化，非 gate）：identifiable 1.2074e-6°、null
+  0.0°。
+
+### Gauge 合同合法性（三类候选全部 valid）
+
+| gauge | rank(G) | 剩余自由度 | det(G·S·V_null) | cond |
+|---|---|---|---|---|
+| `named_parameter_zero_gauge` (θ_dz=0, θ_C_dx=0) | 2 | 5 | -0.345 | 72.5 |
+| `minimum_norm_scaled_gauge` (V_null^T S^{-1} θ=0) | 2 | 5 | 1.0 | 1.0 |
+| `minimum_norm_native_gauge` ((S V_null)^T θ=0) | 2 | 5 | 540.9 | 1.16 |
+
+三者均与 null 空间互补，均不改变 tracker-observable prediction
+（closure 验证）。
+
+### Gauge-invariant observable closure（全部 7 gate 通过）
+
+- `|G û|max = 2.0e-12` ≤ 1e-9（约束精确满足）
+- representative 唯一性：0.0（≤ 1e-8；同一 gauge 下 4 个
+  observable-equivalent truth 给出逐位相同代表，无 null 漂移）
+- 跨 gauge 可观测预测相对差 4.2e-15 ≤ 1e-8
+- 跨 gauge 可辨识投影绝对差 3.1e-15 ≤ 1e-8
+- held-out（pair 对半分，801/802）预测跨 gauge 相对差 2.4e-15 ≤ 1e-8
+- KKT 最大条件数 2.0e8 ≤ 1e12，求解残差与满秩检查全部通过
+- 预期内的 gauge 依赖性（report-only）：null 坐标均值
+  named=[0.0122, 6.7e-6]、min-norm-scaled=[~0, ~0]、
+  min-norm-native=[-0.221, -0.0053]，跨 gauge spread 0.234——
+  gauge-dependent absolute components 确实不同，永不作跨 gauge 比较；
+  恢复完整注入 truth 未作为 gate。
+- 诊断：被冻结 rank cut 丢弃的 near-null 信息最大相对占比 4.06%
+  （报告，永不使用）。
+
+### External-constraint eligibility table（15/15 全部不合格）
+
+机械四门规则与冻结的条目 66/67 slot artifact 交叉核对一致，无任一
+候选通过全部四门：`ift_C_dx`（+0.2541169 mm）映射已验证且独立但无
+covariance/IOV（保持 `feasibility_only`）；`ift_l0_minus_l2_dx` 与
+C_dx 同 DoF 不独立；`ift_station0_ry` 无值且映射未解决（保持
+`unavailable`）；Kabsch/dz-vs-x/layer tilt/support-beam/2021 I/F
+tilt 映射全部禁止或未协调且无 covariance；conditions 常数是重建状态
+而非独立 survey；population Sigma 不得作 σ。
+
+**没有任何现有外部测量有资格把 gauge/null directions 提升为物理约束。**
+
+### 最终冻结判定
+
+`gauge_feasibility_closed_no_eligible_external_physical_constraint`
+
+- `gauge_constraint_contract_valid = true`
+- `gauge_fixed_solver_well_posed = true`
+- `gauge_invariant_observable_closure = true`
+- `eligible_external_physical_constraints = []`
+- `external_constraint_ingest_authorized = false`
+- `no_ingestable_external_physical_constraint_available = true`
+- `real_data_candidate_alignment_authorized = false`
+- `geometry_write_allowed = false`
+- `official_conditions_write_allowed = false`
+
+### Artifact SHA256（outputs/gauge_constraint_external_constraint_feasibility_v1/）
+
+- `config_validation.json` = `3864833dab091dfc370f1efa6d39267f4548582329a0d14c349166f8e8b54865`
+- `tracker_information_regression.json` = `0a01d1b528878d1695d47c8a423633094263ada83009bd6a7dd49d6245dda5b8`
+- `gauge_candidates.json` = `7ef11cf8e304dfffbc2ef600737561decfd94d4b3b6d27e61689184f7fe0161d`
+- `gauge_invariant_closure.json` = `e77a18d99156f7173b4d50a45c0c24eef9176da831aa3721223eb8664651f0e1`
+- `external_constraint_eligibility.json` = `dd0c00afa6e2f6dc56dc10dcaba5187fdd7a291a2bccb8f5c869546dee392020`
+- `next_stage_decision.json` = `7b3d3af8cf03c6834882a0e6d773c46521f1fe1498bca09e5aad090049d886fd`
+- `campaign_summary.json` = `c24660afc1acf5e8be85b14298ad692e314cbbbfd96747a47ad4c4e248a88eca`
+
+### 关键提交
+
+- `9ba17c7` 预注册（gate 冻结先于结果）
+- `ab608da` 回归度量 amendment（含完整取证与 3 个回归测试）
+- 结果回填 + 全量回归 558 tests 通过后冻结提交
+
+### 后续分支（均需独立预注册）
+
+1. **Gauge-Fixed Real-Data Alignment Diagnostic V1**：calibration
+   subset 求 gauge-fixed candidate（称为 reconstruction gauge
+   representative / candidate diagnostic），只在 held-out residual/DQ
+   population 评价 gauge-invariant observable improvement；official
+   COOL/POOL write 保持关闭。
+2. 若未来出现真正 eligible 的 external physical measurement：另开独立
+   子战役，`y = H θ + ε` 形式，与 software gauge 结论严格分离。
