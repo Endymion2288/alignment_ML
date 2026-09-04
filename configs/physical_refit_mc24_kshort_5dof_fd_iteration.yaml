@@ -33,6 +33,12 @@ physical_refit_capture_scan:
   chi2_gate: 25.0
   refinement_iterations: 1
   run_alignment_closure: false
+  # Merged MC24 rec reuses generator-job event numbers, so the content audit
+  # must group tracklets as consecutive equal-(run_id, event_id) blocks in
+  # file order (collisions are non-adjacent, separated by 1000-entry
+  # generator-job strides).  The cross-geometry FD join itself uses the
+  # ntuple-bridged occurrence-augmented identity of workbook 76.
+  merged_rec_physical_order: true
 
   alignment_parameter_specs:
     - name: ift_dx_mm

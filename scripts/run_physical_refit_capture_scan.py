@@ -1382,6 +1382,11 @@ def _run_point(
                                 if bool(config.get("require_mc_labels", bool(config.get("is_mc", True))))
                                 else []
                             ),
+                            *(
+                                ["--physical-order"]
+                                if bool(config.get("merged_rec_physical_order", False))
+                                else []
+                            ),
                         ]
                     ),
                 ]
@@ -1486,6 +1491,12 @@ def main() -> None:
     config["is_mc"] = is_mc
     config["include_truth"] = include_truth
     config["require_mc_labels"] = require_mc_labels
+    merged_rec_physical_order = bool(config.get("merged_rec_physical_order", False))
+    if "merged_rec_physical_order" in config and not isinstance(
+        config["merged_rec_physical_order"], bool
+    ):
+        raise ValueError("merged_rec_physical_order must be a boolean when set")
+    config["merged_rec_physical_order"] = merged_rec_physical_order
     if not Path(str(config["input_xaod"])).expanduser().is_file():
         raise FileNotFoundError(f"input xAOD is unavailable: {config['input_xaod']}")
     plan = _build_plan(config)
