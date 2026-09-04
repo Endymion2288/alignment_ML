@@ -11,6 +11,7 @@ backend.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 
 import torch
@@ -48,6 +49,16 @@ class RouteAwareTransformerConfig:
     # route-query -> route_edge_correction path.  RelativeRoute V4 YAML sets
     # the additive complete-route correction explicitly.
     use_additive_route_correction: bool = False
+    # Workbook-72 V5A bounded residual.  When None (default / historical V4)
+    # the additive complete-route correction is unbounded:
+    #     delta = raw_delta.
+    # When set to a positive float B (V5A), the raw head output is squashed to
+    # the solver-semantic O(1) scale before entering L_corrected:
+    #     delta_bounded = B * tanh(raw_delta / B)  in [-B, +B].
+    # tanh(0)=0 and d/dx[B*tanh(x/B)] = sech^2(x/B) = 1 at x=0, so zero-init
+    # and the unit slope at the origin are both preserved exactly.  B=4 matches
+    # the production dustbin boundary (U_complete = L_corrected - 4).
+    route_correction_bound: float | None = None
 
     def as_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -266,6 +277,18 @@ class RouteAwareSparseTransformer(nn.Module):
             dim=-1,
         )
         delta_route_logits = self.route_score(self.route_encoder(route_input)).squeeze(-1)
+        # Workbook-72 V5A bounded residual: squash the raw head output onto the
+        # solver-semantic O(1) scale before it enters L_corrected.  Applied here
+        # (in the head) so that every downstream consumer -- the additive
+        # route_logits below, the RelativeRouteV4Inference wrapper, the
+        # solver-aware losses, and the production solver -- sees the bounded
+        # delta.  None (historical V4) leaves the correction unbounded.
+        bound = self.config.route_correction_bound
+        if bound is not None:
+            bound_value = float(bound)
+            if not math.isfinite(bound_value) or bound_value <= 0.0:
+                raise ValueError("route_correction_bound must be a positive finite float")
+            delta_route_logits = bound_value * torch.tanh(delta_route_logits / bound_value)
         if self.config.use_additive_route_correction:
             # Trainable delta must not enter the frozen Workbook-64 edge
             # correction.  Historical V2 computed route_edge_correction from

@@ -168,7 +168,10 @@ def _compute_frozen_hash(model: nn.Module) -> str:
     return digest.hexdigest()
 
 
-def _validate_train_sources(samples: Sequence[CurriculumSample]) -> None:
+def _validate_train_sources(
+    samples: Sequence[CurriculumSample],
+    expected_sources: Sequence[str] | None = None,
+) -> None:
     if {sample.split for sample in samples} != {"train"}:
         raise ValueError("Head-only training opened a non-train split")
     constituents = {str(source) for sample in samples for source in sample.source_ids}
@@ -178,9 +181,22 @@ def _validate_train_sources(samples: Sequence[CurriculumSample]) -> None:
         raise ValueError(
             f"Forbidden / Development / Blind sources leaked into training: {', '.join(sorted(leaking))}"
         )
-    if constituents != set(AUTHORIZED_SIX_TRAIN_SOURCES):
+    if expected_sources is None:
+        # Historical Workbook-69 behaviour: the full six-source train corpus.
+        expected = set(AUTHORIZED_SIX_TRAIN_SOURCES)
+    else:
+        # Workbook-72 source-transfer CV: a fold trains on a strict subset of the
+        # six authorized sources (the held-out family must be absent).  Requiring
+        # constituents == expected fold sources IS the source-holdout guard.
+        expected = {str(s) for s in expected_sources}
+        if not expected <= set(AUTHORIZED_SIX_TRAIN_SOURCES):
+            raise ValueError(
+                "Fold train sources must be a subset of the authorized six train sources. "
+                f"Got: {', '.join(sorted(expected))}"
+            )
+    if constituents != expected:
         raise ValueError(
-            f"Training set must match authorized six train sources. Got: {', '.join(sorted(constituents))}"
+            f"Training set must match expected train sources. Got: {', '.join(sorted(constituents))}"
         )
 
 
@@ -200,6 +216,15 @@ def main() -> None:
     parser.add_argument("--output-dir", required=True, help="Path to output directory")
     parser.add_argument("--q-over-p-mode", type=int, default=0, choices=(0,))
     parser.add_argument("--device", default="cuda", choices=("cuda",))
+    parser.add_argument(
+        "--expected-train-sources",
+        default=None,
+        help=(
+            "Optional comma-separated list of train source ids for Workbook-72 "
+            "source-transfer CV folds.  When omitted the full authorized six-source "
+            "set is required (historical Workbook-69 behaviour)."
+        ),
+    )
     args = parser.parse_args()
 
     config_path = Path(args.config).expanduser().resolve()
@@ -239,8 +264,17 @@ def main() -> None:
         require_all_splits=False,
         allowed_splits=("train",),
     )
-    _validate_train_sources(samples)
-    print(f"Loaded {len(samples)} train curriculum samples from 6 authorized sources.", flush=True)
+    expected_sources = (
+        [s.strip() for s in args.expected_train_sources.split(",") if s.strip()]
+        if args.expected_train_sources
+        else None
+    )
+    _validate_train_sources(samples, expected_sources=expected_sources)
+    print(
+        f"Loaded {len(samples)} train curriculum samples from "
+        f"{len(expected_sources) if expected_sources else 6} authorized sources.",
+        flush=True,
+    )
 
     # 2. Build candidate sets and graph bundle
     train_sets = build_candidate_sets(
