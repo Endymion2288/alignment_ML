@@ -1,0 +1,401 @@
+# Physically-Distinct Track-Coverage Residual-Blind HTCondor Export &
+# Reinventory V1 (workbook 75 / 2026-09-04).
+#
+# This campaign executes the single next step authorized by workbook 74:
+# the residual-blind HTCondor tracklet export of the two metadata-distinct
+# candidates mc24_100120_muon_floor and mc24_100130_kshort_end_fasernu,
+# followed by a repeated residual-blind coverage inventory against the
+# frozen workbook-74 gates and the canonical (tx, ty) envelope.
+#
+# It does not construct A = W^{1/2} J S, does not SVD, does not inspect
+# rank, does not inject any alignment payload, does not build a physical
+# FD point, and does not select events from residuals / Jacobian /
+# singular values / cosine / alignment response.  Workbooks 59-74 remain
+# frozen.  No coverage gate is modified.
+
+schema_version: faser-physically-distinct-track-coverage-residual-blind-export-reinventory-v1
+frozen: true
+stage: residual_blind_htcondor_export_and_reinventory
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+three_arm_authorized: false
+frozen_v2_alignment_loop_authorized: false
+real_data_correction_authorized: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_reopen_workbook_51_reduced_station_mode: true
+do_not_reopen_workbook_36_as_this_campaign: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_restack_canonical_5mrad_unused_files: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_rescue_seven_d_observable: true
+do_not_rescue_cluster_local_observable: true
+do_not_redefine_tracklet_stable_core_criterion: true
+do_not_drop_entry_69_failure_sources: true
+do_not_drop_failed_sources_to_recover_rank_five: true
+do_not_delete_dz_or_cdx_columns_from_seven_d_svd: true
+do_not_delete_rz_or_further_dof: true
+do_not_force_write_old_survey_central_values: true
+do_not_open_three_arm_unless_identifiability_passes: true
+do_not_open_frozen_v2_alignment_loop: true
+do_not_construct_fd_identifiability_this_stage: true
+do_not_compute_svd_or_rank_this_stage: true
+do_not_guess_branch_meaning_from_filename: true
+do_not_lower_statistical_gates: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_open_gauge_branch_until_inventory_closes: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+cdx_fixed_is_not_a_measurement_of_zero: true
+dz_is_not_a_tracker_free_parameter: true
+pooled_rank_is_not_portability: true
+filename_5mrad_is_not_phase_space_proof: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+this_is_not_seven_d_column_deletion: true
+this_is_not_workbook_36_survey_dz_curriculum: true
+this_is_not_workbook_59_or_60_rank_rescue: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+# Stage-75 specific freezes.
+do_not_inject_alignment_payload_in_export: true
+do_not_construct_physical_fd_point_this_stage: true
+do_not_compute_residual_based_selection_this_stage: true
+do_not_pool_the_two_export_candidates: true
+do_not_split_one_xaod_file_into_fake_independent_sources: true
+do_not_modify_truth_matching_or_route_definition_post_hoc: true
+do_not_reinterpret_local_hypot_tx_ty_as_spectrometer_wide_angle: true
+export_is_not_fd_authorization: true
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_entry_59_decision: no_portable_alternative_topology_in_current_r0022
+inherited_entry_60_decision: real_track_topology_insufficient_for_ry_cdx_separation
+inherited_entry_61_decision: external_survey_or_metrology_required_and_year_iov_parameterization_required
+inherited_entry_68_decision: tracker_only_identifiable_basis_unstable_solve_stopped
+inherited_entry_69_decision: cross_source_stable_core_independent_validation_fail
+inherited_entry_70_decision: cluster_local_transfer_exact_join_restored_not_an_identifiability_campaign
+inherited_entry_71_decision: cluster_local_observable_not_cross_run_portable
+inherited_entry_72_decision: tracklet_independent_failure_provenance_audit_complete_sources_not_dropped
+inherited_entry_73_decision: rigid_station_five_dof_not_source_or_coverage_portable
+inherited_entry_74_decision: residual_blind_export_authorized_fd_not_opened
+
+# Workbook-74 contract inheritance.  The loader verifies the SHA256 of the
+# inherited config and that the gates / phase-space / rigid-station contract
+# copied below are identical to the inherited values.
+inherited_workbook_74_config: configs/physically_distinct_track_coverage_identifiability_feasibility_v1.yaml
+inherited_workbook_74_config_sha256: 2a8b17a362fa38c4fb9ad16fdb379bf4c7f8046fb38f1bc1f345776e21936caf
+inherited_workbook_74_canonical_coverage: outputs/physically_distinct_track_coverage_identifiability_feasibility_v1/canonical_coverage.json
+
+# Frozen rigid-station 5DoF contract, inherited unchanged from workbook 74.
+# This stage does not reconstruct A.  A later FD campaign, if a candidate is
+# admitted and separately pre-registered, must reuse these values unchanged.
+rigid_station_five_dof_contract:
+  parameter_names: [ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad]
+  parameter_units: [mm, mm, mrad, mrad, mrad]
+  rank_tolerance: 0.01
+  scale_matrix_S:
+    ift_dx_mm: 5.0
+    ift_dy_mm: 5.0
+    ift_rx_mrad: 60.0
+    ift_ry_mrad: 60.0
+    ift_rz_mrad: 60.0
+  weighted_matrix: "A = W^{1/2} J S"
+  do_not_retune_this_stage: true
+  do_not_reconstruct_this_stage: true
+
+physics_scales:
+  faser_ip_distance_mm: 480000.0
+  tracker_radial_envelope_mm: 100.0
+  ip_angular_acceptance_rad: 0.000208
+  ip_like_max_slope: 0.0005
+  stereo_rad: 0.020
+  ift_layer_pitch_mm: 31.5
+  strip_pitch_mm: 0.080
+  wide_angle_min_slope: 0.002
+  slope_definition: hypot_source_tracklet_tx_ty
+  slope_source: canonical_tracklet_local_state
+  slope_is_not_leftover_residual_rtx_rty: true
+  slope_is_not_spectrometer_delta_x_over_delta_z: true
+  station_z_mm:
+    0: -1860.15
+    1: 47.4
+    2: 1237.4
+    3: 2427.4
+  station_z_match_tolerance_mm: 400.0
+
+# Identical to workbook 74.
+phase_space:
+  coordinates: [tx, ty]
+  preferred_station: 0
+  envelope_quantiles: [0.01, 0.99]
+  histogram_range_tx: [-0.40, 0.40]
+  histogram_range_ty: [-0.40, 0.40]
+  histogram_bins: 24
+  azimuth_bins: 12
+  min_truth_match_fraction: 0.99
+  filename_5mrad_is_not_phase_space_proof: true
+
+# Frozen before looking at any export coverage number.  Identical to
+# workbook 74; do not lower.
+coverage_gates:
+  min_events: 200
+  min_ift_events: 200
+  min_complete_four_station_events: 80
+  min_independent_sources_or_runs: 2
+  require_ift_station_0: true
+  require_stations_0_1_2_3_present: true
+  min_outside_canonical_envelope_fraction: 0.20
+  max_histogram_intersection_for_distinct: 0.80
+  min_wide_local_slope_fraction: 0.30
+  do_not_lower_gates: true
+  collision_like_metadata_cannot_admit: true
+  same_production_as_canonical_cannot_admit: true
+  sealed_test_cannot_admit: true
+  coverage_unmeasured_cannot_admit: true
+  pooled_or_mixed_rank_is_not_admission: true
+  min_xaod_files_for_export: 2
+  min_xaod_events_per_file_for_export: 1000
+  require_segmentfit_for_export: true
+  require_ift_geometry_for_export: true
+
+# Canonical population: identical 18 workbook-73/74 hierarchical V1
+# iteration-00 train/validation FD-anchor tracklet sources.  The envelope is
+# recomputed with the workbook-74 reporter and must reproduce the workbook-74
+# canonical_coverage.json values exactly (regression-checked).
+canonical_population:
+  id: hierarchical_v1_5mrad_flukaE
+  role: canonical_baseline
+  metadata_class: canonical_5mrad_flukaE_particle_gun
+  declared_from: "Workbook 73 hierarchical V1 train/validation FD-anchor tracklets; generator logs confirm SingleParticle z=-3990 mm, theta=None, phi=0..2pi, energy=TH2Sampler, FASERNU-04 / TI12MC04."
+  expected_difference: none
+  physically_distinct_from_canonical: false
+  do_not_restack_unused_same_dsid_files: true
+  unused_same_production_files_are_not_a_new_population: true
+  filename_5mrad_is_not_phase_space_proof: true
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  q_over_p_mode: 0
+  sources:
+    - {id: mc24_100043_00200_00299, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00200_00299/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00300_00399, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00300_00399/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00400_00499, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00400_00499/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00500_00599, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00500_00599/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00600_00699, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00600_00699/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00200_00299, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00200_00299/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00300_00399, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00300_00399/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00400_00499, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00400_00499/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00500_00599, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00500_00599/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00600_00699, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00600_00699/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00000_00049, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00000_00049/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00050_00099, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00050_00099/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00100_00149, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00100_00149/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00150_00199, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00150_00199/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00000_00049, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00000_00049/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00050_00099, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00050_00099/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00100_00149, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00100_00149/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00150_00199, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00150_00199/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+
+# The only two candidates authorized by workbook 74 for residual-blind
+# HTCondor tracklet export.  Input files are declared here before any export
+# coverage number is known; the immutable input manifest builder records the
+# measured EOS/xAOD metadata (size, adler32, event count, collection keys,
+# generator/reconstruction provenance) for exactly these files.
+#
+# Source independence follows the existing schema: one reconstructed xAOD
+# file is one source (a file-level production slice with disjoint generator
+# segments and disjoint event content).  No file is split into fake
+# independent sources; the two candidates are never pooled.
+export_candidates:
+  - id: mc24_100120_muon_floor
+    metadata_class: mc_particle_gun_floor_origin
+    declared_from: "Generator log Sim.Gun: pid={-13,13}, x=[-100,100] mm, y=-120 mm, z=[-2000,1000] mm, theta=None, energy=TH2Sampler. Origin is the floor/edge, not IP-like z=-3990 mm."
+    expected_difference: floor_origin_topology_versus_ip_like_particle_gun
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    production_dsid: 100120
+    production_name: FaserMC-MC24_PG_muon_floor
+    sim_tag: s0013
+    rec_tag: s0013-r0020
+    geometry_tag: FASERNU-04
+    geom_flag: TI12MC04
+    conditions_tag: OFLCOND-FASER-04
+    generator_provenance:
+      generator: SingleParticle
+      pid: [-13, 13]
+      mass_mev: 105.66
+      theta: null
+      phi: [0.0, 6.283185307179586]
+      x_mm: [-100.0, 100.0]
+      y_mm: -120.0
+      z_mm: [-2000.0, 1000.0]
+      energy_sampler: TH2Sampler
+      events_per_generator_job: 10000
+      generator_jobs_per_rec_file: 10
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/log/s0013/FaserMC-MC24_PG_muon_floor-100120-00000.gen.log
+    representative_rec_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/log/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00000-00009-s0013-RDO.rec.log
+    # Angular population: identical to the workbook-74 reporter (truth-matched
+    # muon, match fraction >= 0.99, preferred station 0).  The gun particle is
+    # the muon, so this is the same definition as the canonical inventory.
+    angular_population:
+      abs_pdg: [13]
+      min_truth_match_fraction: 0.99
+      definition: truth_matched_gun_particle_tracklets
+      preregistered_reason: "Muon gun pid={-13,13}: identical to the workbook-74 truth-matched muon population."
+    inputs:
+      - {source_id: mc24_100120_00000_00009, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00000-00009-s0013-xAOD.root}
+      - {source_id: mc24_100120_00010_00019, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00010-00019-s0013-xAOD.root}
+      - {source_id: mc24_100120_00020_00029, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00020-00029-s0013-xAOD.root}
+      - {source_id: mc24_100120_00030_00039, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00030-00039-s0013-xAOD.root}
+      - {source_id: mc24_100120_00040_00049, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00040-00049-s0013-xAOD.root}
+      - {source_id: mc24_100120_00050_00059, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00050-00059-s0013-xAOD.root}
+      - {source_id: mc24_100120_00060_00069, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00060-00069-s0013-xAOD.root}
+      - {source_id: mc24_100120_00070_00079, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00070-00079-s0013-xAOD.root}
+      - {source_id: mc24_100120_00080_00089, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00080-00089-s0013-xAOD.root}
+      - {source_id: mc24_100120_00090_00099, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00090-00099-s0013-xAOD.root}
+
+  - id: mc24_100130_kshort_end_fasernu
+    metadata_class: mc_particle_gun_neutral_kaon
+    declared_from: "Generator log Sim.Gun: pid=310, mass=497.6, z=[-2000,-1951] mm, energy=TH2Sampler. Neutral-kaon gun, not a muon IP-like beam."
+    expected_difference: kshort_decay_origin_versus_muon_particle_gun
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    production_dsid: 100130
+    production_name: FaserMC-MC24_PG_kshort_end_fasernu_xin
+    sim_tag: s0013
+    rec_tag: s0013-r0020
+    geometry_tag: FASERNU-04
+    geom_flag: TI12MC04
+    conditions_tag: OFLCOND-FASER-04
+    generator_provenance:
+      generator: SingleParticle
+      pid: 310
+      mass_mev: 497.6
+      theta: null
+      phi: [0.0, 6.283185307179586]
+      radius_mm: -100.0
+      z_mm: [-2000.0, -1951.0]
+      energy_sampler: TH2Sampler
+      events_per_generator_job: 1000
+      generator_jobs_per_rec_file: 10
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/log/s0013/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000.gen.log
+    representative_rec_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/log/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000-00009-s0013-RDO.rec.log
+    # Angular population, pre-registered before the full export from generator
+    # metadata and the exporter-contract audit, not from coverage results:
+    # the gun particle (pid=310, K0S) is neutral and leaves no SCT track; the
+    # tracker-visible particles of the generated process are the charged
+    # decay daughters (K0S -> pi+ pi-, |pdg|=211).  The workbook-74 reporter's
+    # truth-match semantics (match fraction >= 0.99, truth_particle_id >= 0,
+    # one representative tracklet at the preferred station) are unchanged;
+    # only the particle id of the generated process differs, exactly as the
+    # muon-gun populations use |pdg|=13.  The strict workbook-74 |pdg|=13
+    # variant is still computed as a labelled cross-check (it is empty by
+    # construction for a neutral gun; smoke: 0 muon-tagged tracklets in 500
+    # events), never as the admission input.
+    angular_population:
+      abs_pdg: [211]
+      min_truth_match_fraction: 0.99
+      definition: truth_matched_charged_decay_daughter_tracklets
+      preregistered_reason: "Neutral-kaon gun pid=310: gun particle leaves no tracker track; charged decay daughters (K0S -> pi+ pi-) are the tracker-visible generated process.  Exporter-contract audit: tracklet exporter, TrackTruthMatchingTool (majority barcode, no PDG filter), SegmentFit population, and MC event selection are all particle-generic; the only muon-specific element is the workbook-74 reporter angular mask |pdg|=13."
+    crosscheck_angular_population:
+      abs_pdg: [13]
+      min_truth_match_fraction: 0.99
+      definition: strict_workbook74_muon_mask_crosscheck_not_admission
+    inputs:
+      - {source_id: mc24_100130_00000_00009, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000-00009-s0013-xAOD.root}
+      - {source_id: mc24_100130_00010_00019, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00010-00019-s0013-xAOD.root}
+      - {source_id: mc24_100130_00020_00029, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00020-00029-s0013-xAOD.root}
+      - {source_id: mc24_100130_00030_00039, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00030-00039-s0013-xAOD.root}
+      - {source_id: mc24_100130_00040_00049, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00040-00049-s0013-xAOD.root}
+      - {source_id: mc24_100130_00050_00059, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00050-00059-s0013-xAOD.root}
+      - {source_id: mc24_100130_00060_00069, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00060-00069-s0013-xAOD.root}
+      - {source_id: mc24_100130_00070_00079, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00070-00079-s0013-xAOD.root}
+      - {source_id: mc24_100130_00080_00089, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00080-00089-s0013-xAOD.root}
+      - {source_id: mc24_100130_00090_00099, path: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00090-00099-s0013-xAOD.root}
+
+# Candidates whose workbook-74 verdicts stay frozen and are not re-exported
+# or re-admitted in this stage.
+frozen_workbook_74_candidates:
+  - mc24_100012_100gev_gaussian_theta
+  - mc24_100116_117_2d_fluka_nonsealed
+  - mc24_100049_050_calonu_5mrad
+  - mc24_100123_124_year_labeled_muon
+  - mc24_fluka_210010_full_shower
+  - real_2024_cosmic_beam_mode
+  - real_2023_cosmic_like
+  - real_backward_alps_ift_collision
+  - real_testbeam_2021
+  - real_2024_r0022_wide_angle_selected_routes
+
+sealed_test:
+  productions: [100116, 100117]
+  forbidden_source_ids:
+    - mc24_100116_00030_00039
+    - mc24_100117_00030_00039
+  note: "Historical V1 sealed multidirection test. Never opened in this campaign."
+
+# Nominal residual-blind export chain: persisted SegmentFit -> GhostBusters
+# -> NtupleDumperAlg detailed tracklets -> canonical converter.  No alignment
+# payload, no --refit-segments, no physical FD point, no residual selection.
+export_chain:
+  exporter: faser_ntuple_maker.py
+  exporter_args: [--isMC, --useIFT, --export-tracklets]
+  nevents: -1
+  converter: scripts.convert_ntuple_tracklets
+  converter_args: [--include-truth]
+  content_audit: scripts.audit_tracklets
+  schema_check: scripts.inspect_root_schema
+  no_refit_segments: true
+  no_tracker_align_sqlite: true
+  no_export_tracklet_propagation: true
+  one_job_per_xaod_file: true
+  event_identity: physical_event_is_consecutive_run_event_block_in_file_order
+  merged_rec_event_numbers_repeat_per_generator_job: true
+
+condor:
+  schedd_mode: eossubmit
+  job_flavour: tomorrow
+  request_memory_mb: 8000
+  request_cpus: 1
+  max_explicit_retries: 2
+
+assumptions:
+  - "Stage 75 executes only the workbook-74-authorized residual-blind HTCondor tracklet export of mc24_100120_muon_floor and mc24_100130_kshort_end_fasernu, then repeats the residual-blind coverage inventory.  It is not an FD campaign and not rank rescue."
+  - "The export chain is the validated nominal chain: persisted SegmentFit, GhostBusters, NtupleDumperAlg detailed tracklets, canonical converter.  No alignment payload is injected; no physical FD point is constructed; no residual-based selection is applied."
+  - "Merged MC24 rec files reuse generator-job event numbers (100120: 10 x 0..9999; 100130: 10 x 0..999 per file).  A physical event is a consecutive equal-(run_id, event_id) block in exporter file order; the inventory never sorts distinct physical events into one (run, event) group."
+  - "One xAOD file is one source under the existing file-level production-slice schema.  The two candidates are never pooled, and no file is split into fake independent sources."
+  - "The 100130 angular population is pre-registered as the truth-matched charged pion daughters of the neutral kaon gun; the strict workbook-74 |pdg|=13 variant is reported only as a labelled cross-check.  Neither is chosen from coverage results."
+  - "Statistical gates are the frozen workbook-74 gates.  A candidate below gate is insufficient; gates are not lowered."
+  - "A later native 5DoF FD campaign, if any candidate is admitted, requires its own pre-registered config and workbook entry and reuses the frozen rigid-station parameters, S=(5,5,60,60,60), rank_tolerance=0.01, and the same WLS definition.  Mixed pooled rank is not complementarity."
+  - "Sealed 100116/100117 00030_00039 stays closed.  Unused 100043/100044/100047/100048 files are not a new population.  2024 r0022 collision-like data is not restacked."
+  - "If neither candidate passes the frozen gates after the repeated inventory, this stage freezes current_track_coverage_insufficient_for_unconstrained_rigid_station_5dof; only then may a Gauge-Constrained / External-Constraint Alignment Feasibility branch be pre-registered."
+
+output_dir: outputs/physically_distinct_track_coverage_residual_blind_export_reinventory_v1
