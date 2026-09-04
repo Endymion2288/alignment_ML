@@ -68,9 +68,44 @@ real `/Tracker/Align` rotation payloads refit through the same physical chain,
 and a local alignment step recovers injected +/-60 mrad IFT rotations to better
 than 1 mrad. The frozen MLP/V1/V2 route controls keep their validation primary
 gates out to 60 mrad, so R_y alone is not the association bottleneck at that
-scale. The current mainline is a multi-DoF (dx, dy, R_y) global alignment loop
-on a multi-source iteration-0 physical bank; read the multi-DoF loop document
-and the project audit before starting new work.
+scale. Survey/metrology is an external cross-check, not an alignment input
+(workbook 60–67). The current mainline is tracker-only identifiable-mode
+alignment on the hierarchical V1 physical finite-difference Jacobian. Workbook
+68 froze `tracker_only_identifiable_basis_unstable_solve_stopped`: pooled
+identifiable rank is 5, but the identifiable subspace is not source/bootstrap
+stable at the frozen rank cut, so three-arm closure and Frozen-V2
+unknown-association are not opened. Workbook 69 froze
+`cross_source_stable_core_independent_validation_fail`: a 5-D consensus core
+can be built on the seven V1 sources with the sixth mode isolated, and that
+core is LOSO/bootstrap-stable, but independent source-disjoint confirmation
+fails (8/11 < 0.80). Do not retune `S` or `rank_tolerance=0.01`, drop the
+rank-6 source, or force rank 5. Workbook 70 restored the cluster-local
+transfer exact join without relaxing provenance; that is not an
+identifiability campaign and is not a stable-core gate. Workbook 71 froze
+`cluster_local_observable_not_cross_run_portable`: under unified exact join
+the official `A = W^{1/2} J S` ranks of r14973 and r14974 are both 3 and
+the full-sample subspaces coincide, but slope tertiles drop rank 3→2, so
+the extra dimension is coverage-conditioned. Entry 58 still reproduces as
+a negative control. Workbook 72 classified the workbook-69 rank 2/3/4
+sources as normal physics/coverage loss, not pipeline corruption; those
+sources were not dropped and are not a confirmatory set. Do not keep
+chasing tracker-only observables by retuning thresholds. Workbook 73 froze
+`rigid_station_five_dof_not_source_or_coverage_portable`: with internal
+geometry and `C_dx` fixed as a model boundary, native station rigid-body
+5DoF `A = W^{1/2} J S` has pooled rank 5 but is not source/coverage
+portable (14/18 sources rank 5; slope tertiles drop rank). Do not recover
+rank 5 by dropping sources, deleting further DoF, or retuning `S` /
+`rank_tolerance=0.01`. Workbook 74 Stage 1 froze
+`residual_blind_export_authorized_fd_not_opened`: the physically distinct
+track-coverage inventory is fully residual-blind; 0 candidates admit a
+separate 5DoF FD campaign; `mc24_100120_muon_floor` and
+`mc24_100130_kshort_end_fasernu` are authorized only for HTCondor
+residual-blind export, then a repeated inventory. Do not lower the
+200/200/80 statistical gates, treat local `hypot(tx,ty)` as a
+spectrometer wide-angle gate, skip to gauge / external constraint, or
+reopen 7D / cluster-local / stable-core / rigid-station-5DoF rescue.
+Real data remains
+`residual_dq_monitoring_only`; `geometry_write_allowed=false`.
 
 ```bash
 cd /eos/home-x/xcheng/FASER
@@ -142,6 +177,15 @@ contract and validation limits are linked below.
 - [IFT R_y physical rotation study](docs/ift_ry_physical_rotation.md)
 - [Multi-DoF global alignment loop](docs/global_alignment_multidof_loop.md)
 - [Project audit and next-stage plan](docs/project_audit_and_next_plan.md)
+- [cad_survey_nov22 frame and covariance audit](docs/cad_survey_nov22_frame_covariance_audit.md)
+- [Nov-2022 metrology provenance and Calypso station-ry contract](docs/nov22_metrology_provenance_station_ry_contract.md)
+- [Tracker-only identifiable-subspace definition and three-arm closure](docs/tracker_only_identifiable_subspace_three_arm_closure.md)
+- [Cross-source stable-core identifiable subspace and independent validation](docs/cross_source_stable_core_identifiable_subspace.md)
+- [Cluster-local Jacobian transfer exact-join repair](docs/cluster_local_jacobian_transfer_repair.md)
+- [Cluster-local observable cross-run identifiability and transfer](docs/cluster_local_observable_cross_run_identifiability.md)
+- [Tracklet independent-failure provenance audit](docs/tracklet_independent_failure_provenance_audit.md)
+- [Rigid-station-only tracker alignment identifiability](docs/rigid_station_only_tracker_alignment_identifiability.md)
+- [Physically-distinct track-coverage identifiability feasibility](docs/physically_distinct_track_coverage_identifiability_feasibility.md)
 - [Chinese input schema and exporter contract](docs/tracklet_export_contract_cn.md)
 - [Chinese data audit](docs/data_audit_cn.md)
 - [Chinese baseline validation](docs/baseline_validation_cn.md)
@@ -162,4 +206,13 @@ contract and validation limits are linked below.
 - [Chinese IFT R_y physical rotation study](docs/ift_ry_physical_rotation_cn.md)
 - [Chinese multi-DoF global alignment loop](docs/global_alignment_multidof_loop_cn.md)
 - [Chinese project audit and next-stage plan](docs/project_audit_and_next_plan_cn.md)
+- [Chinese cad_survey_nov22 frame and covariance audit](docs/cad_survey_nov22_frame_covariance_audit_cn.md)
+- [Chinese Nov-2022 metrology provenance and Calypso station-ry contract](docs/nov22_metrology_provenance_station_ry_contract_cn.md)
+- [Chinese tracker-only identifiable-subspace definition and three-arm closure](docs/tracker_only_identifiable_subspace_three_arm_closure_cn.md)
+- [Chinese cross-source stable-core identifiable subspace and independent validation](docs/cross_source_stable_core_identifiable_subspace_cn.md)
+- [Chinese cluster-local Jacobian transfer exact-join repair](docs/cluster_local_jacobian_transfer_repair_cn.md)
+- [Chinese cluster-local observable cross-run identifiability and transfer](docs/cluster_local_observable_cross_run_identifiability_cn.md)
+- [Chinese tracklet independent-failure provenance audit](docs/tracklet_independent_failure_provenance_audit_cn.md)
+- [Chinese rigid-station-only tracker alignment identifiability](docs/rigid_station_only_tracker_alignment_identifiability_cn.md)
+- [Chinese physically-distinct track-coverage identifiability feasibility](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)
 - [Chinese README](README_cn.md)

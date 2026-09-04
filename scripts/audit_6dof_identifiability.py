@@ -214,7 +214,14 @@ def _pooled_bank(banks: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "truth_particle_id",
         "source_station_id",
         "target_station_id",
+        "source_tracklet_id",
+        "target_tracklet_id",
+        "source_tx",
+        "source_ty",
+        "source_slope",
     ):
+        if key not in first:
+            continue
         pooled[key] = np.concatenate([bank[key] for bank in banks], axis=0)
     pooled["positive_residual"] = np.concatenate([bank["positive_residual"] for bank in banks], axis=1)
     pooled["negative_residual"] = np.concatenate([bank["negative_residual"] for bank in banks], axis=1)
@@ -318,7 +325,14 @@ def _masked_bank(bank: Mapping[str, Any], mask: np.ndarray) -> dict[str, Any]:
         "truth_particle_id",
         "source_station_id",
         "target_station_id",
+        "source_tracklet_id",
+        "target_tracklet_id",
+        "source_tx",
+        "source_ty",
+        "source_slope",
     ):
+        if key not in bank:
+            continue
         result[key] = np.asarray(bank[key])[mask]
     result["positive_residual"] = np.asarray(bank["positive_residual"])[:, mask]
     result["negative_residual"] = np.asarray(bank["negative_residual"])[:, mask]

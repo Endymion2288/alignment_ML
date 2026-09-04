@@ -1,0 +1,179 @@
+# Cross-source stable-core identifiable subspace definition and
+# independent validation V1.
+# Workbook 68 froze tracker_only_identifiable_basis_unstable_solve_stopped.
+# This campaign does not reopen that V1 solve, does not retune
+# rank_tolerance=0.01, does not retune S, and does not drop the rank-6
+# source.  The seven V1 sources are hypothesis construction only.
+
+schema_version: faser-cross-source-stable-core-identifiable-subspace-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_force_identifiable_rank_five: true
+do_not_truncate_rank_six_source: true
+do_not_drop_v1_failure_source: true
+do_not_open_three_arm_unless_independent_core_passes: true
+do_not_use_v1_pooled_v_id_for_three_arm: true
+do_not_merge_cluster_local_repair_into_stable_core_gate: true
+do_not_remove_dz_to_improve_this_svd: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+hypothesis_sources_are_not_confirmatory_evidence: true
+dimension_determined_by_eigenvalue_and_persistence: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_v1_decision: tracker_only_identifiable_basis_unstable_solve_stopped
+
+# Inherited frozen SVD contract from workbook 68.  Not retuned.
+rank_tolerance: 0.01
+normal_matrix_rcond: 1.0e-10
+
+scale_matrix_S:
+  ift_dx_mm: 5.0
+  ift_dy_mm: 5.0
+  ift_dz_mm: 5.0
+  ift_rx_mrad: 60.0
+  ift_ry_mrad: 60.0
+  ift_rz_mrad: 60.0
+  C_dx: 0.12
+
+jacobian_corpus:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_dz_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+    - C_dx
+  # Seven V1 sources, including the rank-6 validation source.  Hypothesis
+  # construction only.  Rank-6 is never truncated to 5.
+  hypothesis_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00600_00699
+    - mc24_100044_00300_00399
+    - mc24_100047_00000_00049
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00150_00199
+  # Already-produced, source-disjoint FD banks that were not used in the
+  # workbook-68 rank-flip inspection.  Confirmatory evidence only.
+  # No sealed test.  No Calypso reconstruction in this campaign.
+  independent_validation_source_ids:
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100043_00500_00599
+    - mc24_100044_00200_00299
+    - mc24_100044_00400_00499
+    - mc24_100044_00500_00599
+    - mc24_100044_00600_00699
+    - mc24_100047_00050_00099
+    - mc24_100047_00100_00149
+    - mc24_100048_00050_00099
+    - mc24_100048_00100_00149
+
+algorithm:
+  name: equal_weight_identifiable_projector_consensus
+  weighted_matrix: "A = W^{1/2} J S"
+  per_source_projector: "P_s = V_id,s V_id,s^T with native frozen-rank SVD, no truncation"
+  consensus_operator: "M = (1/N) sum_s P_s"
+  source_weighting: equal_per_source
+  eigendecomposition: symmetric_eigh_descending
+  sign_convention: largest_abs_right_vector_entry_positive
+  core_selection: eigenvalue_and_source_persistence
+  dimension_rule: automatic_from_frozen_cuts
+  forced_core_dimension: null
+  core_orthogonal_is_not_a_measurement_of_zero: true
+
+# Pre-registered before inspecting independent sources.  Not retuned after.
+core_definition:
+  min_consensus_eigenvalue: 0.70
+  min_mode_persistence: 0.85
+  min_hypothesis_source_support_fraction: 0.80
+  persistence_is_quadratic_form_q_T_P_s_q: true
+
+gates:
+  require_hypothesis_core_dimension_at_least: 1
+  require_loso_same_core_dimension: true
+  max_loso_principal_angle_deg: 15.0
+  max_loso_projector_frobenius: 1.0
+  max_hypothesis_bootstrap_principal_angle_deg: 20.0
+  max_hypothesis_bootstrap_projector_frobenius: 1.2
+  min_independent_source_support_fraction: 0.80
+  max_independent_core_principal_angle_deg: 15.0
+  max_independent_core_missing_frobenius: 0.75
+  min_independent_mode_persistence: 0.85
+  require_independent_same_core_dimension_as_hypothesis: true
+  arm_a_max_projected_error_relative: 0.05
+  arm_a_max_amplitude_error: 0.05
+  arm_b_max_identifiable_fake_relative: 0.05
+  arm_c_max_projector_closure_relative: 0.05
+
+bootstrap:
+  n_source_replicates: 40
+  n_event_replicates_per_source: 8
+  seed: 20260902
+  min_pairs: 20
+
+injections:
+  identifiable_scaled_amplitude: 0.10
+  null_scaled_amplitude: 0.10
+  n_replicates: 8
+  seed: 20260902
+
+assumptions:
+  - "Workbook 68 remains frozen: identifiable_rank=5, identifiable_basis_stable=false, three-arm not opened, Frozen-V2 not authorized."
+  - "rank_tolerance 1e-2 and S=(5,5,5,60,60,60,0.12) are inherited and not retuned from this campaign's spectrum."
+  - "Each source projector uses the native frozen-rank SVD, including the rank-6 validation source mc24_100047_00150_00199.  That source is not truncated to 5-D and is not dropped."
+  - "The seven V1 sources are hypothesis construction only.  They are not confirmatory evidence."
+  - "Independent confirmation uses already-produced hierarchical iteration-00 FD banks that were not in the V1 seven-source list.  Sealed test is not opened.  Athena is not rerun."
+  - "Consensus M is the equal-weight average of source projectors, not a pair-count-weighted pool and not a naked mixed-unit SVD."
+  - "Core dimension is automatic from frozen eigenvalue and persistence cuts.  It is not forced to 5."
+  - "Core modes are reconstruction-observable linear combinations and must not be relabelled as a lone mechanical ry or C_dx."
+  - "dx-C_dx remains a possible observable or null combination.  Neither parameter is fixed."
+  - "dz remains in the 7-parameter model.  Removing dz requires a new config citing the frozen 6-DoF unidentifiability map, not this SVD."
+  - "Three-arm, if opened, uses frozen V_core rather than workbook-68 pooled V_id.  Arm-B injects the core-orthogonal complement."
+  - "Cluster-local transfer repair is a separate campaign and is not a stable-core gate."
+  - "V_core-orthogonal zero is the minimum-norm / gauge representative, not a measurement that orthogonal modes are physically zero."
+
+output_dir: outputs/cross_source_stable_core_identifiable_subspace_v1

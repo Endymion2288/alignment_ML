@@ -70,9 +70,39 @@ validation 上没有超过冻结的 pairwise route 控制，V3 路线作为已�
 
 IFT R_y 真实转动研究闭合了链路的转动环节：真实 `/Tracker/Align` 转动 payload 经由同一物理链路 refit，
 局部 alignment step 以优于 1 mrad 的误差恢复注入的 ±60 mrad IFT 转动。冻结的 MLP/V1/V2 route 控制在
-60 mrad 以内保持 validation primary gate，因此单独的 R_y 在该尺度下不是关联瓶颈。当前主线是
-multi-DoF（dx、dy、R_y）全局 alignment 闭环，基于多源 iteration-0 物理库；开始新工作前请先阅读
-multi-DoF loop 文档与项目审查报告。
+60 mrad 以内保持 validation primary gate，因此单独的 R_y 在该尺度下不是关联瓶颈。Survey/metrology
+是 external cross-check，不是 alignment 输入（条目 60–67）。当前主线是 hierarchical V1 物理有限差分
+Jacobian 上的 tracker-only identifiable-mode alignment。条目 68 冻结
+`tracker_only_identifiable_basis_unstable_solve_stopped`：pooled identifiable rank 为 5，但
+identifiable subspace 在冻结 rank cut 下跨 source / bootstrap 不稳定，因此三臂闭环和 Frozen-V2
+unknown-association 均未打开。条目 69 冻结
+`cross_source_stable_core_independent_validation_fail`：7 个 V1 源上可以构造 5 维
+consensus core 并把第 6 模式隔离，该 core 在 LOSO/bootstrap 上稳定，但独立
+source-disjoint 确认失败（8/11 < 0.80）。不得反调 `S` 或 `rank_tolerance=0.01`，不得删
+rank-6 源，也不得强制 rank 5。条目 70 在不放宽 provenance 的前提下恢复了
+cluster-local transfer exact join；那不是 identifiability 战役，也不是
+stable-core 门。条目 71 冻结
+`cluster_local_observable_not_cross_run_portable`：统一 exact join 下
+r14973 / r14974 的官方 `A = W^{1/2} J S` rank 都是 3，全样本子空间重合，
+但 slope tertile 把 rank 从 3 降到 2，第三条维是 coverage-conditioned。
+条目 58 作为负控制仍然复现。条目 72 把条目 69 的 rank 2/3/4 源分类为
+正常 physics / coverage loss，不是 pipeline corruption；这些源未被删除，
+也不是 confirmatory set。不得继续在 tracker-only observable 上调阈值追
+结果。条目 73 冻结
+`rigid_station_five_dof_not_source_or_coverage_portable`：内部
+geometry 与 `C_dx` 作为模型边界固定后，原生 station rigid-body 5DoF
+`A = W^{1/2} J S` 的 pooled rank 是 5，但跨 source / coverage 不可搬运
+（14/18 个源 rank 5；slope tertile 掉 rank）。不得靠删 source、再删
+DoF 或反调 `S` / `rank_tolerance=0.01` 恢复 rank 5。条目 74 Stage 1
+冻结 `residual_blind_export_authorized_fd_not_opened`：物理不同
+track-coverage inventory 完全 residual-blind，0 个 candidate 准入独立
+5DoF FD campaign；`mc24_100120_muon_floor` 与
+`mc24_100130_kshort_end_fasernu` 仅授权 HTCondor residual-blind
+export 后重复 inventory。不得降低 200/200/80 统计门，不得把本地
+`hypot(tx,ty)` 当 spectrometer wide-angle 门槛，不得跳到 gauge /
+external constraint，也不得重开 7D / cluster-local / stable-core /
+rigid-station-5DoF 救援。真实数据仍是
+`residual_dq_monitoring_only`；`geometry_write_allowed=false`。
 
 ```bash
 cd /eos/home-x/xcheng/FASER
@@ -142,3 +172,21 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [multi-DoF 全局 alignment 闭环（中文）](docs/global_alignment_multidof_loop_cn.md)
 - [项目审查与下一阶段计划（英文）](docs/project_audit_and_next_plan.md)
 - [项目审查与下一阶段计划（中文）](docs/project_audit_and_next_plan_cn.md)
+- [cad_survey_nov22 坐标系与协方差审计（英文）](docs/cad_survey_nov22_frame_covariance_audit.md)
+- [cad_survey_nov22 坐标系与协方差审计（中文）](docs/cad_survey_nov22_frame_covariance_audit_cn.md)
+- [Nov-2022 原始 metrology provenance 与 Calypso station-ry 合同（英文）](docs/nov22_metrology_provenance_station_ry_contract.md)
+- [Nov-2022 原始 metrology provenance 与 Calypso station-ry 合同（中文）](docs/nov22_metrology_provenance_station_ry_contract_cn.md)
+- [Tracker-only identifiable subspace 定义与三臂闭环（英文）](docs/tracker_only_identifiable_subspace_three_arm_closure.md)
+- [Tracker-only identifiable subspace 定义与三臂闭环（中文）](docs/tracker_only_identifiable_subspace_three_arm_closure_cn.md)
+- [Cross-source stable-core identifiable subspace 与独立验证（英文）](docs/cross_source_stable_core_identifiable_subspace.md)
+- [Cross-source stable-core identifiable subspace 与独立验证（中文）](docs/cross_source_stable_core_identifiable_subspace_cn.md)
+- [Cluster-local Jacobian transfer exact-join 修复（英文）](docs/cluster_local_jacobian_transfer_repair.md)
+- [Cluster-local Jacobian transfer exact-join 修复（中文）](docs/cluster_local_jacobian_transfer_repair_cn.md)
+- [Cluster-local observable 跨 run identifiability 与 transfer（英文）](docs/cluster_local_observable_cross_run_identifiability.md)
+- [Cluster-local observable 跨 run identifiability 与 transfer（中文）](docs/cluster_local_observable_cross_run_identifiability_cn.md)
+- [Tracklet 独立验证失败源只读 provenance 审计（英文）](docs/tracklet_independent_failure_provenance_audit.md)
+- [Tracklet 独立验证失败源只读 provenance 审计（中文）](docs/tracklet_independent_failure_provenance_audit_cn.md)
+- [Rigid-station-only tracker alignment identifiability（英文）](docs/rigid_station_only_tracker_alignment_identifiability.md)
+- [Rigid-station-only tracker alignment identifiability（中文）](docs/rigid_station_only_tracker_alignment_identifiability_cn.md)
+- [Physically-distinct track-coverage identifiability feasibility（英文）](docs/physically_distinct_track_coverage_identifiability_feasibility.md)
+- [Physically-distinct track-coverage identifiability feasibility（中文）](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)

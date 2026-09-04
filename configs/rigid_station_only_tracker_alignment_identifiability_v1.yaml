@@ -1,0 +1,266 @@
+# Rigid-Station-Only Tracker Alignment Identifiability & Closure V1
+#
+# Workbooks 68-72 remain frozen.  This campaign does not rescue the 7D
+# tracklet-level observable, the cluster-local observable, or the
+# cross-source stable core.  It does not retune rank_tolerance=0.01,
+# retune S from the spectrum, drop failed sources, change the residual,
+# redefine a stable core, or reselect population from slope / residual /
+# cosine.
+#
+# Physical model boundary, frozen before inspecting any 5DoF SVD:
+# tracker fit may float only station rigid-body dx, dy, rx, ry, rz.
+# dz stays track-unidentifiable / survey-or-gauge-constrained and is
+# not given to tracks.  Internal plane/module geometry and C_dx are
+# not free parameters; they stay fixed at the current reconstruction
+# geometry / metrology state.  Fixing C_dx is a model boundary, not a
+# measurement that C_dx=0, not a survey verification of the current
+# C_dx, and not a licence to force-write old survey central values.
+# Survey/metrology remains an external cross-check only.
+#
+# Native 5-column A = W^{1/2} J S is reconstructed from hierarchical V1
+# physical FD banks via only_parameters.  Do not delete dz/C_dx columns
+# from a previous 7D SVD object and declare success.
+
+schema_version: faser-rigid-station-only-tracker-alignment-identifiability-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+three_arm_authorized: false
+frozen_v2_alignment_loop_authorized: false
+real_data_correction_authorized: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_reopen_workbook_51_reduced_station_mode: true
+do_not_reopen_workbook_36_as_this_campaign: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_rescue_seven_d_observable: true
+do_not_rescue_cluster_local_observable: true
+do_not_redefine_tracklet_stable_core_criterion: true
+do_not_drop_entry_69_failure_sources: true
+do_not_drop_failed_sources_to_recover_rank_five: true
+do_not_delete_dz_or_cdx_columns_from_seven_d_svd: true
+do_not_force_write_old_survey_central_values: true
+do_not_open_three_arm_unless_identifiability_passes: true
+do_not_open_frozen_v2_alignment_loop: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+cdx_fixed_is_not_a_measurement_of_zero: true
+dz_is_not_a_tracker_free_parameter: true
+pooled_rank_is_not_portability: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+this_is_not_seven_d_column_deletion: true
+this_is_not_workbook_36_survey_dz_curriculum: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_entry_68_decision: tracker_only_identifiable_basis_unstable_solve_stopped
+inherited_entry_69_decision: cross_source_stable_core_independent_validation_fail
+inherited_entry_70_decision: cluster_local_transfer_exact_join_restored_not_an_identifiability_campaign
+inherited_entry_71_decision: cluster_local_observable_not_cross_run_portable
+inherited_entry_72_decision: tracklet_independent_failure_provenance_audit_complete_sources_not_dropped
+
+# Frozen relative rank cut inherited from leakage_spectrum / column-normalized
+# Fisher (workbook 57-72).  Not retuned from this 5DoF spectrum.
+rank_tolerance: 0.01
+normal_matrix_rcond: 1.0e-10
+
+# Station rigid-body 5DoF only.  Order is the frozen station-free set from
+# five_dof_sampling.FREE_PARAMETERS / hierarchical V1 station_free_parameters.
+# dz and C_dx are excluded from the tracker fit, not deleted after a 7D SVD.
+parameter_names:
+  - ift_dx_mm
+  - ift_dy_mm
+  - ift_rx_mrad
+  - ift_ry_mrad
+  - ift_rz_mrad
+
+parameter_units:
+  - mm
+  - mm
+  - mrad
+  - mrad
+  - mrad
+
+excluded_from_tracker_fit:
+  ift_dz_mm:
+    reason: track_unidentifiable_survey_or_gauge_constrained
+    inherited_from: workbook_33_36
+    not_given_to_tracks: true
+  C_dx:
+    reason: internal_geometry_fixed_at_current_reconstruction_state
+    interpretation: model_boundary_not_a_measurement
+    not_a_measurement_of_zero: true
+    survey_did_not_verify_current_value: true
+    do_not_force_write_old_survey_central_value: true
+
+fixed_internal_geometry:
+  plane_module_geometry: current_reconstruction_geometry_metrology_state
+  C_dx: current_reconstruction_geometry_metrology_state
+  C_dx_fixed_is_not_measured_zero: true
+  C_dx_fixed_is_not_survey_verified: true
+
+scale_matrix_S:
+  ift_dx_mm: 5.0
+  ift_dy_mm: 5.0
+  ift_rx_mrad: 60.0
+  ift_ry_mrad: 60.0
+  ift_rz_mrad: 60.0
+
+weighted_matrix: "A = W^{1/2} J S"
+residual_weight: nominal_WLS_inverse_4x4_pair_covariance
+sign_convention: largest_abs_right_vector_entry_positive
+
+# Hierarchical V1 iteration-00 physical central FD steps for the five
+# floated parameters.  dz and C_dx probes are not loaded.
+finite_difference_steps:
+  ift_dx_mm: 0.5
+  ift_dy_mm: 0.5
+  ift_rx_mrad: 10.0
+  ift_ry_mrad: 10.0
+  ift_rz_mrad: 10.0
+
+jacobian_corpus:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+  reconstruction_method: native_five_column_only_parameters
+  forbidden_reconstruction: drop_dz_cdx_from_previous_seven_d_svd
+  # Pre-registered hierarchical V1 train/validation split.  All 18
+  # already-produced source-disjoint FD banks are included.  Workbook-69
+  # rank 2/3/4 sources stay in.  They are not dropped and are not a
+  # confirmatory subset.
+  train_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100043_00500_00599
+    - mc24_100043_00600_00699
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+    - mc24_100044_00400_00499
+    - mc24_100044_00500_00599
+    - mc24_100044_00600_00699
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100047_00100_00149
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+    - mc24_100048_00100_00149
+    - mc24_100048_00150_00199
+
+coverage:
+  slope_definition: hypot_source_tracklet_tx_ty
+  slope_source: canonical_tracklet_local_state_at_fd_anchor
+  slope_is_not_leftover_residual_rtx_rty: true
+  slope_is_not_spectrometer_delta_x_over_delta_z: true
+  n_slope_bins: 3
+  min_tertile_events: 8
+  topology_definition: complete_four_station_truth_routes
+  require_no_slope_tertile_rank_drop: true
+  require_topology_same_rank: true
+
+jacobian_validity:
+  min_pairs: 20
+  require_plus_minus_probes: true
+  require_plus_minus_population_aligned: true
+  require_finite_residuals: true
+  require_finite_jacobian: true
+  require_native_five_parameters: true
+  min_column_norm_relative: 1.0e-6
+  covariance_condition_warn: 1.0e12
+
+bootstrap:
+  n_event_replicates: 40
+  n_half_splits: 12
+  seed: 20260903
+  min_pairs: 20
+
+injections:
+  # Pre-registered.  Used only if identifiability gates pass.
+  identifiable_scaled_amplitude: 0.10
+  null_scaled_amplitude: 0.10
+  n_replicates: 8
+  seed: 20260903
+
+gates:
+  required_identifiable_rank: 5
+  require_same_identifiable_rank: true
+  require_every_predeclared_source_rank: true
+  require_every_usable_tertile_rank: true
+  pooled_rank_is_not_portability: true
+  max_source_principal_angle_deg: 15.0
+  max_source_projector_frobenius: 1.0
+  max_train_validation_principal_angle_deg: 15.0
+  max_train_validation_projector_frobenius: 1.0
+  max_source_disjoint_principal_angle_deg: 15.0
+  max_source_disjoint_projector_frobenius: 1.0
+  max_topology_principal_angle_deg: 15.0
+  max_topology_projector_frobenius: 1.0
+  max_bootstrap_principal_angle_deg: 20.0
+  max_bootstrap_projector_frobenius: 1.2
+  require_no_slope_tertile_rank_drop: true
+  require_jacobian_validity: true
+  arm_a_max_projected_error_relative: 0.05
+  arm_a_max_amplitude_error: 0.05
+  arm_b_max_identifiable_fake_relative: 0.05
+  arm_c_max_projector_closure_relative: 0.05
+
+assumptions:
+  - "Physical Jacobian columns are central finite differences of truth-selected mode-0 pair residuals from the hierarchical iteration-00 bank (workbook 44-45), reconstructed with only_parameters equal to the five station-free names."
+  - "Native units remain mm for translations and mrad for rotations, matching /Tracker/Align payload conversion in physical_jacobian.COMPONENT_INDEX_AND_PAYLOAD_SCALE."
+  - "Scale matrix S is the frozen station-free severity_scale (5 mm / 60 mrad), declared before SVD and never retuned from singular values.  dz and C_dx scales are unused because those parameters are not floated."
+  - "Residual weight W is the nominal 4x4 pair covariance already used by solve_physical_finite_difference; it is a WLS weight, not an independent same-cluster covariance."
+  - "Rank tolerance 1e-2 is the frozen leakage/Fisher relative cut applied to singular values of A = W^{1/2} J S."
+  - "Fixing C_dx and internal plane/module geometry is a rigid-station model boundary.  It is not a measurement that C_dx=0, not a survey verification of the current C_dx, and not a write of old survey central values into the fit."
+  - "dz remains track-unidentifiable / survey-or-gauge-constrained (workbook 33-36) and is not given to tracks."
+  - "Survey/metrology remains an external cross-check.  Official slots stay feasibility_only / unavailable (workbook 66-67)."
+  - "Angular coverage coordinate is hypot(source_tx, source_ty) of the truth-matched source-station tracklet local state at the FD anchor.  That is local SegmentFit slope, not leftover residual (rtx, rty) and not spectrometer Δx/Δz."
+  - "Topology slice is the complete four-station truth-route mask already used by the 6-DoF / tracker-only audits (_complete_route_mask)."
+  - "All 18 hierarchical V1 train/validation sources are pre-included, including workbook-69 rank 2/3/4 sources.  A source that drops 5DoF rank is diagnosed, not deleted."
+  - "Pooled rank=5 is not portability.  Every pre-declared source and usable slope/topology slice must pass."
+  - "V_null^T u_hat = 0 is the minimum-norm/gauge representative in scaled coordinates, not a measurement that null modes are physically zero."
+  - "Identifiable modes are reconstruction-observable linear combinations and must not be relabeled as a lone mechanical ry."
+  - "Linear three-arm injections, if opened, use the validated 5DoF Jacobian; Athena is not rerun.  Truth is MC control/evaluation only."
+  - "This campaign is not workbook 36 (survey-constrained dz curriculum with C_dx still in the hierarchy) and is not a 7D SVD with two columns deleted."
+
+output_dir: outputs/rigid_station_only_tracker_alignment_identifiability_v1

@@ -1,0 +1,379 @@
+# Physically-Distinct Track-Coverage Identifiability Feasibility V1
+#
+# Stage 1 is a fully residual-blind coverage inventory.  It does not
+# construct A = W^{1/2} J S, does not SVD, does not inspect rank, and
+# does not reverse-pick samples from residual / cosine / Jacobian
+# singular values.  Workbooks 59-73 remain frozen.  Rank-rescue of the
+# 7D, cluster-local, stable-core, and rigid-station 5DoF observables
+# is forbidden.
+
+schema_version: faser-physically-distinct-track-coverage-identifiability-feasibility-v1
+frozen: true
+stage: residual_blind_coverage_inventory
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+three_arm_authorized: false
+frozen_v2_alignment_loop_authorized: false
+real_data_correction_authorized: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_reopen_workbook_51_reduced_station_mode: true
+do_not_reopen_workbook_36_as_this_campaign: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_restack_canonical_5mrad_unused_files: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+do_not_rescue_seven_d_observable: true
+do_not_rescue_cluster_local_observable: true
+do_not_redefine_tracklet_stable_core_criterion: true
+do_not_drop_entry_69_failure_sources: true
+do_not_drop_failed_sources_to_recover_rank_five: true
+do_not_delete_dz_or_cdx_columns_from_seven_d_svd: true
+do_not_delete_rz_or_further_dof: true
+do_not_force_write_old_survey_central_values: true
+do_not_open_three_arm_unless_identifiability_passes: true
+do_not_open_frozen_v2_alignment_loop: true
+do_not_construct_fd_identifiability_this_stage: true
+do_not_compute_svd_or_rank_this_stage: true
+do_not_guess_branch_meaning_from_filename: true
+do_not_lower_statistical_gates: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_open_gauge_branch_until_inventory_closes: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+cdx_fixed_is_not_a_measurement_of_zero: true
+dz_is_not_a_tracker_free_parameter: true
+pooled_rank_is_not_portability: true
+filename_5mrad_is_not_phase_space_proof: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+this_is_not_seven_d_column_deletion: true
+this_is_not_workbook_36_survey_dz_curriculum: true
+this_is_not_workbook_59_or_60_rank_rescue: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_entry_59_decision: no_portable_alternative_topology_in_current_r0022
+inherited_entry_60_decision: real_track_topology_insufficient_for_ry_cdx_separation
+inherited_entry_61_decision: external_survey_or_metrology_required_and_year_iov_parameterization_required
+inherited_entry_68_decision: tracker_only_identifiable_basis_unstable_solve_stopped
+inherited_entry_69_decision: cross_source_stable_core_independent_validation_fail
+inherited_entry_70_decision: cluster_local_transfer_exact_join_restored_not_an_identifiability_campaign
+inherited_entry_71_decision: cluster_local_observable_not_cross_run_portable
+inherited_entry_72_decision: tracklet_independent_failure_provenance_audit_complete_sources_not_dropped
+inherited_entry_73_decision: rigid_station_five_dof_not_source_or_coverage_portable
+
+# Frozen rigid-station 5DoF contract.  Stage 1 does not reconstruct A.
+# A later FD campaign, if opened, must reuse these values unchanged.
+rigid_station_five_dof_contract:
+  parameter_names: [ift_dx_mm, ift_dy_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad]
+  parameter_units: [mm, mm, mrad, mrad, mrad]
+  rank_tolerance: 0.01
+  scale_matrix_S:
+    ift_dx_mm: 5.0
+    ift_dy_mm: 5.0
+    ift_rx_mrad: 60.0
+    ift_ry_mrad: 60.0
+    ift_rz_mrad: 60.0
+  weighted_matrix: "A = W^{1/2} J S"
+  do_not_retune_this_stage: true
+  do_not_reconstruct_this_stage: true
+
+physics_scales:
+  faser_ip_distance_mm: 480000.0
+  tracker_radial_envelope_mm: 100.0
+  ip_angular_acceptance_rad: 0.000208
+  ip_like_max_slope: 0.0005
+  stereo_rad: 0.020
+  ift_layer_pitch_mm: 31.5
+  strip_pitch_mm: 0.080
+  wide_angle_min_slope: 0.002
+  slope_definition: hypot_source_tracklet_tx_ty
+  slope_source: canonical_tracklet_local_state
+  slope_is_not_leftover_residual_rtx_rty: true
+  slope_is_not_spectrometer_delta_x_over_delta_z: true
+  station_z_mm:
+    0: -1860.15
+    1: 47.4
+    2: 1237.4
+    3: 2427.4
+  station_z_match_tolerance_mm: 400.0
+
+phase_space:
+  coordinates: [tx, ty]
+  preferred_station: 0
+  envelope_quantiles: [0.01, 0.99]
+  histogram_range_tx: [-0.40, 0.40]
+  histogram_range_ty: [-0.40, 0.40]
+  histogram_bins: 24
+  azimuth_bins: 12
+  min_truth_match_fraction: 0.99
+  filename_5mrad_is_not_phase_space_proof: true
+
+# Pre-registered before inspecting residual / SVD / rank.  Do not lower.
+coverage_gates:
+  min_events: 200
+  min_ift_events: 200
+  min_complete_four_station_events: 80
+  min_independent_sources_or_runs: 2
+  require_ift_station_0: true
+  require_stations_0_1_2_3_present: true
+  min_outside_canonical_envelope_fraction: 0.20
+  max_histogram_intersection_for_distinct: 0.80
+  min_wide_local_slope_fraction: 0.30
+  do_not_lower_gates: true
+  collision_like_metadata_cannot_admit: true
+  same_production_as_canonical_cannot_admit: true
+  sealed_test_cannot_admit: true
+  coverage_unmeasured_cannot_admit: true
+  pooled_or_mixed_rank_is_not_admission: true
+  # Export is still residual-blind.  It is not an FD campaign and does
+  # not lower the tracklet statistical gates above.
+  min_xaod_files_for_export: 2
+  min_xaod_events_per_file_for_export: 1000
+  require_segmentfit_for_export: true
+  require_ift_geometry_for_export: true
+
+canonical_population:
+  id: hierarchical_v1_5mrad_flukaE
+  role: canonical_baseline
+  metadata_class: canonical_5mrad_flukaE_particle_gun
+  declared_from: "Workbook 73 hierarchical V1 train/validation FD-anchor tracklets; generator logs confirm SingleParticle z=-3990 mm, theta=None, phi=0..2pi, energy=TH2Sampler, FASERNU-04 / TI12MC04."
+  expected_difference: none
+  physically_distinct_from_canonical: false
+  do_not_restack_unused_same_dsid_files: true
+  unused_same_production_files_are_not_a_new_population: true
+  filename_5mrad_is_not_phase_space_proof: true
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  q_over_p_mode: 0
+  sources:
+    - {id: mc24_100043_00200_00299, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00200_00299/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00300_00399, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00300_00399/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00400_00499, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00400_00499/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00500_00599, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00500_00599/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100043_00600_00699, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00600_00699/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00200_00299, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00200_00299/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00300_00399, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00300_00399/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00400_00499, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00400_00499/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00500_00599, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00500_00599/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100044_00600_00699, split: train, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100044_00600_00699/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00000_00049, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00000_00049/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00050_00099, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00050_00099/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00100_00149, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00100_00149/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100047_00150_00199, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100047_00150_00199/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00000_00049, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00000_00049/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00050_00099, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00050_00099/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00100_00149, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00100_00149/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+    - {id: mc24_100048_00150_00199, split: validation, tracklets: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100048_00150_00199/physical_scan/points/iteration_00_reference/refit/tracklets.root}
+
+# Predeclared from generator logs, rec flags, named PHYS streams, and
+# already-exported tracklets.  Not from residual / SVD / rank.
+predeclared_candidates:
+  - id: mc24_100012_100gev_gaussian_theta
+    metadata_class: mc_particle_gun_const_100gev_gaussian_theta
+    declared_from: "Generator log Sim.Gun: pid={-13,13}, energy=ConstSampler[100000.0], theta=GaussianSampler, z=-3990 mm, FASERNU-04 / TI12MC04. Existing mag_0 curriculum tracklets, train+validation only."
+    expected_difference: const_100GeV_and_gaussian_theta_versus_TH2_flukaE_5mrad_family
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    skip_historical_test_split: true
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/rec/s0012-r0019/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00000-00004-s0012-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100012/log/s0012/FaserMC-MC24_PG_muon_fasernu_100GeV-100012-00000.gen.log
+    sources:
+      - {id: mc24_00000_00004, split: train, tracklets: outputs/mc24_muon_curriculum_physical_v1/sources/mc24_00000_00004/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_00005_00009, split: train, tracklets: outputs/mc24_muon_curriculum_physical_v1/sources/mc24_00005_00009/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_00010_00014, split: train, tracklets: outputs/mc24_muon_curriculum_physical_v1/sources/mc24_00010_00014/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_00015_00019, split: validation, tracklets: outputs/mc24_muon_curriculum_physical_v1/sources/mc24_00015_00019/physical_scan/points/mag_0_validation_00/refit/tracklets.root}
+
+  - id: mc24_100116_117_2d_fluka_nonsealed
+    metadata_class: mc_particle_gun_2d_fluka
+    declared_from: "Generator log Sim.Gun: SingleParticle, theta=None, z=-3990 mm, energy=TH2Sampler, production name fasernu_2D_fluka. Mag_0 train/validation tracklets only. Sealed 00030_00039 files are never opened."
+    expected_difference: 2d_fluka_energy_angular_sampler_versus_5mrad_flukaE_family
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/rec/s0012-r0019/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00000-00009-s0012-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100116/log/s0012/FaserMC-MC24_PG_mupl_fasernu_2D_fluka-100116-00000.gen.log
+    sources:
+      - {id: mc24_100116_00000_00009, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100116_00000_00009/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_100116_00010_00019, split: validation, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100116_00010_00019/physical_scan/points/mag_0_validation_00/refit/tracklets.root}
+      - {id: mc24_100116_00020_00029, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100116_00020_00029/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_100116_00040_00049, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100116_00040_00049/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_100117_00000_00009, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100117_00000_00009/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_100117_00010_00019, split: validation, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100117_00010_00019/physical_scan/points/mag_0_validation_00/refit/tracklets.root}
+      - {id: mc24_100117_00020_00029, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100117_00020_00029/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+      - {id: mc24_100117_00040_00049, split: train, tracklets: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/mc24_100117_00040_00049/physical_scan/points/mag_0_train_00/refit/tracklets.root}
+
+  - id: mc24_100049_050_calonu_5mrad
+    metadata_class: mc_particle_gun_calonu_geometry
+    declared_from: "Generator/reco logs: --geom TI12MCCaloNu, pid=13, z=-3990 mm, energy=TH2Sampler, production name caloNu_5mrad_flukaE. Five-event admission smoke tracklets exist for 100049."
+    expected_difference: caloNu_detector_configuration_not_proven_angular_topology
+    physically_distinct_hypothesis: false
+    same_production_as_canonical: false
+    sealed: false
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100049/rec/s0015/FaserMC-MC24_PG_mumi_caloNu_5mrad_flukaE-100049-00000-00004-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100049/log/s0015/FaserMC-MC24_PG_mumi_caloNu_5mrad_flukaE-100049-00000.gen.log
+    sources:
+      - {id: mc24_100049_00000_00004, split: smoke, tracklets: outputs/mc24_v3_calo_nu_mumi_smoke_100049_00000_00004/points/mag_0_admission_00/refit/tracklets.root}
+
+  - id: mc24_100120_muon_floor
+    metadata_class: mc_particle_gun_floor_origin
+    declared_from: "Generator log Sim.Gun: pid={-13,13}, x=[-100,100] mm, y=-120 mm, z=[-2000,1000] mm, theta=None, energy=TH2Sampler. Origin is the floor/edge, not IP-like z=-3990 mm."
+    expected_difference: floor_origin_topology_versus_ip_like_particle_gun
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/rec/s0013-r0020/FaserMC-MC24_PG_muon_floor-100120-00000-00009-s0013-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100120/log/s0013/FaserMC-MC24_PG_muon_floor-100120-00000.gen.log
+    existing_truth_kinematics: outputs/mc24_source_audit_100120_muon_floor_v1/truth_muon_kinematics.json
+    sources: []
+
+  - id: mc24_100123_124_year_labeled_muon
+    metadata_class: mc_particle_gun_year_labeled_fluka_spectrum
+    declared_from: "Generator logs: 100123 muon_2023 and 100124 muon_2024, Sim.Gun z=-3990 mm, theta=None, energy=TH2Sampler, radius=-100 mm. Filename year tag is not phase-space proof; treat as unconfirmed until tracklets exist."
+    expected_difference: year_labeled_spectrum_unconfirmed_versus_5mrad_flukaE
+    physically_distinct_hypothesis: false
+    same_production_as_canonical: false
+    sealed: false
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100124/rec/s0013-r0022/FaserMC-MC24_PG_muon_2024-100124-00000-00009-s0013-r0022-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100124/log/s0013/FaserMC-MC24_PG_muon_2024-100124-00000.gen.log
+    sources: []
+
+  - id: mc24_100130_kshort_end_fasernu
+    metadata_class: mc_particle_gun_neutral_kaon
+    declared_from: "Generator log Sim.Gun: pid=310, mass=497.6, z=[-2000,-1951] mm, energy=TH2Sampler. Neutral-kaon gun, not a muon IP-like beam."
+    expected_difference: kshort_decay_origin_versus_muon_particle_gun
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/rec/s0013-r0020/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000-00009-s0013-xAOD.root
+    representative_log: /eos/experiment/faser/data0/sim/mc24/particle_gun/100130/log/s0013/FaserMC-MC24_PG_kshort_end_fasernu_xin-100130-00000.gen.log
+    sources: []
+
+  - id: mc24_fluka_210010_full_shower
+    metadata_class: mc_fluka_full_shower
+    declared_from: "Workbook 02/data audit: MC24 FLUKA 210010 xAOD SegmentFit and Segments empty in the 10-event and 100-event smokes. Production is a full FLUKA shower, not the 5 mrad muon gun."
+    expected_difference: full_fluka_shower_versus_muon_particle_gun
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    sealed: false
+    known_empty_segmentfit: true
+    representative_xaod: /eos/experiment/faser/data0/sim/mc24/fluka/210010/rec/s0013-r0019/FaserMC-MC24_Fluka_2023_exp001_z448p6_d31p4_zsim3p99-210010-00000-00007-s0013-xAOD.root
+    sources:
+      - {id: mc24_fluka210010_100events, split: smoke, tracklets: outputs/mc24_fluka210010_100events_physical_refit_smoke_v1/points/mag_0_nominal/refit/tracklets.root}
+
+  - id: real_2024_cosmic_beam_mode
+    metadata_class: real_cosmic_beam_mode
+    declared_from: "Workbook 60: PHYS 2024_cos is NtupleDumper --cosmics. Occupancy-empty."
+    expected_difference: non_stable_beam_mode_event_filter
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    inherit_workbook: 60
+    sources: []
+
+  - id: real_2023_cosmic_like
+    metadata_class: real_cosmic_like
+    declared_from: "Workbook 60: named PHYS 2023_cos. Not high lever-arm; xAOD not retained."
+    expected_difference: dedicated_no_stable_or_cosmic_like_stream
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    inherit_workbook: 60
+    sources: []
+
+  - id: real_backward_alps_ift_collision
+    metadata_class: real_collision_like
+    declared_from: "Workbook 60: *_back is reverse CKF of collision tracks; *_alps is a physics filter; *_ift / 2022 / 2023 / 2025 remain TI12 collision-like."
+    expected_difference: none_still_collision_like
+    physically_distinct_hypothesis: false
+    same_production_as_canonical: false
+    inherit_workbook: 60
+    sources: []
+
+  - id: real_testbeam_2021
+    metadata_class: real_testbeam_no_ift
+    declared_from: "Workbook 60: TestBeam2021 FASER-TB00 / OFLCOND-FASER-TB00, no IFT/C_dx geometry."
+    expected_difference: test_beam_geometry_not_ti12_four_station_ift
+    physically_distinct_hypothesis: true
+    same_production_as_canonical: false
+    inherit_workbook: 60
+    sources: []
+
+  - id: real_2024_r0022_wide_angle_selected_routes
+    metadata_class: real_r0022_collision_like
+    declared_from: "Workbook 59: predeclared wide-angle selected routes in current r0022. Complete 4-station selected routes = 17. Frozen no_portable_alternative_topology_in_current_r0022."
+    expected_difference: r0022_selected_route_wide_angle_already_inventory
+    physically_distinct_hypothesis: false
+    same_production_as_canonical: false
+    inherit_workbook: 59
+    do_not_restack: true
+    sources: []
+
+inherited_inventories:
+  workbook_59:
+    decision: no_portable_alternative_topology_in_current_r0022
+    inventory: outputs/alternative_track_topology_identifiability_feasibility_v1/topology_inventory_report.json
+    next_stage: outputs/alternative_track_topology_identifiability_feasibility_v1/next_stage_decision.json
+  workbook_60:
+    decision: real_track_topology_insufficient_for_ry_cdx_separation
+    inventory: outputs/noncollision_crossyear_topology_identifiability_v1/residual_blind_topology_inventory.json
+    next_stage: outputs/noncollision_crossyear_topology_identifiability_v1/next_stage_decision.json
+    data_source: outputs/noncollision_crossyear_topology_identifiability_v1/data_source_inventory.json
+  workbook_73:
+    decision: rigid_station_five_dof_not_source_or_coverage_portable
+    next_stage: outputs/rigid_station_only_tracker_alignment_identifiability_v1/next_stage_decision.json
+
+eos:
+  rec_root: /eos/experiment/faser/rec
+  data0_rec_root: /eos/experiment/faser/data0/rec
+  phys_root: /eos/experiment/faser/phys
+  mc_particle_gun_root: /eos/experiment/faser/data0/sim/mc24/particle_gun
+  mc_fluka_root: /eos/experiment/faser/data0/sim/mc24/fluka
+  years: [2022, 2023, 2024, 2025, 2026]
+  extra_rec_trees: [TestBeam2021]
+
+sealed_test:
+  productions: [100116, 100117]
+  forbidden_source_ids:
+    - mc24_100116_00030_00039
+    - mc24_100117_00030_00039
+  note: "Historical V1 sealed multidirection test. Never opened in this campaign."
+
+assumptions:
+  - "Stage 1 is residual-blind. Candidates are defined from generator logs, reconstruction flags, named PHYS streams, detector configuration, and already-exported tracklets. Residual, Jacobian singular values, cosine, alignment response, and rank are not selection variables."
+  - "Filename tokens such as 5mrad are not phase-space proof. Observed (tx, ty) comes from canonical tracklet local state."
+  - "Unused 100043/100044/100047/100048 files are the same 5 mrad FLUKA-E production as the canonical hierarchical V1 corpus. They are not a new population."
+  - "Workbook 59/60 real-data topology inventories are inherited as evidence, not reopened as rank rescue."
+  - "Statistical gates are frozen before looking at coverage numbers. A candidate below gate is insufficient; gates are not lowered."
+  - "Coverage-unmeasured (no IFT+1+2+3 tracklets) cannot admit a later FD campaign. A distinct, high-statistics xAOD may only authorize HTCondor tracklet export, still residual-blind."
+  - "A later FD campaign, if opened, must reuse frozen rigid-station dx,dy,rx,ry,rz, the same S, rank_tolerance=0.01, and the same WLS definition. Mixed pooled rank is not complementarity."
+  - "Sealed 100116/100117 00030_00039 stays closed."
+  - "This stage does not skip to the gauge/external-constraint branch until the inventory proves no sufficient physically distinct population exists."
+
+output_dir: outputs/physically_distinct_track_coverage_identifiability_feasibility_v1

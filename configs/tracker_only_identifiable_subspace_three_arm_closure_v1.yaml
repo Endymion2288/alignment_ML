@@ -1,0 +1,141 @@
+# Tracker-only identifiable-subspace definition and three-arm closure V1
+# Survey/metrology is an external cross-check, not an alignment input.
+# Frozen V2 / association policy stay unchanged.  Real data stays
+# residual_dq_monitoring_only.  Geometry write is false.
+# SVD is of A = W^{1/2} J S with frozen S and frozen rank_tolerance.
+# Do not retune S or the rank cut from singular values.
+
+schema_version: faser-tracker-only-identifiable-subspace-three-arm-closure-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_identifiable_modes: false
+survey_is_alignment_input: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_treat_null_zero_as_a_measurement: true
+do_not_relabel_modes_as_mechanical_parameters: true
+solver_restricted_to_identifiable_subspace: true
+truth_selected_association_is_solver_control: true
+survey_is_external_cross_check_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+retune_scales_from_singular_values: false
+unknown_association_frozen_v2_closure_opened: false
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+# Frozen relative rank cut inherited from leakage_spectrum / column-normalized
+# Fisher (workbook 57-61).  Applied to singular values of A = W^{1/2} J S,
+# not to a naked mixed-unit Jacobian and not to the squared normal-matrix
+# spectrum without taking the square-root relationship into account.
+rank_tolerance: 0.01
+normal_matrix_rcond: 1.0e-10
+
+scale_matrix_S:
+  ift_dx_mm: 5.0
+  ift_dy_mm: 5.0
+  ift_dz_mm: 5.0
+  ift_rx_mrad: 60.0
+  ift_ry_mrad: 60.0
+  ift_rz_mrad: 60.0
+  C_dx: 0.12
+
+jacobian_corpus:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_dz_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+    - C_dx
+  # Source-disjoint subset of the already-produced hierarchical iteration-00
+  # bank: two physics samples on each split, disjoint original xAOD files.
+  # Full 18-source reload is not required for this linear SVD/closure stage.
+  source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00600_00699
+    - mc24_100044_00300_00399
+    - mc24_100047_00000_00049
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00150_00199
+
+bootstrap:
+  n_event_replicates: 40
+  n_half_splits: 12
+  seed: 20260902
+  min_pairs: 20
+
+injections:
+  # Dimensionless ||S^{-1} θ|| amplitudes, inside the frozen linear envelope
+  # severity <= 0.15 (workbook 33-35).  Not retuned after seeing residuals.
+  identifiable_scaled_amplitude: 0.10
+  null_scaled_amplitude: 0.10
+  n_replicates: 8
+  seed: 20260902
+
+gates:
+  require_same_identifiable_rank: true
+  max_source_principal_angle_deg: 15.0
+  max_source_projector_frobenius: 1.0
+  max_train_validation_principal_angle_deg: 15.0
+  max_train_validation_projector_frobenius: 1.0
+  max_topology_principal_angle_deg: 15.0
+  max_topology_projector_frobenius: 1.0
+  max_bootstrap_principal_angle_deg: 20.0
+  max_bootstrap_projector_frobenius: 1.2
+  arm_a_max_projected_error_relative: 0.05
+  arm_a_max_amplitude_error: 0.05
+  arm_b_max_identifiable_fake_relative: 0.05
+  arm_c_max_projector_closure_relative: 0.05
+
+cluster_local:
+  enabled: true
+  stability_config: configs/true_cluster_local_ry_cdx_stability_transfer_v1.yaml
+  not_a_campaign_gate: true
+  not_used_as_real_data_alignment_solve: true
+
+assumptions:
+  - "Physical Jacobian columns are central finite differences of truth-selected mode-0 pair residuals from the hierarchical iteration-00 bank (workbook 44-45)."
+  - "Native units remain mm for translations/C_dx and mrad for rotations, matching /Tracker/Align payload conversion in physical_jacobian.COMPONENT_INDEX_AND_PAYLOAD_SCALE."
+  - "Scale matrix S is the frozen severity_scale (5 mm / 60 mrad / 0.12 mm C_dx), declared before SVD and never retuned from singular values."
+  - "Residual weight W is the nominal 4x4 pair covariance already used by solve_physical_finite_difference; it is a WLS weight, not an independent same-cluster covariance."
+  - "Rank tolerance 1e-2 is the frozen leakage/Fisher relative cut applied to singular values of A = W^{1/2} J S."
+  - "Stations ry software contract (workbook 67) is global left-multiply about the FASER origin; this campaign does not fill a survey prior."
+  - "Survey/metrology remains an external cross-check.  Official slots stay feasibility_only / unavailable (workbook 66-67)."
+  - "Linear three-arm injections use the validated Jacobian; Athena is not rerun.  This is the first-round truth-selected control, not Frozen-V2 unknown-association closure."
+  - "V_null^T u_hat = 0 is the minimum-norm/gauge representative in scaled coordinates, not a measurement that null modes are physically zero."
+  - "Identifiable modes are reconstruction-observable linear combinations and must not be relabeled as a lone mechanical ry or C_dx."
+
+output_dir: outputs/tracker_only_identifiable_subspace_three_arm_closure_v1

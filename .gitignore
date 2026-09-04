@@ -10,4 +10,5 @@ outputs/*
 # Kerberos credential caches must never be tracked
 xcheng.cc
 krb5cc_*
-
+PoolFileCatalog.xml
+eventLoopHeartBeat.txt

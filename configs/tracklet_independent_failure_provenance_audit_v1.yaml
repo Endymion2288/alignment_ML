@@ -1,0 +1,86 @@
+# Read-only failure-provenance audit of workbook-69 independent sources
+# whose native identifiable rank was 2, 3, or 4.
+# Does not retune S or rank_tolerance, drop sources, reselect population,
+# or reopen the stable-core campaign.  Not a confirmatory set.
+
+schema_version: faser-tracklet-independent-failure-provenance-audit-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+survey_is_alignment_input: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_modify_pairwise_or_route_policy: true
+do_not_run_full_parameter_newton: true
+do_not_solve_alignment_correction_on_real_data: true
+do_not_write_official_conditions: true
+do_not_write_geometry_pool_or_cool: true
+do_not_open_sealed_test: true
+do_not_svd_naked_mixed_unit_jacobian: true
+do_not_retune_scales_from_singular_values: true
+do_not_retune_rank_threshold_from_spectrum: true
+do_not_drop_failure_sources: true
+do_not_reselect_population: true
+do_not_force_identifiable_rank_five: true
+do_not_use_as_stable_core_confirmation: true
+do_not_merge_into_cluster_local_gate: true
+read_only_audit: true
+survey_is_external_cross_check_only: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+inherited_entry_69_decision: cross_source_stable_core_independent_validation_fail
+
+rank_tolerance: 0.01
+normal_matrix_rcond: 1.0e-10
+
+scale_matrix_S:
+  ift_dx_mm: 5.0
+  ift_dy_mm: 5.0
+  ift_dz_mm: 5.0
+  ift_rx_mrad: 60.0
+  ift_ry_mrad: 60.0
+  ift_rz_mrad: 60.0
+  C_dx: 0.12
+
+jacobian_corpus:
+  kind: physical_central_finite_difference
+  iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+  anchor_point: iteration_00_reference
+  min_truth_match_fraction: 0.99
+  q_over_p_mode: 0
+  splits: [train, validation]
+  parameter_names:
+    - ift_dx_mm
+    - ift_dy_mm
+    - ift_dz_mm
+    - ift_rx_mrad
+    - ift_ry_mrad
+    - ift_rz_mrad
+    - C_dx
+  failure_source_ids:
+    - mc24_100043_00400_00499
+    - mc24_100043_00500_00599
+    - mc24_100044_00200_00299
+  # Pre-registered sibling controls from the same independent-validation
+  # list that passed workbook 69.  Read-only comparison only.  Not a new
+  # confirmatory core sample.
+  sibling_control_source_ids:
+    - mc24_100043_00300_00399
+    - mc24_100044_00400_00499
+
+near_zero_column_relative: 1.0e-6
+covariance_condition_warn: 1.0e8
+
+assumptions:
+  - "Workbook 69 remains frozen.  These three sources are not deleted, truncated, or used to redefine the stable-core criterion."
+  - "The audit classifies coverage loss versus pipeline/artifact corruption.  It does not restore rank 5."
+  - "Sibling controls are pre-registered from workbook-69 independent sources that already passed.  They are not a new confirmatory set for a portable core."
+  - "Sealed test is not opened.  Athena is not rerun.  S and rank_tolerance stay frozen."
+
+output_dir: outputs/tracklet_independent_failure_provenance_audit_v1

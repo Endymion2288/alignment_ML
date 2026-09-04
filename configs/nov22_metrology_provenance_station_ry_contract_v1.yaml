@@ -1,0 +1,130 @@
+# Nov-2022 raw metrology provenance + Calypso station-ry transform contract V1
+# Read-only inventory of original Nov-2022 measurements, plus a software
+# finite-difference validation of /Tracker/Align/Stations ry.  Does not
+# retrain, does not write geometry, and does not enter Fisher.
+
+schema_version: faser-nov22-metrology-provenance-station-ry-contract-v1
+frozen: true
+protocol_version: operating_protocol_v1
+real_data_operating_mode: residual_dq_monitoring_only
+geometry_write_allowed: false
+station_calibration_mode_available: false
+cdx_mode_allowed: false
+alignment_payload_from_self_nulling_residuals: false
+geometry_candidate_from_cad_survey: false
+geometry_candidate_from_software_fd: false
+do_not_retrain_v2: true
+do_not_modify_frozen_v2_checkpoint: true
+do_not_construct_station_calibration_mode: true
+do_not_construct_reduced_station_mode: true
+do_not_enter_cdx_mode: true
+do_not_run_newton: true
+do_not_solve_alignment_correction: true
+do_not_write_official_conditions: true
+do_not_use_tracklet_intercept_as_cluster_residual: true
+do_not_enter_full_module_identifiability_map: true
+do_not_invent_new_cosine_cut: true
+do_not_select_events_from_residual_or_cosine: true
+do_not_select_prior_from_residual: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_rebuild_2024_r0022_jacobian: true
+do_not_mix_cross_year_residuals_or_alignment_constants: true
+do_not_average_across_iovs: true
+do_not_invent_survey_numbers: true
+do_not_use_design_as_survey: true
+do_not_use_software_gauge_as_survey: true
+do_not_treat_conditions_as_independent_survey: true
+do_not_upgrade_numeric_agreement_to_survey_derived: true
+do_not_treat_ppt_as_alignment_prior: true
+do_not_treat_ppt_as_geometry: true
+do_not_map_unconfirmed_tilt_to_ry: true
+do_not_use_station_sd_as_measurement_sigma: true
+do_not_equate_layer_trend_to_calypso_station_ry: true
+do_not_map_stereo_or_layerpitch_to_station_ry: true
+do_not_map_planes_rotations_to_station_ry: true
+do_not_map_kabsch_or_dz_vs_x_to_station_ry: true
+do_not_guess_index_tuple_meanings: true
+do_not_modify_original_survey_file: true
+do_not_expand_ml_or_module_map: true
+do_not_expand_collision_track_statistics: true
+do_not_infer_physics_from_filename: true
+do_not_construct_covariance_from_population_scatter: true
+synthetic_prior_feasibility_only: true
+slide_summary_feasibility_only: true
+software_fd_sensitivity_only: true
+residual_reduction_is_not_alignment_success: true
+implied_cdx_is_not_a_measurement: true
+residual_kind: true cluster-local unbiased residual
+residual_decrease_label: DQ observable
+
+frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+
+source:
+  relative: docs/cad_survey_nov22.txt
+  immutable: true
+  label: cad_survey_nov22
+  expected_sha256: 1ea2e62d5340bc6242cdd887954cd92761d3472cf736e1831a5094ff83c1c8f6
+  expected_size_bytes: 21284
+
+adjacent_sources:
+  survey_2022_pdf: docs/04Nov2022_Survey.pdf
+  survey_2021_pdf: docs/FAS_IFT_Dec10-2021.pdf
+  cad_survey_audit_config: configs/cad_survey_nov22_frame_covariance_audit_v1.yaml
+  infrastructure_config: configs/survey_metrology_iov_alignment_infrastructure_v1.yaml
+  prior_interface_config: configs/survey_derived_prior_interface_frame_validation_v1.yaml
+
+calypso_evidence:
+  detector_factory: Tracker/TrackerDetDescr/FaserSCT_GeoModel/src/SCT_DetectorFactory.cxx
+  station_cxx: Tracker/TrackerDetDescr/FaserSCT_GeoModel/src/SCT_Station.cxx
+  frame_cxx: Tracker/TrackerDetDescr/FaserSCT_GeoModel/src/SCT_Frame.cxx
+  module_cxx: Tracker/TrackerDetDescr/FaserSCT_GeoModel/src/SCT_Module.cxx
+  align_db_tool: Tracker/TrackerAlignTools/TrackerAlignGenTools/src/TrackerAlignDBTool.cxx
+  global_delta: Tracker/TrackerDetDescr/TrackerReadoutGeometry/src/SiDetectorManager.cxx
+  sct_manager_delta: Tracker/TrackerDetDescr/TrackerReadoutGeometry/src/SCT_DetectorManager.cxx
+  align_cond_alg: Tracker/TrackerConditions/FaserSCT_ConditionsAlgorithms/src/FaserSCT_AlignCondAlg.cxx
+  detector_element_cond_alg: Tracker/TrackerConditions/FaserSCT_ConditionsAlgorithms/src/FaserSCT_DetectorElementCondAlg.cxx
+  detector_element: Tracker/TrackerDetDescr/TrackerReadoutGeometry/src/SiDetectorElement.cxx
+  geomodel_test: Control/CalypsoExample/GeoModelTest/src/GeoModelTestAlg.cxx
+  geomdb_sql: DetectorDescription/GeoModel/FaserGeoModel/data/geomDB.sql
+  toplevel_placements: Tracker/TrackerDetDescr/TrackerGeoModelUtils/src/TopLevelPlacements.cxx
+  sct_geometry_cfg: Tracker/TrackerDetDescr/FaserSCT_GeoModel/python/FaserSCT_GeoModelConfig.py
+  rotation_convention: "T(dx,dy,dz) * Rz(rz) * Ry(ry) * Rx(rx)"
+  station_constants_order: [dx, dy, dz, rx, ry, rz]
+  stations_channel: /Tracker/Align/Stations
+  stations_level: 3
+  stations_frame: global
+  planes_channel: /Tracker/Align/Planes
+  planes_level: 2
+  planes_frame: global_conjugated_to_plane_z
+  fasernu04_scttoplevel_tag: SCTTopLevel-02
+  fasernu04_scttoplevel_hvs_id: 107793
+  fasernu04_sct_parent_z_mm: 1237.4
+  fasernu04_interface_posz_mm: -3097.55
+  fasernu04_station0_origin_z_mm: -1860.15
+
+software_fd:
+  ry_rad: 0.0001
+  ry_pair_rad: [-0.0001, 0.0001]
+  purpose: finite_difference_frame_validation_only
+  not_an_alignment_solve: true
+  not_a_geometry_candidate: true
+
+workbook_17_frozen_physical_refit:
+  source: docs/ift_ry_physical_rotation.md
+  station: 0
+  ry_rad: 0.010
+  mean_delta_x_mm_plus: -18.5981
+  mean_delta_x_mm_minus: 18.5970
+  mean_delta_tx_plus: 0.0100209
+  mean_delta_tx_minus: -0.0100143
+  observable: truth_matched_IFT_track_state_not_sensor_center
+  not_a_survey_prior: true
+
+entry_61_frozen:
+  degeneracy_breaking_sigma_ry_mrad: 20.0
+  degeneracy_breaking_sigma_cdx_mm: 0.315
+  leftover_sigma_cdx_mm_after_tight_ry: 0.34514281813225994
+  useful_ry_mrad: 0.5
+  useful_cdx_mm: 0.080
+
+output_dir: outputs/nov22_metrology_provenance_station_ry_contract_v1
