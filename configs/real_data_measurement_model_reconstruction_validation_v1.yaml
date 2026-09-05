@@ -1,0 +1,294 @@
+# Workbook 80 pre-registration:
+# Real-Data Measurement-Model Reconstruction & Cross-Run Validation V1.
+#
+# Workbook 79 froze `real_data_statistical_model_multiple_failures`: the
+# covariance/statistical model, the observable/Jacobian-transfer support, and
+# the calibration cross-run transportability ALL failed their pre-registered
+# gates.  WB79 also proved that the full and diagonal-marginal covariances
+# give a BIT-IDENTICAL alignment information matrix H, eigenvalues and beta
+# (the near-singular covariance direction is alignment-blind), so the large
+# gamma is NOT caused solely by the off-diagonal correlation and diagonalizing
+# the covariance does NOT fix alignment.
+#
+# This campaign ONLY rebuilds and validates the measurement model:
+#   A. the residual covariance model
+#   B. the MC->real Jacobian-transfer model
+# It does NOT solve for a final alignment correction, does NOT open held-out
+# data, does NOT write geometry, does NOT iterate nonlinearly, does NOT change
+# the gauge, does NOT redefine V_id/V_null, does NOT modify S/rank_tolerance,
+# and does NOT use any external prior.
+#
+#   geometry_write_allowed = false
+#   official_conditions_write_allowed = false
+#   real_data_candidate_alignment_authorized = false
+#   external_constraint_ingest_authorized = false
+#   held_out_accessed = false
+#
+# Everything in this file is frozen before any confirmatory validation quantity
+# is computed.  Candidate model STRUCTURES are frozen here (pre-registered from
+# first-principles physics, NOT from any alignment-gamma outcome).
+
+schema_version: faser-real-data-measurement-model-reconstruction-validation-v1
+workbook: 80
+created_utc: "2026-09-05T10:40:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned).  The WB80 module loads the WB79 config
+# (which itself loads and SHA-verifies the WB78 config) and reuses the frozen
+# tracker-information, gauge, population, split and transfer contracts
+# verbatim.  Any SHA mismatch halts the campaign.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_79_config: configs/real_data_residual_covariance_model_adequacy_v1.yaml
+  workbook_79_config_sha256: 8e89f9c449bf78c118b5be3b4d5f632694fd23f817a10cc590869ede1e6d75ea
+  workbook_79_output_root: outputs/real_data_residual_covariance_model_adequacy_v1
+  workbook_79_artifact_sha256:
+    baseline_reproduction.json: 8ae7d181c595150411ccb7518e271c535999e80217b6d00f2b885b7731625ab3
+    covariance_audit.json: ea4ec27dcb7d8f83b24fa753fac08dccd348d02975191645528703a4960f5c5d
+    transfer_support.json: b377c259fc2e86f6bbc9e9754729c7069db5f3df9b29708d5ec5dfe02d466483
+    cross_run.json: a142b001e026671edf817fab7ccfec161e92699e63fb8f22f2c23f62e3b6f983
+    model_adequacy_decision.json: 4d43a4d4057574d213711e33397abfcf150adce4f322cc4f3f1cd458da3fe654
+  # Frozen split / calibration bank identity (calibration = 14973+14974 only).
+  split_sha256: c9c359793c41b59df1296e3ec2075af652c3f585746ca832a9c2e37f4a4f61d3
+  calibration_bank_sha256: 6e4eaae08bdc8b48174b2f24d1dc772f4cade7cb1918d59a8f017eb505687114
+  # WB79 covariance eigensystem / whitening baseline that the reproduce stage
+  # must reproduce exactly before any new model is built (tight float tol).
+  # Values are the frozen WB79 covariance_audit.json numbers (eigenmode
+  # decomposition), distinct from the inv(C)-based applicability chi2.
+  wb79_baseline:
+    n_pairs: 378
+    chi2_total: 1999613.163574398
+    whitened_chi2_resid_per_ndof: 1058.4585330827601
+    whitened_ndof: 1492
+    fraction_chi2_from_smallest_eigenmode: 0.9974148966076067
+    covariance_condition_median: 2346694286586.7583
+  reproduce_rtol: 1.0e-6
+  reproduce_atol: 1.0e-6
+
+# ---------------------------------------------------------------------------
+# Population / data roles: inherited frozen from WB78/WB79.  Calibration =
+# 14973+14974 ONLY plus MC/control.  Held-out (14975/14976, 7 monitoring runs,
+# 14977 report-only) remains completely closed; a code-level guard refuses any
+# held-out residual read.  No new run, no event removal, no route re-selection,
+# no restacking, no residual-based or condition-based or fit-quality-based
+# pair/event dropping.
+# ---------------------------------------------------------------------------
+population:
+  inherit_from_workbook_78: true
+  calibration_runs: [14973, 14974]
+  held_out_closed: true
+
+# ---------------------------------------------------------------------------
+# Covariance semantics audit (Stage: covariance-semantics).  Read-only code /
+# provenance trace of how the combined 4x4 covariance is generated, answering
+# the 12 pre-registered questions with formula / source location / matrix
+# ordering / units / assumption / resolved-or-unresolved verdict, plus an
+# empirical characterization (eigenstructure, correlation, marginal vs
+# residual, propagated-vs-target decomposition, lever-arm dependence).
+# ---------------------------------------------------------------------------
+covariance_semantics_audit:
+  questions:
+    - source_tracklet_state_covariance_origin
+    - propagated_state_covariance_transformation
+    - target_tracklet_covariance_origin
+    - residual_covariance_formula
+    - source_target_independence_assumption
+    - shared_track_common_hits_common_fit
+    - missing_cross_covariance_term
+    - local_global_surface_jacobian_units_ordering
+    - x_tx_y_ty_correlation_physical_origin
+    - long_lever_arm_near_rank1_correlation
+    - inverse_method_direct_inv_vs_stable_factorization
+    - covariance_type_fit_vs_prediction_vs_mixed
+  # Empirical characterization is report-only context for hypothesis
+  # construction; it never selects or drops pairs.
+
+# ---------------------------------------------------------------------------
+# First-principles covariance hypotheses (Stage: covariance-model preamble).
+# Each is marked supported / refuted / unresolved by the semantics audit.
+# ---------------------------------------------------------------------------
+covariance_hypotheses:
+  H_cov_1: full propagated covariance mathematically correct but missing an extra process/noise term
+  H_cov_2: source/target independence assumption wrong (missing cross covariance)
+  H_cov_3: coordinate / propagation Jacobian / covariance transformation error
+  H_cov_4: track-fit covariance is conditional fit uncertainty, not a cross-tracklet residual covariance
+  H_cov_5: real multiple-scattering / detector / association / model discrepancy not covered
+
+# ---------------------------------------------------------------------------
+# Candidate covariance models (Stage: covariance-model).  ALL structures are
+# pre-registered from first-principles physics BEFORE any confirmatory
+# validation; NONE is chosen because it makes gamma smaller, the rank more
+# stable, the condition number nicer, or the chi2 drop more.  Every candidate
+# is C_new = C_combined + Q (or a scale variant), and any nuisance scale is
+# estimated ONLY by cross-fitting (14973 derive -> 14974 validate, and the
+# reverse).  No candidate enters an alignment solve in Workbook 80.
+#
+# State order is [x_mm, y_mm, tx, ty].  Lever arm L = z_target - z_source(0).
+# ---------------------------------------------------------------------------
+covariance_model:
+  # De-meaning for fluctuation estimation: remove the per-(run, station-pair-
+  # type) coherent mean of the raw residual (diagnostic-only alignment-bias
+  # proxy; NEVER a new residual definition or alignment input).
+  demean_per_run_pairtype_cell: true
+  min_pairs_for_estimation: 30
+  # Nuisance-scale estimator: per pair-type, choose the scale minimizing the
+  # Gaussian negative log-likelihood of the de-meaned residuals on the
+  # DERIVATION run only; freeze it; apply verbatim to the VALIDATION run.
+  estimator: gaussian_nll_per_pairtype
+  candidates:
+    - name: C0_frozen
+      kind: frozen_baseline          # current C_combined; expected to fail
+      n_nuisance: 0
+    - name: C1_ms_leverarm
+      # C_combined + theta2 * G_MS(L).  G_MS couples (x,tx) and (y,ty) with the
+      # multiple-scattering random-walk structure [[L^2/3, L/2],[L/2, 1]].
+      # One physically-structured scale theta2 per pair-type.  Tests H_cov_1/5.
+      kind: ms_leverarm_process_noise
+      n_nuisance: 1
+    - name: C2_scaled_diagonal_floor
+      # C_combined + q * diag(median marginal variances per pair-type).
+      # Uncorrelated missing-noise floor; one scale q per pair-type.  Tests
+      # H_cov_5 (detector/association).  NOT the forbidden "diagonalize W".
+      kind: scaled_diagonal_floor
+      n_nuisance: 1
+    - name: C3_variance_inflation
+      # alpha * C_combined (same near-singular structure, inflated scale).  One
+      # scale alpha per pair-type.  Contrast: pure scale cannot fix structure.
+      kind: variance_inflation
+      n_nuisance: 1
+  # Cross-fitting folds (no same-data self-proof).
+  cross_fit_folds:
+    - {derive: 14973, validate: 14974}
+    - {derive: 14974, validate: 14973}
+
+# ---------------------------------------------------------------------------
+# Pre-registered covariance validation metrics (confirmatory).  A candidate is
+# validated only if it passes ALL gates on BOTH cross-fit folds.  Gates inherit
+# the WB79 model-adequacy scale unless a mathematical reason requires otherwise
+# (any change is pre-registered here, before seeing confirmatory results).
+# ---------------------------------------------------------------------------
+covariance_validation:
+  whitened_chi2_per_ndof_max: 4.0            # inherit WB79 gate
+  cov_z_eigenvalue_min: 0.25                  # empirical Cov(z) eigenvalues in
+  cov_z_eigenvalue_max: 4.0                   # [0.25, 4] (~factor-2 in sigma)
+  cross_run_generalized_eigenvalue_max_rms_log: 1.0986122886681098  # ln(3)
+  marginal_scale_max_log_ratio: 1.0986122886681098  # |ln(model/empirical marg)| <= ln(3)
+  correlation_sign_agreement_min: 0.75        # fraction of off-diag signs matching empirical
+  require_positive_definite: true
+  factorization_max_inverse_residual: 1.0e-6  # ||C C^-1 - I||_max on the model
+  # Only the physically-motivated candidates (not C0_frozen) count toward
+  # `covariance_model_validated`.
+
+# ---------------------------------------------------------------------------
+# Numerical inversion audit (Stage: numerical-inversion).  Strictly separate:
+#   A. computing the SAME C^-1 more stably (Cholesky / eigendecomposition /
+#      SVD)  -- numerical implementation, allowed;
+#   B. modifying C itself (eigenvalue floor / cap / pseudoinverse cutoff) --
+#      a statistical-model change requiring separate pre-registration.
+# The audit compares methods on the SAME frozen covariance and reports the
+# discrepancy; it never silently turns a numerical method into regularization.
+# ---------------------------------------------------------------------------
+numerical_inversion_audit:
+  methods: [direct_inv, cholesky_solve, eigendecomposition, svd_pseudoinverse]
+  # Pure (no floor / no cutoff) variants only; any floor/cutoff is model change.
+  report_max_abs_chi2_difference: true
+
+# ---------------------------------------------------------------------------
+# Jacobian-transfer model (Stages: jacobian-model, jacobian-support).
+# Residual-blind kinematic transfer only.  Candidate features are frozen before
+# seeing any real solve result, computable from MC, and identically defined for
+# real data.  No residual nearest-neighbour J, no alignment-improvement feature
+# selection, no held-out binning.
+# ---------------------------------------------------------------------------
+jacobian_transfer:
+  # Residual-blind kinematic features (track-slope plane; matches the WB79
+  # support failure which was in tx/ty).
+  features: [pred_tx, pred_ty]
+  # MC source-disjoint split (construction vs validation), by MC campaign to
+  # test portability across different samples.  Frozen before any fit.
+  mc_construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00600_00699
+    - mc24_100044_00300_00399
+  mc_validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00150_00199
+    - mc24_100048_00000_00049
+    - mc24_100048_00150_00199
+  # Candidate conditional-J models (per station pair), frozen before MC
+  # validation.  J0 is the WB78 station-pair mean baseline.
+  models:
+    - name: J0_station_pair_mean
+      kind: station_pair_mean
+    - name: J1_kinematic_binned
+      kind: kinematic_binned_mean
+      tx_bin_edges: [-0.08, -0.04, 0.0, 0.04, 0.08]
+      ty_bin_edges: [-0.03, -0.015, 0.0, 0.015, 0.03]
+      min_pairs_per_bin: 5
+    - name: J2_linear_regression
+      kind: linear_kinematic_regression   # J(tx,ty) = a + b_tx*tx + b_ty*ty per element
+  # MC validation gates (on held-out MC sources only).
+  mc_validation:
+    max_frobenius_relative_error: 0.35       # per-pair J prediction error
+    injection_recovery_max_relative: 0.35    # informed-subspace injection recovery
+    null_leakage_max_relative: 0.35          # null-direction leakage into informed
+    min_validation_pairs_per_pairtype: 30
+  # Real-data support validation (residual-blind), applied only after the J
+  # model is frozen on MC.  A real pair is in-domain if its (tx,ty) lies within
+  # the MC-validated applicability envelope.
+  real_support:
+    mahalanobis2_99_2dof: 9.210
+    min_fraction_within_support: 0.90        # per (0,1) and (0,2); (0,3) report-only
+    # Out-of-support pairs are NEVER extrapolated into a solve; substantial
+    # out-of-support freezes jacobian_transfer_model_not_validated.
+
+# ---------------------------------------------------------------------------
+# Cross-run information sanity check (Stage: cross-run-info).  ONLY run if BOTH
+# covariance and Jacobian-transfer models are validated.  Diagnostic-only
+# (alignment_authorized=false); never produces a deployable candidate.
+# ---------------------------------------------------------------------------
+cross_run_information:
+  require_equal_rank: true
+  direction_max_angle_deg: 15.0
+  gamma_direction_max_angle_deg: 15.0
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered).  Exactly one terminal string is frozen.
+# ---------------------------------------------------------------------------
+decision_tree:
+  validated: measurement_model_validated_real_data_alignment_v2_preregistration_allowed
+  inconclusive: measurement_model_validation_inconclusive
+  covariance_not_validated: measurement_model_covariance_not_validated
+  jacobian_not_validated: measurement_model_jacobian_transfer_not_validated
+  multiple_not_validated: measurement_model_multiple_components_not_validated
+  cross_run_not_stable: measurement_model_cross_run_information_not_stable
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions.
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+external_constraint_ingest_authorized: false
+held_out_accessed: false
+eligible_external_physical_constraints: []
+do_not_open_held_out: true
+do_not_select_events_by_residual: true
+do_not_drop_pairs_by_condition_or_fit_quality: true
+do_not_repick_split: true
+do_not_switch_gauge: true
+do_not_tune_S_or_rank_tolerance: true
+do_not_redefine_identifiable_basis_on_real_data: true
+do_not_use_external_evidence_as_prior: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+do_not_solve_final_alignment: true
+do_not_promote_diagonal_or_capped_or_unit_covariance: true
+do_not_choose_covariance_by_gamma_or_chi2_drop: true
+do_not_use_residual_nearest_neighbour_jacobian: true
+do_not_extrapolate_jacobian_outside_support: true
+do_not_reopen_identifiability_rescue: true
+do_not_start_nonlinear_or_trust_region_response: true
+
+output_root: outputs/real_data_measurement_model_reconstruction_validation_v1
