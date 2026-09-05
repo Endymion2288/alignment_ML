@@ -1,0 +1,283 @@
+# Workbook 83 pre-registration:
+# Propagated-Covariance Upstream Repair & MC Validation V1.
+#
+# *** THIS IS NOT AN ALIGNMENT TASK. ***
+# Workbook 81 froze `faseracts_propagated_covariance_not_calibrated` with
+# mechanism `overestimated_transported_fit_covariance`: the production C_prop
+# is a deterministic J C J^T transport of the source-fit covariance with NO
+# material/process noise, and the unconstrained dummy q/p covariance forms a
+# dominant spurious pencil (over-estimated 310-3894x); mode 3 (suppress q/p
+# covariance transport) removes the pencil but then UNDER-estimates the real
+# propagation error 10-100x.  Workbook 81 identified TWO independent problems:
+#   A. the dummy q/p covariance should not enter the propagated covariance;
+#   B. the source-tracklet fit covariance itself does not cover the real
+#      source-state / propagation stochastic error.
+#
+# Workbook 82 independently froze `existing_mc_real_wide_ty_support_validated`
+# (the residual-blind wide-ty kinematic-support branch).  This campaign
+# addresses ONLY the covariance branch; it changes no central prediction and
+# solves no alignment.
+#
+# Workbook 83 splits the repair into two STRICTLY ORDERED levels:
+#   Stage A: source-tracklet covariance truth closure (NO propagation).
+#   Stage B: propagation covariance construction (only if Stage A passes).
+# Stage A is validated FIRST and source-disjoint.  If Stage A cannot produce a
+# portable calibrated source covariance, the campaign freezes
+# `source_tracklet_fit_covariance_not_calibratable` and does NOT touch the
+# FaserActs propagated covariance (propagation cannot repair a wrong input
+# uncertainty model).
+#
+# The whole campaign:
+#   held_out_accessed = false
+#   real_data_alignment_authorized = false
+#   geometry_write_allowed = false
+#   official_conditions_write_allowed = false
+#   external_constraint_ingest_authorized = false
+# It reads NO real-data residual and never solves for an alignment correction.
+
+schema_version: propagated-covariance-upstream-repair-mc-validation-v1
+workbook: 83
+created_utc: "2026-09-05T20:30:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned).  WB83 SHA-verifies the frozen WB81 and WB82
+# configs + decision artifacts so the campaign provably starts from the frozen
+# negative (WB81 covariance) and positive (WB82 kinematic-support) states.
+# WB83 inherits ALL WB80/WB81/WB82 prohibitions verbatim.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_81_config: configs/faseracts_propagated_covariance_provenance_closure_v1.yaml
+  workbook_81_config_sha256: 5a13b0cc7273546ebbee4268a853c32c527a68fd263eb82483f3d6e581d5f2b9
+  workbook_81_output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
+  workbook_81_artifact_sha256:
+    propagated_covariance_decision.json: fd605f0ea93dd239a06c4ae8f14a619e1735709963d657b4c9a68575e9db96c2
+    campaign_summary.json: 97a92006163770ee3986a992813b3abb2a58843f7953f25134de1f8412645a4f
+    closure.json: 27ac8820d5e5dc455d63e08e4e037ecbb17847fedba20ca6771c484397e41cf7
+  workbook_81_frozen_decision: faseracts_propagated_covariance_not_calibrated
+  workbook_81_frozen_mechanism: overestimated_transported_fit_covariance
+  workbook_82_config: configs/wide_ty_real_support_matched_mc_coverage_feasibility_v1.yaml
+  workbook_82_config_sha256: b4417b4d9253050c417277641196e0434686a3b03f8bfded663d67b50fd1fe02
+  workbook_82_output_root: outputs/wide_ty_real_support_matched_mc_coverage_feasibility_v1
+  workbook_82_artifact_sha256:
+    wide_ty_mc_support_decision.json: e5386b618e964ad51d03b37b0b19846f9fe0814094ff21d7846fe59d7534cb46
+    campaign_summary.json: 0ba7ed82dd349159f4a1418c23d594e2249083fa0f091153ceda089fdb4d305c
+  workbook_82_frozen_decision: existing_mc_real_wide_ty_support_validated
+
+# ---------------------------------------------------------------------------
+# Software provenance (read-only; pins the exact code whose covariance
+# semantics are audited).  WB83 Stage A audits the SOURCE-tracklet covariance
+# written by the exporter (NtupleDumperAlg.globalTrackletCovariance), which
+# transforms the native Athena 5x5 (loc1,loc2,phi,theta,q/p) SegmentFit
+# covariance to the global 4x4 [x,y,tx,ty] via a central numerical Jacobian.
+# ---------------------------------------------------------------------------
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  exporter_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+
+# ---------------------------------------------------------------------------
+# MC data (source-disjoint, file-level).  WB83 Stage A reuses the SAME
+# hierarchical-V1 sources and the SAME construction/validation split as WB81
+# (frozen there, inherited here), at the NOMINAL-geometry
+# `iteration_00_reference` point so the tracklet fit and the Geant truth share
+# one geometry.  The source tracklet state + fit covariance come from
+# tracklets.root; the truth from enhanced_tracklets.root.
+# ---------------------------------------------------------------------------
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  tracklets_file: tracklets.root
+  tracklets_tree: tracklets
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+  # Stage A tests the tracklet covariance at EVERY station (the source AND the
+  # target tracklets share the same exporter transform; the alignment source is
+  # station 0 but the miscalibration is station-universal).  Station 0 is the
+  # primary alignment-source case.
+  station_ids: [0, 1, 2, 3]
+  primary_station_id: 0
+
+# ---------------------------------------------------------------------------
+# Truth / reference source state (Stage A truth-reference).  Identical
+# construction to WB81 (per-station Geant truth, truth_stX_*), but evaluated at
+# the SOURCE surface with NO propagation:
+#   tx_truth = px/pz ; ty_truth = py/pz
+#   x_truth(z_mm) = truth_stX_x + tx_truth * (z_mm - truth_stX_z)
+#   y_truth(z_mm) = truth_stX_y + ty_truth * (z_mm - truth_stX_z)
+#   e_source = [x_mm, y_mm, tx, ty]_fitted - [x_truth, y_truth, tx_truth, ty_truth]
+# Only the tracklet's MEASURED state components [x, y, tx, ty] enter.  q/p is
+# NOT a measured quantity of a straight tracklet, so the Stage-A primary
+# observable does NOT require the dummy q/p to be "calibrated".
+# ---------------------------------------------------------------------------
+truth_reference:
+  join_keys: [run_id, event_id, truth_particle_id]
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: "truth_st{station}_{coord}"   # coord in x,y,z
+  truth_momentum_template: "truth_st{station}_{mom}"     # mom in px,py,pz
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+  # Physical acceptance guard (residual-blind): drop only unphysical
+  # |tx|,|ty| outliers so they cannot inflate covariance envelopes.  Same value
+  # as WB82.
+  physical_acceptance_abs_tx_ty_max: 0.2
+  min_tracklets_per_station: 30
+
+# ---------------------------------------------------------------------------
+# Stage A closure metrics.  For each station and each split
+# (construction/validation), whiten  z = C_source^{-1/2} e_source  (symmetric
+# eigendecomposition) and compute the pre-registered metrics.  The coherent
+# mean of e_source is reported separately (a systematic, NOT what a covariance
+# describes); the covariance gates use the de-meaned fluctuation.  No tracklet
+# is dropped on pull/condition/fit quality.
+# ---------------------------------------------------------------------------
+source_closure_metrics:
+  demean_per_station: true
+  whitening: symmetric_eigendecomposition
+  metrics:
+    - mean_z
+    - marginal_rms
+    - cov_z_eigenvalues
+    - chi2_per_ndof
+    - coverage_probability
+    - generalized_eigenvalues
+    - marginal_variance_ratios
+    - position_swap_diagnostic
+    - correlation_orientation
+    - tx_ty_dependence
+    - qoverp_dependence
+  coverage_chi2_quantile_df: 4
+  # Position-swap diagnostic (report-only, NOT a gate): quantify whether the
+  # written covariance's x<->y position block is exchanged relative to the
+  # empirical e_source covariance.  Reports marginal variance ratios
+  # (C_ii / emp_ii), the cross-swapped ratios (C_xx/emp_yy, C_yy/emp_xx), and
+  # the chi2/ndof before vs after a position-only x<->y permutation.
+  position_swap_diagnostic: true
+
+# ---------------------------------------------------------------------------
+# Pre-registered Stage A closure gates (confirmatory).  C_source is
+# "calibrated" on a (station, split) cell only if ALL gates pass.  Gates are
+# frozen before any confirmatory computation and are NOT tuned to make
+# chi2 ~ 1.  Inherited from WB81's second-order-structure gate [0.25, 4].
+# ---------------------------------------------------------------------------
+source_closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  min_tracklets_per_station: 30
+  # Source-disjoint portability: the construction-derived conclusion must
+  # reproduce on the validation split (both must agree on calibrated /
+  # not-calibrated) for a portable verdict.
+
+# ---------------------------------------------------------------------------
+# Stage A repair models (pre-registered BEFORE any confirmatory closure).
+# Only limited, physically interpretable source-covariance repairs are allowed,
+# derived from SOURCE-LEVEL closure on the CONSTRUCTION split and confirmed on
+# the VALIDATION split.  It is FORBIDDEN to reverse-optimize the source
+# covariance from propagated-target whitening.  A permutation (x<->y swap
+# reversal) is allowed ONLY as a pre-registered structural repair with an
+# independently documented mechanism (exporter transform / SegmentFit basis),
+# not as a whitening-tuned choice.
+# ---------------------------------------------------------------------------
+stage_a_repair:
+  allowed_models:
+    - global_scale
+    - xy_block_scale
+    - position_permutation_xy_swap
+    - station_dependent_scale
+  forbidden:
+    - reverse_optimize_from_propagated_target_whitening
+    - tune_to_best_chi2
+  repair_derived_on: construction
+  repair_confirmed_on: validation
+
+# ---------------------------------------------------------------------------
+# Stage B (propagation covariance construction) is GATED on Stage A success.
+# It is pre-registered here for completeness but is NOT entered in this
+# campaign unless Stage A yields a portable calibrated source covariance.
+# Stage B would address: q/p covariance semantic repair (straight-tracklet q/p
+# covariance not participating in geometric transport), and physically
+# justified ACTS process noise (multiple scattering / energy loss) -- each a
+# separate pre-registered contract, never "mode 3 + covariance inflation".
+# ---------------------------------------------------------------------------
+stage_b:
+  entered_only_if_stage_a_validated: true
+  qoverp_covariance_semantic_repair:
+    description: >-
+      straight-tracklet q/p covariance does not participate in geometric
+      covariance transport (a covariance SEMANTICS change, NOT a truth-q/p
+      substitution).  Must verify it does not wrongly delete real
+      [x,y,tx,ty] covariance information.
+    diagnostic_truth_qoverp_remains_diagnostic_only: true
+  process_noise:
+    description: >-
+      multiple-scattering / energy-loss process noise may be added ONLY with
+      physical justification (material map availability, particle hypothesis,
+      ACTS MaterialInteractor semantics), never by whitening-tuning.
+    requires_physical_preregistration: true
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered).  Exactly one terminal string is frozen.
+# Only the final success state sets propagated_covariance_model_validated=true
+# (and measurement_model_validated stays false until WB82/wide-ty J support is
+# also independently true -- which WB82 has frozen true, but the two are
+# combined only in a future Measurement Model V2).
+# ---------------------------------------------------------------------------
+decision_tree:
+  # Stage A terminal states.
+  source_tracklet_covariance_not_validated: source_tracklet_covariance_not_validated
+  source_tracklet_fit_covariance_not_calibratable: source_tracklet_fit_covariance_not_calibratable
+  # Stage B terminal states (not entered if Stage A fails).
+  qop_covariance_semantic_repair_not_validated: qop_covariance_semantic_repair_not_validated
+  process_noise_model_not_validated: process_noise_model_not_validated
+  propagated_covariance_repair_not_validated: propagated_covariance_repair_not_validated
+  propagated_covariance_repaired_and_source_disjoint_validated: propagated_covariance_repaired_and_source_disjoint_validated
+  propagated_covariance_repair_inconclusive: propagated_covariance_repair_inconclusive
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions (inherited + campaign-specific).
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+real_data_alignment_authorized: false
+external_constraint_ingest_authorized: false
+held_out_accessed: false
+do_not_open_held_out: true
+do_not_read_real_data_residuals: true
+do_not_modify_faseracts_extrapolation_tool: true
+do_not_select_events_by_residual: true
+do_not_drop_pairs_by_condition_or_fit_quality: true
+do_not_use_external_evidence_as_prior: true
+do_not_solve_final_alignment: true
+do_not_tune_covariance_to_chi2: true
+do_not_promote_diagonal_or_capped_or_unit_covariance: true
+do_not_extrapolate_beyond_canonical_support: true
+do_not_open_alignment_diagnostic_v2: true
+do_not_promote_diagnostic_variant_to_production: true
+# WB83-specific: do NOT promote mode 3 to a production covariance; do NOT fill
+# q/p with truth as a real-data solution; do NOT reverse-optimize the source
+# covariance from propagated-target whitening; do NOT change the central
+# propagated state as part of a covariance repair.
+do_not_promote_mode3_to_production: true
+do_not_use_truth_qoverp_for_real_data_solution: true
+do_not_reverse_optimize_source_covariance_from_target: true
+do_not_change_central_prediction_in_covariance_repair: true
+
+output_root: outputs/propagated_covariance_upstream_repair_mc_validation_v1

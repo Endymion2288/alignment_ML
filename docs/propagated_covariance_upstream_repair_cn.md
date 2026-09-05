@@ -1,0 +1,110 @@
+# 传播协方差上游修复与 MC 验证 V1
+
+Workbook 83，**Stage A：源 tracklet 协方差真值闭合**。
+**状态：完成并冻结** —— 单一交互会话内按冻结顺序执行；所有 gate 在任何 confirmatory 计算前写入 config 并冻结，执行后未修改任何 gate。
+
+**最终决策：`source_tracklet_fit_covariance_not_calibratable`。**
+**机制分类：`position_xy_swap_with_slope_miscalibration`。**
+**指向上游修复战役：`segment_fit_hit_error_model_covariance_audit`（本战役未打补丁）。**
+
+> **命名：** 本 Workbook 83 是协方差支线（承接 WB81），**不是** alignment，也**不是** WB82 的 kinematic-support 支线。WB82 已独立冻结 `existing_mc_real_wide_ty_support_validated`。本战役只处理 WB81 识别的问题 **(B)**——源 tracklet fit 协方差本身不覆盖真实源态误差——并**严格先做 Stage A**（源面真值闭合，**无任何传播**）。Stage B（传播协方差构造）已在 config 预注册，但只有 Stage A 通过才允许进入。Stage A **未通过**，故未进入 Stage B，**未触碰 FaserActs 传播协方差**。
+
+整个 Workbook 83：`held_out_accessed=false`、`real_data_alignment_authorized=false`、`geometry_write_allowed=false`、`official_conditions_write_allowed=false`、`external_constraint_ingest_authorized=false`、`propagated_covariance_model_validated=false`、`measurement_model_validated=false`、`real_kinematic_jacobian_support_validated=false`。本战役**不读**任何 real-data residual，也**不求** alignment correction。
+
+## 科学问题（唯一）
+
+源 tracklet fit 协方差 `C_source` 是否描述真实源态误差 `e_source = fitted source state − truth state at source surface`（在可测 `[x,y,tx,ty]` 基下、**无传播**、源不相交 MC 验证）？若否，预注册的有限物理可解释修复能否给出可移植的校准源协方差？
+
+WB81 已冻结 `faseracts_propagated_covariance_not_calibrated`（机制 `overestimated_transported_fit_covariance`）：生产 `C_prop` 是源 fit 协方差的确定性 `J C J^T` 传输（**无** material/process noise），且未约束的 dummy q/p 协方差形成主导虚假 pencil（高估 310–3894×）；mode 3（抑制 q/p 协方差传输）移除 pencil 后反而**低估**真实传播误差 10–100×。WB81 识别两个独立问题：**(A)** dummy q/p 协方差不应进入传播协方差；**(B)** 源 tracklet fit 协方差本身不覆盖真实源态/传播随机误差。本战役只验证问题 (B)，且**先验证源面**——传播无法修复错误的输入不确定度模型。
+
+q/p 不是直线 tracklet 的可测量，故 Stage A 主可观测量**不要求** dummy q/p "被校准"。
+
+## 起始状态审计（STEP 1，已完成）
+
+`load_config` 对 WB81/WB82 逐项 SHA 验证（不一致即 `ConfigError` 拒绝）：
+
+- WB81 config `5a13b0cc…`、`propagated_covariance_decision.json` `fd605f0e…`、`campaign_summary.json` `97a92006…`、`closure.json` `27ac8820…`；冻结决策 `faseracts_propagated_covariance_not_calibrated`、机制 `overestimated_transported_fit_covariance`、`propagated_covariance_model_validated=false` 逐字核对一致。
+- WB82 config `b4417b4d…`、`wide_ty_mc_support_decision.json` `e5386b61…`、`campaign_summary.json` `0ba7ed82…`；冻结决策 `existing_mc_real_wide_ty_support_validated` 逐字核对一致。
+- 软件来源（只读）：Calypso `40892527e9c65409afd2378a2abfc25ddbddac03`、Athena `24.0.41`、ACTS `32.0.2`、exporter `PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx`。
+
+## 冻结数据角色与禁止事项
+
+- **MC 数据（源不相交，文件级）**：复用 WB81 hierarchical V1 source 与**同一** construction/validation 划分（construction：100043×3 + 100044×2；validation：100047×2 + 100048×2），取 nominal-geometry `iteration_00_reference` 点（tracklet fit 与 Geant truth 共享同一 geometry）。源 tracklet 态+fit 协方差来自 `tracklets.root`，真值来自 `enhanced_tracklets.root`。
+- **Stage A 在全部 4 个 station 测试**（source 与 target tracklet 共享同一 exporter transform；miscalibration 是 station-universal）。station 0 是 primary alignment-source 情形。
+- **真值参考**：逐 station Geant truth（`truth_stX_*`），`tx_truth=px/pz`、`ty_truth=py/pz`，`x/y_truth(z_mm)` 做直线 z 修正。`e_source = [x_mm,y_mm,tx,ty]_fitted − [x,y,tx,ty]_truth`。
+- **过滤（residual-blind）**：truth-match ≥ 0.99；physical acceptance `|tx|,|ty| ≤ 0.2`（只丢非物理 near-vertical outlier，防止虚增协方差 envelope）。**不按 pull/condition/fit quality 丢任何 tracklet。**
+- 禁止：打开 held-out/sealed、读 real-data residual、求 alignment correction、改 FaserActsExtrapolationTool、把 mode 3 提升为生产协方差、用 truth q/p 作 real-data 解、从传播 target whitening 反推源协方差、在协方差修复中改中心传播态、把 covariance 调到 chi2≈1。
+
+## Stage A 方法（`source_closure.json`）
+
+对每 (station, split)：白化 `z = C_source^{-1/2} e_source`（对称特征分解），计算预注册指标——`chi2/ndof`（mean + 稳健 median + 尾部份额）、`Cov(z)` 特征值、广义特征值 `eig(C_emp, C_source)`、覆盖概率、边际方差比 `C_ii/emp_ii`、相关方向、以及 **position-swap diagnostic**（report-only：交叉交换比 `C_xx/emp_yy`、`C_yy/emp_xx`，以及 position-only x↔y 置换前后的 chi2/ndof）。
+
+**预注册 gate（confirmatory，冻结后未改）**：`chi2/ndof ≤ 4`、`Cov(z)` 特征值 ∈ [0.25, 4]、广义特征值 ∈ [0.25, 4]、每 station ≥ 30 tracklet；且 construction 与 validation 两个源不相交 split 必须**一致**（可移植性）。
+
+## Stage A 发现（核心结果）
+
+**as-is 源协方差在所有 4 个 station、两个源不相交 split 上全部失败。** 以 station 0 construction 为例（其余 station/split 完全一致）：
+
+| 分量 | 经验 RMS `e_source` | fit 协方差边际 RMS | 方差比 `C_ii/emp_ii` |
+| --- | --- | --- | --- |
+| x | 0.524 mm（沿条带，不精确） | 0.011 mm（声称精确） | **≈ 0.0004（低估 ~2500×）** |
+| y | 0.0099 mm（precision） | 0.530 mm（声称不精确） | **≈ 2873（高估 ~2900×）** |
+| tx | 0.020 | 0.020 | **≈ 1.03（已校准）** |
+| ty | 0.00040 | 0.0049 | **≈ 154（高估 ~150–300×）** |
+
+- **位置 x↔y 交换（结构性）**：交叉交换比 `C_yy/emp_xx ≈ 0.93–1.18`（干净 ≈1），`C_xx/emp_yy ≈ 0.97–5.9`。即写出的协方差把 x/y 位置精度**标反了**：声称 x 精确、y 不精确，但真实恰恰相反（y 是 precision/弯曲坐标，x 是沿条带坐标）。这与 WB81 的 q/p pencil 在 y、磁铁在 y 弯曲、经验上 y 是 precision 坐标完全一致。
+- **tx 已校准，ty 高估** ~150–300×（方差）。
+- **白化 chi2/ndof（median）**：as-is ≈ **360–437**（全部 station/split），远超 gate ≤4。
+
+### position-swap diagnostic：swap 修复位置对角但不修复相关结构
+
+对协方差做 position-only x↔y 置换后（report-only 诊断），**median** 白化 chi2/ndof 从 ~400 降到 **~1.2–1.8**（接近 1）——即 position swap 确实修复了典型 tracklet 的位置对角块。**但这只是部分修复**：`chi2/ndof > 4` 的 tracklet 份额仍高达 **34–46%**（校准 4-dof 协方差期望 ~0.4%）。剩余尾部来自一个**虚假 near-null 方向**（一个错误的 y–ty 相关，使某线性组合方差被压到近零；outlier 沿该方向的 pull ≈ 10.8，而典型 tracklet ≈ 0.7），position swap 并不修复它。
+
+### 修复天花板测试（report-only）
+
+- as-is：median chi2 ≈ 409，frac>4 ≈ 0.95。
+- **仅 position swap**：median ≈ 1.24，frac>4 ≈ 0.34，广义特征值 `[0.006, 0.80, 0.96, 1.01]`（三个方向 ~1，但 ty 方向仍 ~0.006 高估）。
+- **swap + 对角 rescale**：广义特征值全部 ~1，但 median chi2 反而**恶化到 ~26**、frac>4 ~0.80——对角 rescale 放大了虚假 near-null 方向。
+- **C = C_emp（天花板，非修复）**：median ≈ 0.83，frac>4 ≈ 0.021。
+
+**结论**：源协方差处于**错误的 frame/basis**——位置被交换**且**相关结构与经验 `e_source` 协方差不匹配。任何 scale/permutation 修复都无法给出可移植校准。
+
+## 修复评估（`stage_a_repairs.json`）
+
+预注册的 4 个修复 arm（derived on construction、confirmed on validation，**非** chi2 调优）全部**未通过**源不相交 gate：
+
+| repair | 参数 | validated_source_disjoint |
+| --- | --- | --- |
+| `global_scale` | scale ≈ 0.94 | **否** |
+| `xy_block_scale` | scale_x ≈ 2289, scale_y ≈ 0.00035 | **否** |
+| `position_permutation_xy_swap` | （无参结构修复） | **否** |
+| `station_dependent_scale` | per-station ≈ 0.85–1.07 | **否** |
+
+`position_permutation_xy_swap` 与 `xy_block_scale` 能把位置对角块修好（median ~1.2–1.8），但因虚假相关/ty 高估，mean chi2 与广义特征值 gate 仍失败。**没有任何预注册修复给出可移植的源协方差校准。**
+
+## 决策（`propagated_covariance_upstream_repair_decision.json`）
+
+**`source_tracklet_fit_covariance_not_calibratable`**
+
+- 机制分类：`position_xy_swap_with_slope_miscalibration`。
+- `position_swap_fixes_diagonal_median_chi2 ≈ 1.51`（swap 修复位置对角块的中位 chi2）。
+- `residual_tail_fraction_after_swap ≈ 0.43`（swap 后仍有的 chi2>4 尾部份额）。
+- 指向上游修复战役：`segment_fit_hit_error_model_covariance_audit`；本战役**未**打补丁（`patched_in_this_campaign = false`）。
+- 全部 station、两个源不相交 split 一致失败（`swap_consistent_across_stations = true`）。
+- `propagated_covariance_model_validated = false`、`measurement_model_validated = false`、`real_kinematic_jacobian_support_validated = false`、`real_data_alignment_v2_preregistration_allowed = false`。
+
+**物理解读**：写出协方差与经验 `e_source` 协方差之间是**frame/basis 层面的不匹配**（位置交换 + 相关结构错误 + ty 高估），不是简单的整体/分块尺度错误。这与 exporter `NtupleDumperAlg.globalTrackletCovariance` 把 Athena 原生 5×5 `(loc1,loc2,phi,theta,q/p)` SegmentFit 协方差经中心数值 Jacobian 变换到全局 4×4 `[x,y,tx,ty]` 的过程一致——根因在上游 SegmentFit / hit-error model / exporter 协方差变换，**传播无法修复错误的输入不确定度模型**。
+
+## 下一步（冻结建议）
+
+1. **不进入 Stage B**（Stage A 未过）；不触碰 FaserActs 传播协方差；不把 mode 3 提升为生产协方差。
+2. 开启上游修复战役 **`segment_fit_hit_error_model_covariance_audit`**：审计 SegmentFit 的原生 `(loc1,loc2,phi,theta)` 协方差与 exporter 数值 Jacobian 的基/框架一致性，定位位置 x↔y 交换与虚假 y–ty 相关的根源。
+3. 只有在源协方差在源不相交 MC 上通过 Stage A 的全部 gate 后，才允许重新进入 Stage B（q/p 协方差语义修复 + 物理 process noise），并最终与 WB82 的 J-support 结论在 Measurement Model V2 中合并。
+
+## 工程产物
+
+- 配置：`configs/propagated_covariance_upstream_repair_mc_validation_v1.yaml`
+- 模块：`alignment/source_tracklet_covariance_closure.py`
+- 驱动：`scripts/report_propagated_covariance_upstream_repair.py`
+- 测试：`tests/test_source_tracklet_covariance_closure.py`（45 个测试）
+- 产物（EOS，不入 git）：`outputs/propagated_covariance_upstream_repair_mc_validation_v1/`（`config_validation.json`、`source_closure.json`、`stage_a_repairs.json`、`propagated_covariance_upstream_repair_decision.json`、`campaign_summary.json`）

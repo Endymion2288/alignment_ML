@@ -192,3 +192,5 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [Physically-distinct track-coverage identifiability feasibility（中文）](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)
 - [宽 ty 真实运动学支持匹配 MC 覆盖可行性（英文）](docs/wide_ty_mc_support_feasibility.md)
 - [宽 ty 真实运动学支持匹配 MC 覆盖可行性（中文）](docs/wide_ty_mc_support_feasibility_cn.md)
+- [传播协方差上游修复与 MC 验证（英文）](docs/propagated_covariance_upstream_repair.md)
+- [传播协方差上游修复与 MC 验证（中文）](docs/propagated_covariance_upstream_repair_cn.md)

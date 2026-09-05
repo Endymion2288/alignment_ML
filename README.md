@@ -217,4 +217,6 @@ contract and validation limits are linked below.
 - [Chinese physically-distinct track-coverage identifiability feasibility](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)
 - [Wide-ty real-support-matched MC coverage feasibility](docs/wide_ty_mc_support_feasibility.md)
 - [Chinese wide-ty real-support-matched MC coverage feasibility](docs/wide_ty_mc_support_feasibility_cn.md)
+- [Propagated-covariance upstream repair and MC validation](docs/propagated_covariance_upstream_repair.md)
+- [Chinese propagated-covariance upstream repair and MC validation](docs/propagated_covariance_upstream_repair_cn.md)
 - [Chinese README](README_cn.md)
