@@ -304,7 +304,11 @@ def main() -> None:
     print("=== Workbook 74 Physical Pair-Relative source-transfer evaluation ===", flush=True)
     print(f"hostname {socket.gethostname()}", flush=True)
     git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, text=True).strip()
-    git_status = subprocess.check_output(["git", "status", "--porcelain"], cwd=PROJECT_ROOT, text=True)
+    # Provenance: dirty means uncommitted changes to TRACKED files (untracked
+    # scratch notes do not affect the science-code state).
+    git_status = subprocess.check_output(
+        ["git", "status", "--porcelain", "--untracked-files=no"], cwd=PROJECT_ROOT, text=True
+    )
     print(f"git_commit {git_commit} dirty={bool(git_status.strip())}", flush=True)
 
     config = frozen_packing_config()
