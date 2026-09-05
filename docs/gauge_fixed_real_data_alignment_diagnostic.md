@@ -42,4 +42,10 @@ This is a diagnostic, not a geometry correction deployment. For the whole workbo
 
 ## Results
 
-(to be backfilled after execution)
+**Frozen decision: `real_data_linearized_model_out_of_support`.**
+
+The staged campaign executed in freeze order. Config validation, tracker-information regression (amended projector-Frobenius contract), split freeze (SHA256 `c9c359793c41b59df1296e3ec2075af652c3f585746ca832a9c2e37f4a4f61d3`), and MC control all passed (injection recovery/leakage ≤ 0.35 in both covariance scenarios; exact gauge invariance; null improvement floor 49.72). The one-shot calibration solve produced a frozen candidate (artifact SHA256 `347bfbb5f41d5f19cf497938d48e75c6fa77cae458e8ba7c78b6129a1d81ddc7`) whose dominant informed mode requires |γ|max = 2.46 in scaled severity units — 16× the pre-registered linear envelope of 0.15. The bootstrap stability gate also failed (17/50 rank changes, max direction angle 158°). Per the pre-registered decision tree the held-out evaluation was structurally refused and never read held-out residuals. The candidate is frozen but is **not** a valid correction and must not be interpreted as a mechanical station displacement measurement.
+
+The real calibration information has informed rank 3 inside the frozen identifiable 5D space; the frozen population contains only 2 (0,3) anchor pairs, so the campaign is a diagnostic of this population, not of an idealized one. No gauge switch, re-split, selection tuning, S/rank change, or source removal was performed. The campaign continues `residual_dq_monitoring_only`; `geometry_write_allowed` and `official_conditions_write_allowed` remain `false`.
+
+Full execution record and artifact SHAs: workbook 78 §6.

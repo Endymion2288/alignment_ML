@@ -42,4 +42,10 @@
 
 ## 结果
 
-（执行后回填）
+**冻结决策：`real_data_linearized_model_out_of_support`。**
+
+分阶段战役按 freeze ordering 执行。config 验证、tracker information 回归（amended projector-Frobenius 合同）、split freeze（SHA256 `c9c359793c41b59df1296e3ec2075af652c3f585746ca832a9c2e37f4a4f61d3`）与 MC control 全部通过（两种 covariance scenario 注入恢复/泄漏 ≤0.35；gauge invariance 精确；null 改善地板 49.72）。one-shot calibration solve 产出已冻结 candidate（artifact SHA256 `347bfbb5f41d5f19cf497938d48e75c6fa77cae458e8ba7c78b6129a1d81ddc7`），其主导 informed 模式需 |γ|max = 2.46（scaled severity 单位）——为预注册线性包络 0.15 的 16 倍。Bootstrap 稳定性门同时失败（50 次中 17 次 rank 改变、最大方向夹角 158°）。按预注册决策树，held-out 评估被结构性拒绝，从未读取 held-out residual。该 candidate 已冻结但**不是**有效 correction，不得解释为 mechanical station 位移测量。
+
+真实 calibration 信息在冻结 identifiable 5D 空间内 rank 为 3；冻结 population 仅有 2 个 (0,3) anchor pair，因此本战役是对该 population 的诊断而非理想化 population。未执行任何换 gauge、重切 split、调 selection、调 S/rank、删 source。继续 `residual_dq_monitoring_only`；`geometry_write_allowed` 与 `official_conditions_write_allowed` 保持 `false`。
+
+完整执行记录与 artifact SHA 见 workbook 78 §6。

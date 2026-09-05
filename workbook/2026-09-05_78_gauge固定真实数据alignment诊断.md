@@ -1,7 +1,11 @@
 # Workbook 78: Gauge-Fixed Real-Data Alignment Diagnostic V1（预注册）
 
 日期：2026-09-05
-状态：**预注册（pre-registered）** —— 本条目在任何 real-data candidate 计算之前冻结设计；结果将在执行后回填并单独冻结提交。
+状态：**完成并冻结** —— 预注册 `fd6cc33`，执行前一致性 amendment `70debe9`（全部改动早于任何真实数据 solve，详见 §6.1），结果回填后本条目冻结。
+
+**最终决策：`real_data_linearized_model_out_of_support`**
+
+预注册的 linearity gate 在 calibration subset 上触发：one-shot candidate 所需幅度 |γ|max = 2.46（scaled severity），为冻结线性包络 0.15 的 16 倍。candidate 已冻结但**不是**有效 correction；held-out 评估按预注册决策树被结构性拒绝，从未打开。继续 `residual_dq_monitoring_only`。
 
 ## 1. 科学问题（唯一）
 
@@ -147,6 +151,63 @@ WB77 已机械审计 15/15 不合格。`eligible_external_physical_constraints =
 - Driver 阶段顺序结构性强制 freeze ordering：`validate-config → freeze-split → mc-control → calibrate → evaluate → decide`；`calibrate` 要求 mc-control 通过；`evaluate` 要求 frozen candidate artifact 且 SHA 匹配。
 - 回归测试 20 项覆盖：primary gauge 冻结、split 确定性、held-out 冻结前不可访问、gauge 等价预测、无外部 prior、无 geometry/conditions write、candidate artifact 可复现、错误 split/provenance 硬失败、bank/CSV 逐位复现、MC-control 机制、决策树全部分支。
 
-## 6. 结果（执行后回填）
+## 6. 结果（执行记录与冻结）
 
-（待回填）
+### 6.1 执行前 amendment（`70debe9`）
+
+预注册提交 `fd6cc33` 之后、任何真实数据 solve 之前，发现并修复三处预执行一致性/实现问题（全部改动早于 `calibrate` 阶段；无任何真实数据 fit 结果参与）：
+
+1. `jacobian_corpus` 改为逐字镜像 WB77 `tracker_information` 块（预注册稿误列了不属于冻结 WB68 corpus 的 MC source ID，无法通过冻结 loader）。
+2. `mc_control.held_out_composition` 209/132/1 → 1005/655/15：预注册的 freeze-split 一致性检查比较对象是完整 held-out 评估 population（held_out + monitoring + report-only 角色），原值只覆盖 primary run，与预注册检查自相矛盾。
+3. driver `decide` 阶段读取 regression artifact 的结构修正。
+
+### 6.2 分阶段执行记录
+
+| 阶段 | 结果 |
+| --- | --- |
+| `validate-config` | 通过。WB77 config + 7 artifact SHA、WB68 basis SHA、Frozen-V2 checkpoint SHA 全部一致；tracker information 重建与 WB68 冻结 basis 回归通过（amended projector-Frobenius 合同）。 |
+| `freeze-split` | 通过。split SHA256 `c9c359793c41b59df1296e3ec2075af652c3f585746ca832a9c2e37f4a4f61d3`；12 source 角色/route 数与冻结期望一致；anchor-pair composition 与预注册 MC control composition 完全一致（calibration 227/156/2；held-out 全量 1005/655/15）。 |
+| `mc-control` | **通过**。两 scenario 均满足注入恢复/泄漏门（≤0.35）：`mc_covariance` rank=1、恢复偏差 0.309/泄漏 0.308；`real_scale_covariance` rank=2、恢复 0.255/0.261、泄漏 0.176。gauge invariance 精确为 0。null 地板 q95：49.72（mc）/ 0.21（real-scale），总地板 49.72。 |
+| `calibrate` | candidate 求解完成并冻结（artifact SHA256 `347bfbb5f41d5f19cf497938d48e75c6fa77cae458e8ba7c78b6129a1d81ddc7`；input bank SHA256 `6e4eaae0...`），但**违反预注册线性包络门**：|γ|max = 2.460 > 0.15（16 倍）。 |
+| `evaluate` | **结构性拒绝执行**（"candidate outside linear envelope"）——held-out residual 从未被读取用于评估。 |
+| `decide` | `real_data_linearized_model_out_of_support`。 |
+
+### 6.3 Calibration applicability audit（报告值；未据此选任何 event）
+
+- calibration anchor pairs：378（(0,1):227、(0,2):149、(0,3):2；7 个 (0,2) pair 被冻结传播接受链丢弃，已记账）。
+- 零 candidate 加权残差范数 χ² = 2.00×10⁶（378 pairs × 4 行）——真实 residual 与 combined covariance 隐含相关结构严重不一致（对角 pull 小但近奇异相关方向被大幅违反），线性化高斯模型在该 population 上描述能力有限（报告观察，非 gate）。
+- residual median：x −15.1 mm、y −8.27 mm（anchor pair 杠杆长于 DQ 邻边，故大于冻结参考 −3.81 mm）；per-run 一致（14973: y −8.32 mm；14974: y −8.23 mm）。
+- W applicability：real median diag cov (5.0e5, 2.8e5, 0.585, 0.330) vs MC (3.6e3, 2.0e6, 7.4e-4, 0.908)——x/tx 行权重远低于 MC（冻结 population 属性）。
+- 无 non-finite/损坏；bank/CSV 逐位复现 390 行 max diff = 0.0。
+
+### 6.4 Candidate（已冻结，**非有效 correction**）
+
+- 真实 calibration 信息在冻结 identifiable 5D 空间中的 rank K=3（eigvals 8.0e-5, 1.7, 68.5, 117, 2.61e3 @ tol 0.01）；informed 方向（scaled 坐标）：dir0 ≈ dz+rx 混合、dir1 ≈ dy、dir2 ≈ dx。
+- γ̂ = (−2.460, +0.857, −0.403)；|γ|max = 2.460 = 16.4 × 线性包络 0.15 → **门 G/4.6 触发**。
+- Bootstrap（50 次）：17/50 次 rank 改变、最大方向夹角 158° → 门 E 亦失败（candidate 在重采样下不稳定；决策树中 linearity 门优先）。
+- Solver 本身数值健康：restricted condition 38.1（≤1e12），gauge residual 6.0e-15（≤1e-9）。
+- 物理解读：冻结真实数据 population 的 calibration subset 所要求的修正幅度远超线性化模型已验证支持范围；该 candidate 不得解释为任何 mechanical station 位移测量。
+
+### 6.5 决策与后续
+
+- 冻结决策：`real_data_linearized_model_out_of_support`。
+- `geometry_write_allowed = false`、`official_conditions_write_allowed = false`、`real_data_candidate_alignment_authorized = false`、`external_constraint_ingest_authorized = false` 全部保持。
+- 未执行（按规则禁止）：换 gauge、重切 split、调 selection、调 S/rank、删 source、identifiability rescue、held-out 评估。
+- 继续 `residual_dq_monitoring_only`。
+- 本战役同时确立了可复用机制（供未来 population 更丰富时的独立预注册战役）：真实数据 anchor-pair bank builder（CSV 逐位复现回归）、residual-blind split freeze、MC-control null 地板、informed-subspace one-shot solver、结构性 freeze ordering。
+
+### 6.6 Artifact 清单与 SHA256
+
+| artifact | SHA256 |
+| --- | --- |
+| config (`configs/gauge_fixed_real_data_alignment_diagnostic_v1.yaml`) | `2be332c1054a6accec762e8ab4a46e6441e6d6165c1f46d99b59964a5f74d757` |
+| config_validation.json | `06800ff9f92b6ef5dc96e89cf7688d4371678eb2ddcc14b691fdf4200bc63b44` |
+| tracker_information_regression.json | `1dc46344c43c86ccc828306361ac6c3161570599d4c9856b9fa4a1dea1540ed7` |
+| split_freeze.json | `d2d4e7ceec183645df4e4a18d127ab52b050f4a5f581931f6d792d0ec2ec3146` |
+| mc_control.json | `dea4c31cf73052bd07f2794575fd25e0c20a35025ec371506af2e79d12c58e23` |
+| applicability_audit.json | `cd8c4c2a34e027501d9ec476cb449a79f11f1995109dd23f7f13e0bbc0d7ad2b` |
+| candidate_artifact.json | `1dd3d82859cfcfd5be42ac56c41467ebdc46fdba12f698b52c8ed64c4eb202da` |
+| next_stage_decision.json | `4e7781cb2c7b83164e55801223c0ae1346608b97de6074df0f03f12668de5955` |
+| campaign_summary.json | `2d822c4544a1e1a96cd06ec3fed2060daaa2d089790847c79d3f60b9fbc594c7` |
+
+冻结提交见本节末尾 git 记录；完整测试套件 578 项通过。
