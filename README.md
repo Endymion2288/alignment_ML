@@ -215,4 +215,6 @@ contract and validation limits are linked below.
 - [Chinese tracklet independent-failure provenance audit](docs/tracklet_independent_failure_provenance_audit_cn.md)
 - [Chinese rigid-station-only tracker alignment identifiability](docs/rigid_station_only_tracker_alignment_identifiability_cn.md)
 - [Chinese physically-distinct track-coverage identifiability feasibility](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)
+- [Wide-ty real-support-matched MC coverage feasibility](docs/wide_ty_mc_support_feasibility.md)
+- [Chinese wide-ty real-support-matched MC coverage feasibility](docs/wide_ty_mc_support_feasibility_cn.md)
 - [Chinese README](README_cn.md)

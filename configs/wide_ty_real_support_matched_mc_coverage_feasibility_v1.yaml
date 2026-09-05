@@ -1,0 +1,260 @@
+# Workbook 82 pre-registration:
+# Wide-ty Real-Support-Matched MC Coverage Feasibility V1.
+#
+# *** THIS IS A RESIDUAL-BLIND MC-COVERAGE FEASIBILITY STUDY, NOT ALIGNMENT,
+# *** AND NOT A COVARIANCE REPAIR (that is Workbook 83). ***
+#
+# Workbook 81 froze `faseracts_propagated_covariance_not_calibrated`
+# (mechanism `overestimated_transported_fit_covariance`).  Workbook 80 froze
+# `measurement_model_multiple_components_not_validated`; its Jacobian-transfer
+# blocker was the REAL kinematic support: with the WB80 3-source MC
+# construction subset the (0,1)/(0,2) `pred_tx/pred_ty` within-support
+# fractions were 0.806 / 0.872 (< 0.90 gate), i.e. the real `ty` distribution
+# is wider than the MC construction support.
+#
+# This campaign answers ONE residual-blind question:
+#   Does any EXISTING non-sealed MC/control sample provide enough track
+#   kinematic coverage to cover the real calibration population's (0,1)/(0,2)
+#   (pred_tx, pred_ty) applicability domain, so that a FUTURE conditional-J
+#   model could be trained/validated WITHOUT extrapolating to real tracks?
+#
+# It reads NO alignment residual, NO Jacobian/FD derivative, NO singular
+# value/rank, NO final-correction performance.  Candidate admission uses ONLY
+# physics metadata and kinematics.  The whole campaign:
+#   held_out_accessed = false
+#   real_data_alignment_authorized = false
+#   geometry_write_allowed = false
+#   official_conditions_write_allowed = false
+#   external_constraint_ingest_authorized = false
+
+schema_version: faser-wide-ty-real-support-matched-mc-coverage-feasibility-v1
+workbook: 82
+created_utc: "2026-09-05T17:45:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned).  WB82 loads and SHA-verifies the frozen
+# WB81 config + decision artifacts so it provably starts from the frozen WB81
+# negative covariance state, and it inherits ALL WB80/WB81 prohibitions
+# verbatim.  Any SHA mismatch halts the campaign.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_81_config: configs/faseracts_propagated_covariance_provenance_closure_v1.yaml
+  workbook_81_config_sha256: 5a13b0cc7273546ebbee4268a853c32c527a68fd263eb82483f3d6e581d5f2b9
+  workbook_81_output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
+  workbook_81_artifact_sha256:
+    propagated_covariance_decision.json: fd605f0ea93dd239a06c4ae8f14a619e1735709963d657b4c9a68575e9db96c2
+    campaign_summary.json: 97a92006163770ee3986a992813b3abb2a58843f7953f25134de1f8412645a4f
+  workbook_81_frozen_decision: faseracts_propagated_covariance_not_calibrated
+
+# ---------------------------------------------------------------------------
+# Real support target (residual-blind).  Inherits the frozen WB80 calibration
+# population (14973+14974) and reads ONLY residual-independent track/pair
+# metadata.  The target domain is the (0,1)/(0,2) source-tracklet slope
+# support; (0,3) has only 2 real pairs and stays report-only.  The WB80 gate
+# (>= 0.90 per gated pair type) is inherited and NOT lowered.
+# ---------------------------------------------------------------------------
+real_support_target:
+  calibration_runs: [14973, 14974]
+  pair_types_gated: [[0, 1], [0, 2]]
+  pair_types_report_only: [[0, 3]]
+  # Primary kinematic: source-tracklet local slope (tx, ty) at station 0,
+  # uniform across the real target and every candidate (incl. samples with no
+  # propagations).  The propagation-frame (pred_tx, pred_ty) coverage is a
+  # WB80-consistency cross-check for candidates that have propagations.
+  primary_kinematic: [source_tx, source_ty]
+  crosscheck_kinematic: [pred_tx, pred_ty]
+  # Frozen WB80 reference failure (3-source construction subset, propagation
+  # frame): recorded for context only; WB82 uses its own uniform method.
+  wb80_reference_within_support:
+    pair_0_1: 0.806
+    pair_0_2: 0.872
+
+# ---------------------------------------------------------------------------
+# Sealed-test guard.  Sealed sources remain completely closed.
+# ---------------------------------------------------------------------------
+sealed_test:
+  productions: [100116, 100117]
+  forbidden_source_ids:
+    - mc24_100116_00030_00039
+    - mc24_100117_00030_00039
+
+# ---------------------------------------------------------------------------
+# Candidate MC/control inventory (existing, non-sealed).  Admission is by
+# physics metadata / kinematics ONLY.  A prior campaign failure of a candidate
+# (e.g. 100120 physically-distinct admission, 100130 movable-station min_pairs)
+# does NOT exclude it as a residual-blind conditional-J support-coverage
+# control; conversely a good coverage result here does NOT reopen those frozen
+# identifiability conclusions.
+#
+# kind:
+#   propagation             -> read propagations.root (mode 0, success), join to
+#                              source tracklet for slope + truth metadata.
+#   tracklet_truth_matched  -> no propagations; form (0,target) pairs by
+#                              truth-particle match between station-0 and
+#                              station-target tracklets.
+# ---------------------------------------------------------------------------
+candidates:
+  - name: canonical_hierarchical_v1
+    kind: propagation
+    species_expectation: muon
+    origin_description: IP-like FLUKA-E 5 mrad particle gun (hierarchical V1)
+    prior_status: wb80_baseline_construction_subset_failed_support
+    refit_template: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source}/physical_scan/points/iteration_00_reference/refit
+    source_ids:
+      - mc24_100043_00200_00299
+      - mc24_100043_00300_00399
+      - mc24_100043_00400_00499
+      - mc24_100043_00500_00599
+      - mc24_100043_00600_00699
+      - mc24_100044_00200_00299
+      - mc24_100044_00300_00399
+      - mc24_100044_00400_00499
+      - mc24_100044_00500_00599
+      - mc24_100044_00600_00699
+      - mc24_100047_00000_00049
+      - mc24_100047_00050_00099
+      - mc24_100047_00100_00149
+      - mc24_100047_00150_00199
+      - mc24_100048_00000_00049
+      - mc24_100048_00050_00099
+      - mc24_100048_00100_00149
+      - mc24_100048_00150_00199
+
+  - name: gaussian_theta_100012
+    kind: propagation
+    species_expectation: muon
+    origin_description: constant 100 GeV muon gun, Gaussian-theta
+    prior_status: curriculum_control
+    refit_template: outputs/mc24_muon_curriculum_physical_v1/sources/{source}/physical_scan/points/mag_0_*_00/refit
+    source_ids:
+      - mc24_00000_00004
+      - mc24_00005_00009
+      - mc24_00010_00014
+      - mc24_00015_00019
+      # mc24_00020_00024 is the historical MC test split -> excluded.
+
+  - name: fluka2d_100116_100117_nonsealed
+    kind: propagation
+    species_expectation: muon
+    origin_description: 2D-FLUKA non-sealed muon curriculum
+    prior_status: curriculum_control
+    refit_template: outputs/mc24_muon_2dfluka_curriculum_physical_v1/sources/{source}/physical_scan/points/mag_0_*_00/refit
+    source_ids:
+      - mc24_100116_00000_00009
+      - mc24_100116_00010_00019
+      - mc24_100116_00020_00029
+      - mc24_100116_00040_00049
+      - mc24_100117_00000_00009
+      - mc24_100117_00010_00019
+      - mc24_100117_00020_00029
+      - mc24_100117_00040_00049
+      # mc24_100116_00030_00039 / mc24_100117_00030_00039 are SEALED -> excluded.
+
+  - name: floor_muon_100120
+    kind: tracklet_truth_matched
+    species_expectation: muon
+    origin_description: floor-origin muon (residual-blind export)
+    prior_status: failed_physically_distinct_admission_prior_campaign
+    tracklets_template: outputs/physically_distinct_track_coverage_residual_blind_export_reinventory_v1/exports/mc24_100120_muon_floor/{source}/tracklets.root
+    source_ids:
+      - mc24_100120_00000_00009
+      - mc24_100120_00010_00019
+      - mc24_100120_00020_00029
+      - mc24_100120_00030_00039
+      - mc24_100120_00040_00049
+      - mc24_100120_00050_00059
+      - mc24_100120_00060_00069
+      - mc24_100120_00070_00079
+      - mc24_100120_00080_00089
+      - mc24_100120_00090_00099
+
+  - name: kshort_100130
+    kind: propagation
+    species_expectation: pion
+    origin_description: K-short end-FASERNU charged daughters (|pdg|=211)
+    prior_status: failed_movable_station_min_pairs_prior_campaign
+    refit_template: outputs/mc24_kshort_5dof_fd_iteration00_physical_v1/sources/{source}/physical_scan/points/iteration_00_reference/refit
+    source_ids:
+      - mc24_100130_00000_00009
+      - mc24_100130_00010_00019
+      - mc24_100130_00020_00029
+      - mc24_100130_00030_00039
+      - mc24_100130_00040_00049
+      - mc24_100130_00050_00059
+      - mc24_100130_00060_00069
+      - mc24_100130_00070_00079
+      - mc24_100130_00080_00089
+      - mc24_100130_00090_00099
+
+# ---------------------------------------------------------------------------
+# Coverage metrics + frozen gates (residual-blind).  The primary gate is the
+# WB80-frozen 99% Mahalanobis-envelope support fraction >= 0.90 per gated pair
+# type, PLUS a pre-registered density bin-occupancy gate (catches the
+# "wide-but-sparse" failure mode where a smooth Gaussian envelope covers real
+# points that have no actual MC density).  Both must pass.
+# ---------------------------------------------------------------------------
+coverage:
+  mahalanobis2_99_2dof: 9.210          # chi2_2(0.99); WB80-frozen
+  min_fraction_within_support: 0.90    # per gated pair type; NOT lowered
+  min_truth_match_fraction: 0.99       # inherited from the WB80 FD-bank chain
+  # Physical acceptance: tracklets with |tx| or |ty| beyond this are outside
+  # the FASER tracker acceptance / mis-reconstructed (e.g. rare near-vertical
+  # floor-muon tracklets) and are removed before the Mahalanobis fit so the
+  # Gaussian envelope is not inflated by unphysical outliers.  The real support
+  # (|tx|<=0.16, |ty|<=0.051) and all physical MC are far inside this bound.
+  physical_acceptance_abs_tx_ty_max: 0.2
+  # Density overlap (2D bin occupancy) at pre-registered widths; the primary
+  # density gate uses primary_density_bin_width.
+  density_bin_widths: [0.01, 0.02]
+  primary_density_bin_width: 0.01
+  min_density_bin_occupancy_fraction: 0.90
+  # Pre-registered minimum MC statistics (NOT decided after seeing results).
+  min_candidate_pairs_per_pair_type: 30   # inherit WB80 min_validation_pairs
+  min_candidate_pairs_absolute: 10        # below this a Mahalanobis fit is meaningless
+  min_independent_sources: 2              # feasibility of a source-disjoint split
+  quantile_levels: [50, 90, 95, 99]
+
+# ---------------------------------------------------------------------------
+# Particle-species / momentum / origin audit (report-only).  A candidate that
+# covers (tx,ty) angularly but is the wrong species/momentum for a muon
+# conditional-J model is flagged
+# `angular_support_only_particle_domain_mismatch`, NOT validated.
+# ---------------------------------------------------------------------------
+particle_domain_audit:
+  expected_abs_pdg: [13]               # muon-like real calibration population
+  momentum_gev_min: 10.0               # FASER muon-like tracks are high-p
+  momentum_gev_max: 5000.0
+  min_momentum_fraction_in_range: 0.50
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered, mutually exclusive).
+# ---------------------------------------------------------------------------
+decision_tree:
+  validated: existing_mc_real_wide_ty_support_validated
+  angular_only_particle_mismatch: existing_mc_angular_support_only_particle_domain_mismatch
+  insufficient: existing_mc_insufficient_real_wide_ty_support
+  inconclusive: wide_ty_mc_coverage_validation_inconclusive
+
+# If every existing candidate fails, freeze
+# `existing_mc_not_sufficient_for_real_wide_ty_transfer_support` and only THEN
+# open a separate new-MC-generation-design campaign (not in this workbook).
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions.
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+external_constraint_ingest_authorized: false
+held_out_accessed: false
+residual_blind: true
+do_not_open_held_out: true
+do_not_open_sealed_test: true
+do_not_read_alignment_residual: true
+do_not_use_jacobian_or_fd_derivative_for_admission: true
+do_not_select_candidate_by_coverage_result: true
+do_not_reopen_identifiability_rescue: true
+do_not_generate_new_mc_in_this_workbook: true
+do_not_modify_faseracts_covariance: true
+
+output_root: outputs/wide_ty_real_support_matched_mc_coverage_feasibility_v1

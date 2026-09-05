@@ -190,3 +190,5 @@ physical capture scan 会为每个 payload point 重跑该链路。在严格 `0.
 - [Rigid-station-only tracker alignment identifiability（中文）](docs/rigid_station_only_tracker_alignment_identifiability_cn.md)
 - [Physically-distinct track-coverage identifiability feasibility（英文）](docs/physically_distinct_track_coverage_identifiability_feasibility.md)
 - [Physically-distinct track-coverage identifiability feasibility（中文）](docs/physically_distinct_track_coverage_identifiability_feasibility_cn.md)
+- [宽 ty 真实运动学支持匹配 MC 覆盖可行性（英文）](docs/wide_ty_mc_support_feasibility.md)
+- [宽 ty 真实运动学支持匹配 MC 覆盖可行性（中文）](docs/wide_ty_mc_support_feasibility_cn.md)
