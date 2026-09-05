@@ -1,0 +1,203 @@
+# Workbook 79 pre-registration:
+# Real-Data Residual/Covariance Model Adequacy & Nonlinear-Response
+# Prerequisite V1.
+#
+# Single scientific question: is the WB78 out-of-support candidate
+# (|gamma|max = 2.46, 16x the frozen 0.15 linear envelope) caused by
+#   H1 - a genuine large nonlinear geometry displacement (residual/covariance
+#        model itself adequate), or
+#   H2 - a covariance/statistical-model mismatch (the combined 4x4 covariance's
+#        correlation structure mis-weights near-singular eigen-directions and
+#        inflates chi2 and the inferred gamma), or
+#   H3 - an observable/Jacobian-transfer mismatch (station-pair mean MC
+#        Jacobian transfer error on the real collision topology)?
+#
+# Until this is answered, real-data nonlinear alignment is forbidden.
+#
+# This campaign is model-adequacy ONLY. It produces no correction, opens no
+# held-out data, writes no geometry, and authorizes no alignment. The WB78
+# candidate artifact is used only as an out_of_support_diagnostic_candidate.
+#
+#   geometry_write_allowed = false
+#   official_conditions_write_allowed = false
+#   real_data_candidate_alignment_authorized = false
+#   external_constraint_ingest_authorized = false
+#   held_out_accessed = false
+#
+# Everything in this file is frozen before any audit quantity is computed.
+
+schema_version: faser-real-data-residual-covariance-model-adequacy-v1
+workbook: 79
+created_utc: "2026-09-05T07:40:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance from Workbook 78 (SHA-pinned). The WB79 module loads the
+# WB78 config (verified by SHA) and reuses its frozen tracker-information,
+# gauge, population, split and transfer contracts verbatim; they are NOT
+# duplicated here to prevent drift. Any SHA mismatch halts the campaign.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_78_config: configs/gauge_fixed_real_data_alignment_diagnostic_v1.yaml
+  workbook_78_config_sha256: 2be332c1054a6accec762e8ab4a46e6441e6d6165c1f46d99b59964a5f74d757
+  workbook_78_output_root: outputs/gauge_fixed_real_data_alignment_diagnostic_v1
+  workbook_78_artifact_sha256:
+    candidate_artifact.json: 1dd3d82859cfcfd5be42ac56c41467ebdc46fdba12f698b52c8ed64c4eb202da
+    applicability_audit.json: cd8c4c2a34e027501d9ec476cb449a79f11f1995109dd23f7f13e0bbc0d7ad2b
+    split_freeze.json: d2d4e7ceec183645df4e4a18d127ab52b050f4a5f581931f6d792d0ec2ec3146
+    mc_control.json: dea4c31cf73052bd07f2794575fd25e0c20a35025ec371506af2e79d12c58e23
+  # Frozen split / bank identity (calibration = 14973+14974 only).
+  split_sha256: c9c359793c41b59df1296e3ec2075af652c3f585746ca832a9c2e37f4a4f61d3
+  calibration_bank_sha256: 6e4eaae08bdc8b48174b2f24d1dc772f4cade7cb1918d59a8f017eb505687114
+  # WB78 frozen calibration baseline that Stage-0 must reproduce exactly
+  # (recomputed by the same deterministic chain; tight float tolerance only).
+  baseline:
+    n_pairs: 378
+    chi2_zero_candidate: 1999613.6054909483
+    per_run_chi2_zero: {14973: 965640.5498300323, 14974: 1033973.0556609166}
+    per_run_n_pairs: {14973: 198, 14974: 180}
+    informed_rank: 3
+    information_eigenvalues: [8.0390584620406e-05, 1.6999600787379836, 68.516619585031, 117.34492506400908, 2607.983867005937]
+    restricted_condition: 38.06352214690566
+    gamma_hat_informed_coordinates: [-2.459969180949091, 0.8573546745069945, -0.40299366109582613]
+    beta_hat_identifiable_projection: [0.01947385166916621, -0.08115439522887839, -2.361035011812577, 1.0877241913446407, 0.42931781910000627]
+    bootstrap_replicates: 50
+    bootstrap_rank_changes: 17
+    bootstrap_max_direction_angle_deg: 158.1333677962347
+  reproduce_rtol: 1.0e-9
+  reproduce_atol: 1.0e-9
+
+# ---------------------------------------------------------------------------
+# Population / split: inherited frozen from WB78. Calibration = 14973+14974
+# ONLY. Held-out (14975/14976, 7 monitoring runs, 14977 report-only) remains
+# completely closed; Workbook 79 never reads a held-out residual. No new run,
+# no event removal, no route re-selection, no restacking.
+# ---------------------------------------------------------------------------
+population:
+  inherit_from_workbook_78: true
+  calibration_runs: [14973, 14974]
+  held_out_closed: true
+
+# ---------------------------------------------------------------------------
+# H2 - covariance / statistical-model adequacy (PRIMARY line).
+# ---------------------------------------------------------------------------
+covariance_adequacy:
+  # Whitening: z = L^{-1} (r - m_cell), where m_cell is the per-(run,
+  # station-pair-type) coherent mean of the RAW residual (a diagnostic-only
+  # alignment-bias proxy; never a new residual definition or alignment input).
+  # If the frozen covariance describes the fluctuations around the coherent
+  # mean, the whitened residual chi2 per degree of freedom is O(1).
+  # Gate (pre-registered, generous to the model): chi2_resid/ndof <= 4.0.
+  # ndof subtracts the estimated cell means (4 per non-empty run x pair cell).
+  whitened_chi2_per_ndof_max: 4.0
+  # Cross-run reproducibility of the empirical covariance structure, computed
+  # per station-pair type on (0,1) and (0,2) (sufficient statistics); (0,3)
+  # has <=1 pair per run and is report-only. The primary metric is the
+  # basis-independent generalized-eigenvalue RMS log-deviation between the two
+  # runs' empirical covariances (robust to near-degenerate spectra, unlike a
+  # principal-eigenvector angle). Gate: RMS log-deviation <= ln(3) (factor-3,
+  # ~3-4.5 sigma for n~70-115 per cell, d=4). The principal-eigenvector angle
+  # and per-eigenvalue log-ratios are report-only context.
+  cross_run_generalized_eigenvalue_max_rms_log: 1.0986122886681098  # ln(3)
+  cross_run_principal_eigenvector_max_angle_deg: 30.0  # report-only context
+  # Report-only (no gate): full eigenstructure, correlation matrices, chi2
+  # concentration by covariance eigenmode, marginal pulls, condition numbers.
+  min_pairs_for_empirical_covariance: 30
+
+# ---------------------------------------------------------------------------
+# Diagnostic-only covariance counterfactuals. NONE of these may enter the
+# production solver, produce a deployable candidate, or be promoted to a new
+# alignment model. They exist only to localize the cause of the large gamma.
+# Every counterfactual artifact carries diagnostic_only=true and
+# alignment_authorized=false.
+# ---------------------------------------------------------------------------
+covariance_counterfactuals:
+  condition_cap: 1.0e3   # C: floor eigenvalues at lambda_max/condition_cap
+  counterfactuals:
+    - name: full_frozen          # A: official baseline (= WB78)
+      kind: full
+    - name: diagonal_marginal    # B: same marginal variances, off-diagonal = 0
+      kind: diagonal
+    - name: condition_capped     # C: eigenvalue floor at lambda_max/1e3
+      kind: condition_capped
+    - name: unit_weight          # D: equal weighting of all 4 observables
+      kind: unit
+  bootstrap_replicates: 50
+  bootstrap_seed: 20260905
+
+# ---------------------------------------------------------------------------
+# H3 - observable / Jacobian-transfer support adequacy.
+# ---------------------------------------------------------------------------
+transfer_support:
+  # (a) MC per-pair Jacobian dispersion within each station pair (frozen MC
+  # property): relative Frobenius deviation of each per-pair J from the
+  # station-pair mean J. Gate: RMS relative deviation <= 0.35 (consistent with
+  # the WB78 injection-recovery gate scale, which the transfer already passed).
+  mc_per_pair_jacobian_max_rms_relative: 0.35
+  # (b) Real-vs-MC kinematic support overlap in the track-slope plane
+  # (pred_tx, pred_ty) per station pair, residual-blind. A real pair is
+  # "within support" if its robust Mahalanobis distance to the MC cloud is
+  # within the chi2_2 99% contour (9.210). Gate: >= 90% of real pairs within
+  # support for each of (0,1) and (0,2); (0,3) is report-only (2 pairs).
+  mahalanobis2_99_2dof: 9.210
+  min_fraction_within_support: 0.90
+  kinematic_variables: [pred_tx, pred_ty]
+  # No nearest-neighbour J substitution; support is an applicability
+  # diagnostic only.
+
+# ---------------------------------------------------------------------------
+# Calibration cross-run transportability (report-only one-shot solves on
+# 14973-only and 14974-only; NOT new corrections, still no held-out).
+# Gates inherit the WB68/WB77 15-degree direction contract.
+# ---------------------------------------------------------------------------
+cross_run_transportability:
+  direction_max_angle_deg: 15.0        # dominant informed eigenvector
+  gamma_direction_max_angle_deg: 15.0  # gamma-hat direction between runs
+  require_equal_rank: true
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered). Exactly one terminal string is frozen.
+# Hard gates (WB78 baseline reproduction, finite data, bank/CSV bit-exact
+# reproduction) failing -> real_data_model_adequacy_inconclusive.
+# Otherwise count soft failures among {covariance_adequacy(H2),
+# transfer_support(H3), cross_run_transportability}:
+#   0 -> pass_nonlinear_preregistration_allowed
+#   1 -> the specific failure string
+#  >=2 -> real_data_statistical_model_multiple_failures
+# ---------------------------------------------------------------------------
+decision_tree:
+  pass: real_data_model_adequacy_pass_nonlinear_response_preregistration_allowed
+  inconclusive: real_data_model_adequacy_inconclusive
+  multiple_failures: real_data_statistical_model_multiple_failures
+  component_failures:
+    covariance_adequacy: real_data_covariance_model_not_adequate
+    transfer_support: real_data_jacobian_transfer_support_not_adequate
+    cross_run_transportability: real_data_calibration_information_not_cross_run_stable
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions.
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+external_constraint_ingest_authorized: false
+held_out_accessed: false
+eligible_external_physical_constraints: []
+do_not_open_held_out: true
+do_not_select_events_by_residual: true
+do_not_drop_outlier_pairs: true
+do_not_switch_gauge: true
+do_not_repick_split: true
+do_not_tune_S_or_rank_tolerance: true
+do_not_redefine_identifiable_basis_on_real_data: true
+do_not_use_external_evidence_as_prior: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+do_not_promote_counterfactual_covariance_to_alignment: true
+do_not_promote_empirical_covariance_to_weight: true
+do_not_scale_or_clip_wb78_candidate: true
+do_not_reopen_identifiability_rescue: true
+do_not_start_temporary_reconstruction_validation: true
+output_parameter_naming: out_of_support_diagnostic_candidate
+
+output_root: outputs/real_data_residual_covariance_model_adequacy_v1
