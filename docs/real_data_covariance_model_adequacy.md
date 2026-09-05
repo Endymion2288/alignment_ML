@@ -1,8 +1,16 @@
 # Real-Data Residual/Covariance Model Adequacy & Nonlinear-Response Prerequisite V1
 
-Workbook 79. **Status: pre-registered** — all gates frozen before any audit
-quantity is computed; results backfilled after execution and frozen in a
-separate commit.
+Workbook 79. **Status: completed and frozen** — pre-registered as `0257c9e`,
+executed in freeze order, results backfilled and frozen.
+
+**Final decision: `real_data_statistical_model_multiple_failures`.** All three
+key model-adequacy audits fail: covariance/statistical model (H2),
+Jacobian-transfer support (H3), and calibration cross-run transportability.
+The WB78 out-of-support candidate is a **spurious alignment amplitude produced
+by projecting the residuals through a mis-specified near-singular combined
+covariance**, not a genuine large geometry displacement. Real-data nonlinear
+alignment is **not** authorized; continue `residual_dq_monitoring_only`; no
+Workbook 80 is opened.
 
 This is a **model-adequacy audit**, not a geometry correction and not a
 nonlinear alignment. For the whole workbook:
@@ -214,4 +222,100 @@ support contracts, never expanded to ±2.5 because γ=2.46.
 
 ## Results
 
-(to be backfilled after execution)
+**Frozen decision: `real_data_statistical_model_multiple_failures`** (failed:
+covariance_adequacy, transfer_support, cross_run_transportability).
+
+The campaign executed in freeze order. Stage 0 reproduced the frozen WB78
+calibration baseline exactly (11/11 checks: bank SHA256 `6e4eaae0...`,
+χ²_zero = 1999613.6054909483, informed rank 3, eigenvalues, γ, β, condition
+38.06, bootstrap 17/50 & 158.133°).
+
+### H2 — covariance/statistical-model adequacy: decisive failure
+
+- Zero-candidate χ² = 2.00×10⁶ (1512 dof, χ²/ndof = 1322.5); **99.74% of χ² is
+  concentrated in the smallest covariance eigenmode**. The combined covariance
+  is numerically near-singular (condition median 2.3×10¹², p95 4.1×10¹³;
+  **99.7% of pairs have condition > 10⁸**; median smallest eigenvalue
+  6.2×10⁻⁷).
+- **Whitening test (primary gate)**: after removing the per-(run, pair-type)
+  coherent mean, the whitened residual χ²/ndof = **1058.46 ≫ gate 4.0**. Even
+  with the most generous coherent-mean removal, the frozen covariance does not
+  describe the residual fluctuations (empirical Cov(z) eigenvalues [1.08,
+  4.18, 21.27, 4159.09], condition 3841, should be ≈1).
+- **Mechanism (verified)**: the full and diagonal covariances give a
+  bit-identical information matrix, eigenvalues and β (‖H_full−H_diag‖/‖H_full‖
+  = 0.0) — the near-singular direction is **alignment-blind** (in the design
+  matrix's left null space), inflating χ² by ~1750× without changing the
+  alignment solution.
+- **Diagonal counterfactual control**: with the same marginal variances but no
+  off-diagonal correlation, χ² = 1140.2 (χ²/ndof = **0.75**, healthy). The
+  problem is isolated to the off-diagonal correlation model.
+- `inv(C)` is numerically unreliable (worst pair condition 1.6×10¹⁴,
+  ‖C·C⁻¹−I‖max = 5.7×10⁻⁶).
+- **Cross-run empirical covariance not reproducible**: (0,2)
+  generalized-eigenvalue RMS log-deviation = 1.274 > gate ln(3) = 1.099
+  ((0,1) = 1.058 passes).
+
+### H3 — observable/Jacobian-transfer support: failure
+
+- (a) MC per-pair J dispersion **passes** (rms 0.244 / 0.078 / 0.111 for
+  (0,1)/(0,2)/(0,3), all ≤ gate 0.35) — the mean-J is a reasonable summary on
+  MC.
+- (b) Real-vs-MC kinematic support overlap **fails**: only **86.34% < gate
+  90%** of real (0,1) pairs lie within the MC 99% Mahalanobis (tx, ty)
+  envelope ((0,2) 96.64% passes; (0,3) report-only). The real (0,1)
+  track-slope support is significantly wider than MC (tx p95 0.065 vs 0.037;
+  **ty p95 0.026 vs 0.0087, ~3×**), so the mean-J transfer extrapolates for
+  ~14% of (0,1) pairs.
+
+### Score decomposition, bootstrap, counterfactuals (report-only)
+
+- The score b = JᵀWr is driven entirely by the smallest covariance eigenmode
+  (mode 0 contributes (−87443, 36486, −793957); modes 1–3 are ~1000× smaller)
+  and is highly concentrated (top 1% of pairs contribute 44–58% of |score|).
+  This is the signature of a few near-singular directions amplifying the
+  residual, not many pairs pushing coherently (which would be the H1 signal).
+  Split by run, 14973 and 14974 push γ_0 in **opposite** directions (−155031
+  vs +67242), further confirming a non-coherent, non-physical signal.
+- Bootstrap: 17/50 replicates drop to rank 2; the fragile rank-3 mode
+  (information eigenvalue ~68.5, near the 26.08 cut) fluctuates 3.5–149.6; the
+  scarce (0,3) pairs (only 2) contribute a high but fragile eigenvalue. The
+  diagonal counterfactual is equally unstable (17 changes, 158°), while
+  condition-capped/unit are stable but give smaller γ — the conclusion is
+  sensitive to the covariance treatment (model-mismatch evidence, not a
+  license to pick a best W).
+
+| counterfactual | rank | max|γ| | χ² | smallest-mode χ² frac | bootstrap rank changes | angle vs full |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A full_frozen | 3 | 2.460 | 2.00×10⁶ | 0.997 | 17 | — |
+| B diagonal_marginal | 3 | 2.460 | 1140.2 | 0.062 | 17 | 0.0° |
+| C condition_capped | 3 | 0.574 | 370.5 | 0.124 | 0 | 15.2° |
+| D unit_weight | 3 | 0.772 | 1.82×10⁶ | 0.934 | 0 | 17.4° |
+
+All counterfactuals are `diagnostic_only=true, alignment_authorized=false`;
+none entered the production solver or produced a deployable candidate.
+
+### Cross-run transportability: failure
+
+- Ranks differ (14973 = 3, 14974 = 2). Dominant informed eigenvector angle
+  5.85° ≤ 15° (OK), but the **γ-hat direction angle is 88.16° ≫ 15°** and
+  max|γ| differs ~15× (2.439 vs 0.160). A genuine coherent geometry
+  displacement (H1) would be transportable across runs; the near-orthogonal
+  inferred directions decisively reject H1.
+
+### Consequence
+
+The WB78 out-of-support candidate is a spurious artifact of the mis-specified,
+numerically near-singular combined covariance (with a contributing transfer
+support shortfall for wide-ty (0,1) tracks), not a genuine geometry
+displacement. `geometry_write_allowed=false`,
+`official_conditions_write_allowed=false`,
+`real_data_candidate_alignment_authorized=false`,
+`external_constraint_ingest_authorized=false`, `held_out_accessed=false` all
+remain. Continue `residual_dq_monitoring_only`. Before any alignment solve can
+be trusted, a **separate pre-registered campaign** must re-derive and
+re-validate the combined-covariance correlation model (and the transfer
+support for wide-ty tracks); Workbook 80 nonlinear response is not opened
+until the covariance model is repaired and re-frozen.
+
+Full execution record and artifact SHAs: workbook 79 §7.

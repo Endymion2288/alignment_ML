@@ -1,6 +1,8 @@
 # 真实数据 Residual/协方差模型有效性与非线性响应前置审计 V1
 
-Workbook 79。**状态：预注册** —— 所有 gate 在计算任何 audit 量之前冻结；执行后回填结果并单独冻结。
+Workbook 79。**状态：完成并冻结** —— 预注册 `0257c9e`，按冻结顺序执行后回填结果并冻结。
+
+**最终决策：`real_data_statistical_model_multiple_failures`。** 三项关键 model-adequacy 审计全部失败：covariance/statistical model（H2）、Jacobian-transfer support（H3）、calibration cross-run transportability。WB78 的超大 candidate 是**被失配的近奇异 combined covariance 投影出的虚假 alignment 幅度**，不是真实 geometry 大位移。real-data nonlinear alignment **未获授权**，继续 `residual_dq_monitoring_only`，不开 Workbook 80。
 
 本战役是 **model adequacy 审计**，不是 geometry correction，也不做 nonlinear alignment。整个 Workbook 79：
 
@@ -112,4 +114,44 @@ Workbook 79 首先只做 model adequacy。只有当本战役证明：(1) covaria
 
 ## 结果
 
-（执行后回填）
+**冻结决策：`real_data_statistical_model_multiple_failures`**（failed：covariance_adequacy、transfer_support、cross_run_transportability）。
+
+本战役按冻结顺序执行。Stage 0 精确复现 WB78 calibration baseline（11/11 checks：bank SHA256 `6e4eaae0...`、χ²_zero = 1999613.6054909483、informed rank 3、eigenvalues、γ、β、condition 38.06、bootstrap 17/50 & 158.133°）。
+
+### H2 — covariance/statistical-model adequacy：决定性失败
+
+- 零 candidate χ² = 2.00×10⁶（1512 dof，χ²/ndof = 1322.5）；**99.74% 的 χ² 集中在最小 covariance eigenmode**。combined covariance 数值上近奇异（condition 中位数 2.3×10¹²、p95 4.1×10¹³；**99.7% 的 pair condition > 10⁸**；最小特征值中位数 6.2×10⁻⁷）。
+- **Whitening 检验（主 gate）**：去掉 per-(run, pair-type) coherent mean 后，whitened residual χ²/ndof = **1058.46 ≫ gate 4.0**。即使最宽容地去均值，frozen covariance 也完全不能描述 residual 涨落（经验 Cov(z) 特征值 [1.08, 4.18, 21.27, 4159.09]，condition 3841，应≈1）。
+- **机制（已核实）**：full 与 diagonal covariance 给出逐位相同的信息矩阵、特征值与 β（‖H_full−H_diag‖/‖H_full‖ = 0.0）——近奇异方向是 **alignment-blind**（处于设计矩阵左零空间），把 χ² 放大 ~1750× 却不改变 alignment 解。
+- **对角 counterfactual 对照**：相同 marginal variance、去掉 off-diagonal 后 χ² = 1140.2（χ²/ndof = **0.75**，健康）。问题被精确隔离到 off-diagonal 相关结构。
+- `inv(C)` 数值不可靠（最差 pair condition 1.6×10¹⁴，‖C·C⁻¹−I‖max = 5.7×10⁻⁶）。
+- **Cross-run 经验协方差不可复现**：(0,2) generalized-eigenvalue RMS log-deviation = 1.274 > gate ln(3) = 1.099（(0,1) = 1.058 通过）。
+
+### H3 — observable/Jacobian-transfer support：失败
+
+- (a) MC per-pair J dispersion **通过**（(0,1)/(0,2)/(0,3) rms 0.244/0.078/0.111，均 ≤ gate 0.35）——mean-J 在 MC 上是合理摘要。
+- (b) real-vs-MC kinematic support overlap **失败**：仅 **86.34% < gate 90%** 的 real (0,1) pair 落在 MC 99% Mahalanobis (tx,ty) 包络内（(0,2) 96.64% 通过；(0,3) report-only）。real (0,1) 的 track-slope 支持显著宽于 MC（tx p95 0.065 vs 0.037；**ty p95 0.026 vs 0.0087，约 3×**），mean-J transfer 对 ~14% 的 (0,1) pair 处于外推区。
+
+### Score decomposition、bootstrap、counterfactuals（report-only）
+
+- score b = JᵀWr **完全由最小 covariance eigenmode 驱动**（mode0 贡献 (−87443, 36486, −793957)，mode1–3 小 ~1000×），且高度集中（top 1% pair 贡献 |score| 的 44–58%）。这是少数近奇异方向放大的特征，不是许多 pair coherent 同方向推动（后者才是 H1 信号）。按 run 拆分，14973 与 14974 在 γ_0 上**方向相反**（−155031 vs +67242），进一步证明非相干、非物理信号。
+- Bootstrap：50 次中 17 次降到 rank 2；脆弱 rank-3 模式（信息特征值 ~68.5，紧邻 cut 26.08）在 3.5–149.6 间涨落；稀缺的 (0,3) pair（仅 2 个）贡献高但脆弱的特征值。diagonal counterfactual 同样不稳定（17 次、158°），condition_capped/unit 稳定但 γ 更小——结论对 covariance treatment 敏感（模型失配证据，不是选"最好 W"的授权）。
+
+| counterfactual | rank | max|γ| | χ² | 最小模 χ² 占比 | bootstrap rank 改变 | 方向夹角 vs full |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A full_frozen | 3 | 2.460 | 2.00×10⁶ | 0.997 | 17 | — |
+| B diagonal_marginal | 3 | 2.460 | 1140.2 | 0.062 | 17 | 0.0° |
+| C condition_capped | 3 | 0.574 | 370.5 | 0.124 | 0 | 15.2° |
+| D unit_weight | 3 | 0.772 | 1.82×10⁶ | 0.934 | 0 | 17.4° |
+
+全部 `diagnostic_only=true, alignment_authorized=false`，未进入 production solver，未产生可部署 candidate。
+
+### Cross-run transportability：失败
+
+- rank 不相等（14973 = 3、14974 = 2）。dominant informed eigenvector 夹角 5.85° ≤ 15°（可），但 **γ-hat 方向夹角 88.16° ≫ 15°**，max|γ| 差 ~15×（2.439 vs 0.160）。真实 coherent geometry 位移（H1）应可跨 run 传输；近正交的 inferred 方向决定性排除 H1。
+
+### 后果
+
+WB78 的超大 candidate 是失配的、数值近奇异的 combined covariance（以及对宽 ty (0,1) 轨迹的 transfer support 不足）产生的虚假 artifact，不是真实 geometry 位移。`geometry_write_allowed=false`、`official_conditions_write_allowed=false`、`real_data_candidate_alignment_authorized=false`、`external_constraint_ingest_authorized=false`、`held_out_accessed=false` 全部保持。继续 `residual_dq_monitoring_only`。在任何 alignment solve 可被信任之前，必须另开**独立预注册** campaign 重新推导并验证 combined-covariance 相关结构模型（以及宽 ty 轨迹的 transfer support）；covariance model 修复并重新冻结前不开 Workbook 80 nonlinear response。
+
+完整执行记录与 artifact SHA 见 workbook 79 §7。
