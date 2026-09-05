@@ -579,3 +579,109 @@ continue_to_15d_relative_wls     = false
 2. 跑 source-transfer 评估（Condor），得每 fold gate；
 3. gate PASS → full-six-source V5A + 冻结 development eval；FAIL → stop head-only mainline；
 4. 最终报告 §21。
+
+---
+
+## 21. 评估结果与 gate 决定（2026-09-05，评估已完成，gate FAIL）
+
+### 21.1 评估 provenance
+
+- 评估脚本：`scripts/evaluate_relative_route_v5a_source_transfer.py`（single-pass solver 融合版）。
+- 运行 git_commit = `e571a7e72d04483fc172a1929f18d3df5ec3c103`，git_dirty = false。
+- Condor：cluster `1109176`，CPU slot，hostname `b9g34p8457.cern.ch`，normal termination **return 0**，Run Remote Usage Usr ~49 min，内存峰值 ~1.3 GB。
+- 输出：`outputs/mc24_four_station_relative_route_v5a_source_transfer_v1/evaluation/{holdout_family1_result.json, holdout_family2_result.json, source_transfer_summary.json}`。
+- 提交方式说明：评估最初提交为 GPU job，但 AlmaLinux9 GPU 池当时 ~97% 占满，且唯一空闲 slot 为 V100（capability 7.0，被原 `GPUs_Capability>=7.5` 排除），其余空闲为 RedHat9（被 site 注入的 `OpSysAndVer=="AlmaLinux9"` 拒绝）或已 drain（`Cpus=0`），导致 0 slot 可匹配。按"不同任务用不同提交条件、投向最空闲资源"原则：(a) 评估为小模型推理 + CPU solver，不需强 GPU，改投 CPU 池（449 个空闲 AlmaLinux9 CPU slot 满足资源）；(b) 把每 arm 3 次冗余 solver 融合为 1 次（已验证逐行 `decision_class` 与 `cd_counts` 与原 `_evaluate_arm`+`_produce_truth_rows` 完全一致），~3× 加速。CPU 上 ~49 min 完成。
+
+### 21.2 每 fold solver-level 物理结果
+
+fold `holdout_family1`（train on family2=100047/100048，eval family1=100043/100044，3360 events，6789 complete truth chains）：
+
+| arm | C | D | selected | efficiency | purity | fake |
+|---|---|---|---|---|---|---|
+| W64 baseline | 6 | 74 | 6709 | 0.9882 | 0.9823 | 2943 |
+| Control（unbounded） | 203 | 144 | 6442 | 0.9489 | 0.9852 | 3247 |
+| Primary（bounded B=4） | 237 | 151 | 6401 | 0.9428 | 0.9840 | 3297 |
+
+fold `holdout_family2`（train on family1=100043/100044，eval family2=100047/100048，1680 events，3248 complete truth chains）：
+
+| arm | C | D | selected | efficiency | purity | fake |
+|---|---|---|---|---|---|---|
+| W64 baseline | 0 | 43 | 3205 | 0.9868 | 0.9742 | 1573 |
+| Control（unbounded） | 12 | 57 | 3179 | 0.9788 | 0.9734 | 1601 |
+| Primary（bounded B=4） | 2 | 54 | 3192 | 0.9828 | 0.9714 | 1587 |
+
+### 21.3 catastrophic_truth_destruction 与 new_C
+
+`catastrophic_truth_destruction` = 基准（W64 或对照）已 `selected` 的 truth route 经 correction 后 `U<=0` 的条数。`new_C = new_C_from_selected + new_C_from_D`。
+
+| fold | catastrophic control_vs_w64 | catastrophic primary_vs_w64 | catastrophic primary_vs_control | new_C control | new_C primary |
+|---|---|---|---|---|---|
+| holdout_family1 | 184 | 215 | 5 | 197 (184+13) | 231 (215+16) |
+| holdout_family2 | 12 | 2 | 0 | 12 (12+0) | 2 (2+0) |
+
+### 21.4 bounded delta 分布与 ±4 饱和
+
+truth routes：
+
+| fold | arm | mean | median | q01 | min | max_abs | frac_neg | frac_sat_neg(-4) |
+|---|---|---|---|---|---|---|---|---|
+| f1 | control | -0.013 | 0.144 | -4.48 | -10.93 | 10.93 | 0.145 | — |
+| f1 | primary | 0.025 | 0.170 | -3.55 | -3.98 | 3.98 | 0.143 | 0.0004 |
+| f2 | control | 0.922 | 1.011 | -0.95 | -4.39 | 4.39 | 0.038 | — |
+| f2 | primary | 1.102 | 1.118 | 0.40 | -2.35 | 2.35 | 0.005 | 0.0 |
+
+fake routes：primary 两 fold 均 median=-4.0、min=-4.0、frac_sat_neg≈0.977–0.979（fake 被压到 dustbin 边界 -4，预期行为）；control fake 则到 min=-256（f1）/ -538（f2），即 O(10²) 无界负修正。
+
+### 21.5 gate 判定（FAIL）
+
+| criterion | fold1 | fold2 |
+|---|---|---|
+| safety（\|delta\|<=4、无 NaN/Inf、W64 frozen 不变） | PASS | PASS |
+| transfer_risk（truth -4 饱和 <= 5%） | PASS（0.04%） | PASS（0%） |
+| Mechanism C（primary C <= w64 C 且 catastrophic_primary <= control） | **FAIL**（237>6 且 215>184） | **FAIL**（2>0；但 2<=12） |
+| Mechanism D（primary D <= control D） | **FAIL**（151>144） | PASS（54<=57） |
+| fold_pass | **FAIL** | **FAIL** |
+
+**`gate_pass = false`**（两 fold 均 Fail；fold1 同时破 Mechanism C 与 D，fold2 仅在严格"零新增 C vs baseline"上 Fail）。
+
+### 21.6 科学解读
+
+1. **Safety 目标达成**：bounding 把 truth 修正严格限制在 [-4,+4]，消除了 Workbook 71 识别的 O(10–100) 灾难性负修正（control truth min -10.93/-4.39 → primary min -3.98/-2.35），truth 几乎不饱和在 -4（<=0.04%），无 NaN/Inf，W64 frozen 不变。即"无界放大器"已被移除。
+2. **fold2（family1→family2）支持假设方向**：catastrophic 12→2、new_C 12→2（6× 下降），接近 W64 baseline（C=0）。
+3. **fold1（family2→family1）否定假设**：catastrophic 184→215、new_C 197→231，bounded 反而略差于 unbounded，且仍为 O(100) 量级。
+4. **关键机制洞察**：即使 bounded，`delta=-4` 仍足以摧毁 marginal truth route——`U_complete = L_corrected - 4 = L_edge + delta - 4`，`delta=-4` 时 `U = L_edge - 8 <= 0` 对任意 `L_edge < 8` 成立。bounding 限制了修正的"幅度"，但没有修复 held-out source 上 truth/fake 决策边界的错位：head 仍把部分 held-out truth route 判为 fake-like（压向 -4），而 -4 在 O(1–10) 的 utility 尺度上仍足够大。
+5. **两 fold 难度不对称**：family2→family1（fold1）远比 family1→family2（fold2）难（两 arm 在 fold1 都产生 ~200 量级 new C，fold2 仅 2–12）。source family 间 transfer 难度本身不对称。
+
+**结论**：仅限制修正尺度（bounded scale）不足以解决跨 source 的泛化失败。根因是 truth/fake 决策边界在 held-out source 上的错位（representation / domain transfer），而非单纯的修正幅度。这正式确认 Workbook 71 主因排序中的 representation/domain-transfer 必须在架构层面解决。
+
+### 21.7 预注册决定（gate FAIL → 触发 §13）
+
+按 §13 预注册：bounded absolute head 在 held-out train sources 上仍出现 truth→fake-like correction 与 systematic new C（fold1 为 O(100)），因此：
+
+- **stop head-only mainline**。
+- 禁止继续：bounded relative（V5B）、learnable bound、loss reweighting、B sweep。
+- **不训练 full-six-source V5A**（§14 Step 1/2 仅对 PASS 授权，未触发）。
+- **不做 development 冻结评估**（同上，未触发）。
+- **不打开 Final Blind**（00800_00849 保持关闭）。
+- 下一步：转向 representation / domain-transfer architecture，另开 Workbook。
+
+### 21.8 当前边界状态
+
+```text
+training_authorized              = false（CV 已完成，head-only mainline 停止）
+final_blind_eval_authorized      = false
+development_used_for_selection   = false（00350_00399 未进入任何选择）
+new_final_blind_content_accessed = false
+sealed_test_accessed             = false
+continue_to_15d_relative_wls     = false
+```
+
+### 21.9 下一 hypothesis 建议（representation / domain-transfer，需另开 Workbook 重新预注册）
+
+由 §21.6：bounded scale 只移除放大器，未修复跨 source 的 truth/fake 决策边界错位。下一阶段主假设应直接针对**跨 source 决策边界的 domain shift**，候选方向（需逐一物理 grounding 后预注册，且不得违反 FASER/Calypso 真实 transform semantics）：
+
+1. **source-invariant / domain-adapted route representation**：让 route head 的输入特征对 source family 不变（如 domain-adversarial 或 source-normalized 特征），直接压低 held-out source 上 truth→fake 的误判率。
+2. **物理相对 / 局部 route 表示**（非 naive SE(3)）：从 Calypso 真实 transform semantics 推导对齐不变的局部量，替代 absolute route 表示；Workbook 71 已显示 naive Relative（Arm2）为 secondary failure，故必须先从物理推导验证，不可直接套 gauge-equivariant 网络。
+3. **joint route representation（非 head-only）**：若 head-only 本身缺乏可泛化的辨识信息，需在冻结 backbone 之上引入跨 route 的联合表示。
+
+约束：任何新表示必须先在 TRAIN-side source-transfer CV 上预注册并通过同一 gate；Final Blind（00800_00849）与 sealed test 保持关闭；`continue_to_15d_relative_wls=false`。
