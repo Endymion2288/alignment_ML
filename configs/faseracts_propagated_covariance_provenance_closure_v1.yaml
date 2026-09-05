@@ -1,0 +1,292 @@
+# Workbook 81 pre-registration:
+# FaserActsExtrapolation Propagated-Covariance Provenance & Closure V1.
+#
+# *** THIS IS NOT AN ALIGNMENT DIAGNOSTIC V2. ***
+# The earlier conditional "Workbook 81 = Gauge-Fixed Real-Data Alignment
+# Diagnostic V2" branch was NOT triggered because Workbook 80 failed.  This
+# campaign reuses the free number 81 for a ROOT-CAUSE upstream covariance
+# validation, not an alignment solve.
+#
+# Workbook 80 froze `measurement_model_multiple_components_not_validated`:
+#   covariance_model_validated = false
+#   jacobian_transfer_model_validated = false
+#   real_data_alignment_v2_preregistration_allowed = false
+#   held_out_accessed = false
+# WB80 proved (workbook 80 section 6.4) that the frozen combined covariance's
+# near-singular pencil direction over-estimates the real residual variance by
+# ~100-2000x, and that adding multiple-scattering process noise (C1) or a
+# diagonal floor (C2) fixes chi2/ndof but leaves a near-zero Cov(z) eigenvalue.
+# WB80 could NOT confirm the provenance of C_prop because the propagated
+# covariance is produced by the EXTERNAL Calypso/ACTS FaserActsExtrapolationTool
+# (`unresolved_external_provenance`).
+#
+# This campaign answers ONE upstream question:
+#   What does the FaserActsExtrapolationTool propagated covariance C_prop
+#   actually represent, and does its covariance transport / process noise
+#   correctly describe the source-tracklet -> downstream-surface prediction
+#   error on truth-known MC?
+#
+# This is upstream covariance validation, NOT alignment.  The whole campaign:
+#   held_out_accessed = false
+#   real_data_alignment_authorized = false
+#   geometry_write_allowed = false
+#   official_conditions_write_allowed = false
+# It needs NO real-data residual solve and reads NO real-data residual at all.
+
+schema_version: faseracts-propagated-covariance-provenance-closure-v1
+workbook: 81
+created_utc: "2026-09-05T13:40:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned).  The WB81 module loads the WB80 config and
+# SHA-verifies the WB80 frozen artifacts so the campaign provably starts from
+# the frozen WB80 negative state.  Any SHA mismatch halts the campaign.
+# WB81 inherits ALL WB80 prohibitions verbatim (no covariance floor/inflation
+# tuning, no diagonal-covariance promotion, no J extrapolation, no held-out
+# access, no nonlinear scan, no gauge/S/rank_tolerance change, no event/source
+# deletion, no identifiability rescue).
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_80_config: configs/real_data_measurement_model_reconstruction_validation_v1.yaml
+  workbook_80_config_sha256: 8f0f0445741611e2f4ddbe6889eb107eaa18b9a5af56f655aaac120c44fa74d2
+  workbook_80_output_root: outputs/real_data_measurement_model_reconstruction_validation_v1
+  workbook_80_artifact_sha256:
+    measurement_model_decision.json: c450a0b946961d1663f87bd0b4d5a26ccb8c5e7a21ab634aca8c415e05b52a90
+    campaign_summary.json: 75c04b987506bd1d4c9bfe64178afe2a9dfd64eed1bd604961345c1afb597421
+  # Frozen WB80 decision that WB81 must reproduce before any new computation.
+  workbook_80_frozen_decision: measurement_model_multiple_components_not_validated
+  workbook_80_frozen_gates:
+    covariance_model_validated: false
+    jacobian_transfer_model_validated: false
+    real_data_alignment_v2_preregistration_allowed: false
+    held_out_accessed: false
+
+# ---------------------------------------------------------------------------
+# Software provenance (read from the actual build / release, recorded for the
+# audit).  These pin the exact code whose covariance semantics are audited.
+# ---------------------------------------------------------------------------
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  extrapolation_tool_header: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.h
+  extrapolation_tool_source: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.cxx
+  exporter_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+  exporter_config: PhysicsAnalysis/NtupleDumper/python/NtupleDumperConfig.py
+
+# ---------------------------------------------------------------------------
+# Covariance provenance audit (Stage: provenance).  The 15 pre-registered
+# questions about how C_prop is generated.  Each is answered from the actual
+# Calypso/ACTS source and runtime config and marked resolved_from_source /
+# resolved_from_runtime_config / unresolved.  Output:
+# faseracts_covariance_provenance.json.  Read-only; no code is modified.
+# ---------------------------------------------------------------------------
+provenance_audit:
+  questions:
+    - input_covariance_parameter_basis
+    - input_covariance_segment_to_acts_transform
+    - covariance_transport_jacobian_location
+    - output_covariance_back_to_xytxty
+    - material_effects_enabled
+    - multiple_scattering_process_noise
+    - energy_loss_uncertainty
+    - process_noise_surface_step
+    - particle_hypothesis_mass_charge_momentum
+    - qoverp_mode_effect_on_covariance
+    - field_covariance_or_numerical_transport
+    - surface_frame_local_global_jacobian_amplification
+    - prediction_vs_conditional_covariance
+    - deterministic_transport_without_stochastic_noise
+    - runtime_config_option_values
+
+# ---------------------------------------------------------------------------
+# Truth-known MC data (source-disjoint).  The closure isolates C_prop from
+# C_target and from any real-data residual by using the truth/reference state
+# at the target surface.  We reuse the hierarchical-V1 MC sources because their
+# reconstruction / physical-FD provenance is the most complete.  For each
+# source we use the NOMINAL-geometry `iteration_00_reference` point (all
+# alignment constants == 0) so the propagation and the Geant truth share one
+# geometry.  Construction and validation sources are file-level disjoint and
+# frozen here before any confirmatory quantity is computed.
+# ---------------------------------------------------------------------------
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  propagations_file: propagations.root
+  propagations_tree: propagations
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  # Production covariance mode: reconstructed source tracklet + reconstructed
+  # q/p, with the q/p covariance transported (the C_prop used by the WB80
+  # measurement model).  Other modes are diagnostics only.
+  production_q_over_p_mode: 0
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+  # Station pairs under test (forward pairs from station 0 plus the full set).
+  station_pairs: [[0, 1], [0, 2], [0, 3]]
+
+# ---------------------------------------------------------------------------
+# Truth / reference target state (Stage: truth-reference).  Constructed ONLY
+# from existing branches; no new exporter, no change to reconstruction
+# selection.  The enhanced ntuple carries the per-station Geant-truth state
+# (truth_stX_x/y/z and truth_stX_px/py/pz, keyed by truth_barcode).  The truth
+# reference state at the target surface is
+#   tx_truth = px/pz ; ty_truth = py/pz
+#   x_truth(target_z) = truth_stX_x + tx_truth * (target_z_mm - truth_stX_z)
+#   y_truth(target_z) = truth_stX_y + ty_truth * (target_z_mm - truth_stX_z)
+# i.e. the per-station truth point straight-line-corrected to the propagation
+# target plane over the (small) z gap.  The reference floor is calibrated by
+# the mode-2 (full-truth source) propagation, whose e_prop RMS measures the
+# irreducible propagation + reference uncertainty.  If the floor is not small
+# compared to the closure signal, freeze
+# propagated_covariance_truth_closure_unavailable instead of using a target
+# fit as pseudo-truth.
+# ---------------------------------------------------------------------------
+truth_reference:
+  join_keys: [run_id, event_id, truth_particle_id]
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: "truth_st{station}_{coord}"   # coord in x,y,z
+  truth_momentum_template: "truth_st{station}_{mom}"     # mom in px,py,pz
+  straight_line_z_correction: true
+  # Reference-floor control: mode-2 (full-truth source) e_prop RMS per pair.
+  # The closure is only trusted where the mode-0 signal is large vs this floor.
+  reference_floor_q_over_p_mode: 2
+  min_signal_to_floor: 3.0
+  min_pairs_per_pair: 20
+
+# ---------------------------------------------------------------------------
+# Propagated-covariance closure metrics (Stage: closure).  For each station
+# pair and each split (construction / validation), for the core observable
+#   e_prop = propagated source-tracklet state - truth/reference state at target
+# we whiten  z_prop = C_prop^{-1/2} e_prop  (eigendecomposition; C_prop is
+# near-singular so a stable symmetric whitening is used) and compute the
+# pre-registered metrics below.  The coherent mean of e_prop is reported
+# separately (it is a reconstruction/geometry systematic, NOT what a covariance
+# is meant to describe); the covariance gates use the de-meaned fluctuation.
+# No target-tracklet covariance is subtracted: the goal is to validate C_prop
+# alone.
+# ---------------------------------------------------------------------------
+closure_metrics:
+  demean_per_pair: true
+  whitening: symmetric_eigendecomposition
+  metrics:
+    - mean_z
+    - marginal_rms
+    - cov_z_eigenvalues
+    - chi2_per_ndof
+    - eigenmode_pull
+    - coverage_probability
+    - x_tx_and_y_ty_blocks
+    - condition_distribution
+    - lever_arm_dependence
+    - tx_ty_dependence
+  coverage_chi2_quantile_df: 4
+  # Pencil-direction check (WB80 motif): does C_prop's large-eigenvalue
+  # direction correspond to an equally large physical propagation error?
+  pencil_direction_analysis: true
+  # Orientation-vs-scale decomposition: generalized eigenvalues of
+  # (C_empirical_prop, C_prop), projector overlap, and correlation structure.
+  orientation_vs_scale: true
+
+# ---------------------------------------------------------------------------
+# Pre-registered closure gates (confirmatory).  C_prop is "calibrated" on a
+# (pair, split) cell only if ALL gates pass.  Gates are frozen before any
+# confirmatory computation and are NOT tuned to make chi2 ~ 1.
+# ---------------------------------------------------------------------------
+closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  # Generalized eigenvalues of (C_emp, C_prop): lam << 1 means C_prop
+  # over-estimates, lam >> 1 means under-estimates.  Require all within a
+  # factor ~4 (in variance) of unity for "calibrated".
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  # Pencil-direction variance ratio |C_prop pencil variance / empirical|.
+  pencil_variance_ratio_min: 0.25
+  pencil_variance_ratio_max: 4.0
+  min_pairs_per_pair: 20
+
+# ---------------------------------------------------------------------------
+# Process-noise / q/p-mode diagnostic variants (Stage: variants).  The source
+# audit proves the ACTS MaterialInteractor exists but is DISABLED in production
+# (InteractionMultiScatering/InteractionEloss/InteractionRecord all false), so
+# NO material process noise can be toggled from the existing export.  The only
+# variants available in the persisted records are the q/p-handling modes that
+# the exporter already wrote.  They are used ONLY as diagnostics to decompose
+# the C_prop error mechanism (esp. the q/p-covariance transport), never to pick
+# a "best-whitening" production covariance.
+# ---------------------------------------------------------------------------
+diagnostic_variants:
+  diagnostic_only: true
+  alignment_authorized: false
+  modes:
+    - {q_over_p_mode: 0, label: reco_source_reco_qoverp_with_qoverp_cov, role: production}
+    - {q_over_p_mode: 1, label: reco_source_truth_qoverp, role: diagnostic}
+    - {q_over_p_mode: 2, label: truth_source_truth_qoverp, role: reference_floor}
+    - {q_over_p_mode: 3, label: reco_source_reco_qoverp_no_qoverp_cov, role: qoverp_cov_isolation}
+
+# ---------------------------------------------------------------------------
+# Upstream bug / semantic-mismatch classification (used only if the closure
+# fails).  Exactly one mechanism is frozen, supported by the diagnostics.
+# ---------------------------------------------------------------------------
+failure_classification:
+  categories:
+    - missing_process_noise
+    - overestimated_transported_fit_covariance
+    - wrong_parameter_transform
+    - wrong_surface_jacobian
+    - wrong_particle_hypothesis
+    - conditional_covariance_not_residual_covariance
+    - other_verified_mechanism
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered).  Exactly one terminal string is frozen.
+# Even the validated branches keep real_data_alignment_authorized = false:
+# the Jacobian wide-ty support branch (Workbook 82) is an independent gate.
+# ---------------------------------------------------------------------------
+decision_tree:
+  provenance_unresolved: propagated_covariance_provenance_unresolved
+  truth_closure_unavailable: propagated_covariance_truth_closure_unavailable
+  not_calibrated: faseracts_propagated_covariance_not_calibrated
+  validated_canonical: faseracts_propagated_covariance_validated_within_canonical_support
+  validated_required: faseracts_propagated_covariance_validated_across_required_support
+  inconclusive: propagated_covariance_validation_inconclusive
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions (inherited + campaign-specific).
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+real_data_alignment_authorized: false
+external_constraint_ingest_authorized: false
+held_out_accessed: false
+do_not_open_held_out: true
+do_not_read_real_data_residuals: true
+do_not_modify_faseracts_extrapolation_tool: true
+do_not_select_events_by_residual: true
+do_not_drop_pairs_by_condition_or_fit_quality: true
+do_not_use_external_evidence_as_prior: true
+do_not_solve_final_alignment: true
+do_not_tune_covariance_to_chi2: true
+do_not_promote_diagonal_or_capped_or_unit_covariance: true
+do_not_extrapolate_beyond_canonical_support: true
+do_not_open_alignment_diagnostic_v2: true
+# A process-noise / qoverp diagnostic variant can NEVER be promoted to a
+# production covariance inside this campaign.
+do_not_promote_diagnostic_variant_to_production: true
+
+output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
