@@ -1,0 +1,324 @@
+# Workbook 78 pre-registration: Gauge-Fixed Real-Data Alignment Diagnostic V1.
+#
+# Scientific question (the only one): without claiming to recover a unique
+# mechanical station pose, can a pre-frozen reconstruction gauge representative
+# be stably determined from a real-data calibration subset and improve
+# gauge-invariant tracker observables on completely held-out real data?
+#
+# This is a diagnostic, not a geometry correction deployment.
+# geometry_write_allowed = false. official_conditions_write_allowed = false.
+#
+# Everything in this file is frozen before any real-data candidate is computed.
+
+schema_version: faser-gauge-fixed-real-data-alignment-diagnostic-v1
+workbook: 78
+created_utc: "2026-09-05T06:30:00+00:00"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned). Any mismatch halts the campaign.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_77_config: configs/gauge_constraint_external_constraint_feasibility_v1.yaml
+  workbook_77_config_sha256: d44876589d6bfed742714b957de80119024d7c93f747e45a1ed9357a5c0527e6
+  workbook_77_output_root: outputs/gauge_constraint_external_constraint_feasibility_v1
+  workbook_77_artifact_sha256:
+    config_validation.json: 3864833dab091dfc370f1efa6d39267f4548582329a0d14c349166f8e8b54865
+    tracker_information_regression.json: 0a01d1b528878d1695d47c8a423633094263ada83009bd6a7dd49d6245dda5b8
+    gauge_candidates.json: 7ef11cf8e304dfffbc2ef600737561decfd94d4b3b6d27e61689184f7fe0161d
+    gauge_invariant_closure.json: e77a18d99156f7173b4d50a45c0c24eef9176da831aa3721223eb8664651f0e1
+    external_constraint_eligibility.json: dd0c00afa6e2f6dc56dc10dcaba5187fdd7a291a2bccb8f5c869546dee392020
+    next_stage_decision.json: 7b3d3af8cf03c6834882a0e6d773c46521f1fe1498bca09e5aad090049d886fd
+    campaign_summary.json: c24660afc1acf5e8be85b14298ad692e314cbbbfd96747a47ad4c4e248a88eca
+  workbook_68_identifiable_basis: outputs/tracker_only_identifiable_subspace_three_arm_closure_v1/identifiable_basis.json
+  workbook_68_identifiable_basis_sha256: 367773837eda2d8cb30ee4b0a6f75e3fb49530315e9680e7c964de9bd399e645
+  frozen_v2_checkpoint_sha256: 0c85a001677678163512c59bd5ceb6d08bdefaab79c0f4628659a4a8ad766a27
+  # WB77 amendment inheritance: subspace identity regression uses the
+  # basis-independent projector Frobenius distance, never the arccos-quantized
+  # principal-angle gate.
+  regression_max_projector_frobenius: 1.0e-8
+
+# ---------------------------------------------------------------------------
+# Tracker information / parameter contract: identical to WB77 (frozen WB68).
+# ---------------------------------------------------------------------------
+tracker_information:
+  jacobian_corpus:
+    physical_root: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1
+    parameter_names: [ift_dx_mm, ift_dy_mm, ift_dz_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad, C_dx]
+    parameter_scales: [5.0, 5.0, 5.0, 60.0, 60.0, 60.0, 0.12]
+    sources:
+      - mc24_100043_00200_00299
+      - mc24_100043_00600_00699
+      - mc24_100044_00200_00299
+      - mc24_100044_00600_00699
+      - mc24_100045_00200_00299
+      - mc24_100045_00600_00699
+      - mc24_100046_00200_00299
+  rank_tolerance: 0.01
+  rcond: 1.0e-10
+  # The frozen WB68/77 identifiable/null basis is reused as-is. No re-SVD on
+  # real data, no re-definition of V_id / V_null / P_id.
+
+# ---------------------------------------------------------------------------
+# Gauge contract. The primary gauge is frozen BEFORE seeing any real-data fit
+# result. It is minimum_norm_scaled_gauge because it inherits the frozen
+# WB68/77 severity-scaled minimum-norm representative and the
+# solver_restricted_to_identifiable_subspace doctrine, NOT because it had the
+# lowest condition number in WB77.
+# ---------------------------------------------------------------------------
+gauges:
+  primary: minimum_norm_scaled_gauge
+  secondary_control: named_parameter_zero_gauge
+  report_only: minimum_norm_native_gauge
+  candidates:
+    - name: named_parameter_zero_gauge
+      kind: fixed_reference_rigid_mode
+      fixed_parameters: [ift_dz_mm, C_dx]
+    - name: minimum_norm_scaled_gauge
+      kind: minimum_norm_representative
+      metric: severity_scaled
+    - name: minimum_norm_native_gauge
+      kind: minimum_norm_representative
+      metric: native
+  # Inherited WB77 numerical gates.
+  gauge_residual_max_abs: 1.0e-9
+  gauge_invariance_max_relative_diff: 1.0e-8
+  kkt_condition_max: 1.0e12
+
+# ---------------------------------------------------------------------------
+# Real-data population: frozen Operating Protocol V1 / Frozen-V2 contract.
+# Read-only provenance inventory. No event re-selection, no restacking, no
+# residual-based selection, no wide-angle cuts, no population expansion.
+# ---------------------------------------------------------------------------
+real_data_population:
+  contract: operating_protocol_v1_frozen_v2_selected_route
+  observation_model: anchor_pairs_of_frozen_selected_routes
+  observation_model_note: >-
+    Pair residuals are recomputed from the frozen identity files
+    (synthetic_tracklets.root + field_candidates.root) with the frozen
+    evaluate_field_propagation chain (require_truth_match=False,
+    q_over_p_mode=0). For every frozen selected route, anchor pairs
+    (station 0 endpoint x station j endpoint, j>=1) are taken. This mirrors
+    the frozen MC observable model (anchor IFT vs station j). Correctness
+    regression: the rebuilt adjacent route edges must reproduce the frozen
+    selected_route_field_edge_residuals.csv rows bit-exactly. No new
+    reconstruction, no FD probes, no event selection.
+  core_root: outputs/operating_protocol_v1_real_data_v2_route_acceptance_scaling_v1
+  expansion_root: outputs/operating_protocol_v1_real_data_residual_dq_monitoring_expansion_v1
+  sources:
+    - source_id: data24_r14973_00007_skip49500_n84988
+      run_id: 14973
+      role: calibration
+      expected_selected_routes: 121
+    - source_id: data24_r14974_00005_skip74400_n60886
+      run_id: 14974
+      role: calibration
+      expected_selected_routes: 109
+    - source_id: data24_r14975_00005_skip21600_n111781
+      run_id: 14975
+      role: held_out
+      expected_selected_routes: 156
+    - source_id: data24_r14976_00004_skip95500_n40562
+      run_id: 14976
+      role: held_out
+      expected_selected_routes: 63
+    - source_id: data24_r14977_00005_skip135900_n01687
+      run_id: 14977
+      role: held_out_report_only
+      expected_selected_routes: 2
+    - source_id: data24_r14971_00003_skip20900_n112357
+      run_id: 14971
+      role: held_out_monitoring
+      expected_selected_routes: 233
+    - source_id: data24_r14972_00004_skip23300_n110071
+      run_id: 14972
+      role: held_out_monitoring
+      expected_selected_routes: 193
+    - source_id: data24_r14980_00005_skip57300_n77621
+      run_id: 14980
+      role: held_out_monitoring
+      expected_selected_routes: 114
+    - source_id: data24_r14981_00006_skip95600_n40646
+      run_id: 14981
+      role: held_out_monitoring
+      expected_selected_routes: 77
+    - source_id: data24_r14985_00012_skip95300_n40837
+      run_id: 14985
+      role: held_out_monitoring
+      expected_selected_routes: 74
+    - source_id: data24_r14989_00005_skip71900_n63559
+      run_id: 14989
+      role: held_out_monitoring
+      expected_selected_routes: 91
+    - source_id: data24_r15007_00005_skip111800_n24905
+      run_id: 15007
+      role: held_out_monitoring
+      expected_selected_routes: 32
+
+# ---------------------------------------------------------------------------
+# Calibration / held-out split. Frozen residual-blind role inheritance from
+# the WB48-52 blind corpus: calibration = 14973+14974, held-out =
+# 14975+14976 (primary) + 7 expansion monitoring runs; 14977 report-only
+# (statistics-insufficient). No new split is drawn; the split rule is the
+# frozen operating-protocol role map. The split artifact (event/source IDs,
+# counts, station coverage, SHA) is frozen before any candidate calculation.
+# ---------------------------------------------------------------------------
+split:
+  rule: frozen_operating_protocol_role_map
+  calibration_roles: [calibration]
+  held_out_roles: [held_out, held_out_monitoring]
+  report_only_roles: [held_out_report_only]
+  min_anchor_pairs_for_run_gates: 30
+  do_not_repick_split: true
+
+# ---------------------------------------------------------------------------
+# Observable-model transfer. Per-pair Jacobians on real data would require FD
+# probes, which remain forbidden (do_not_generate_fd_probes). The only legal
+# transfer is the frozen MC pooled-bank station-pair mean native Jacobian.
+# Its model error is quantified by the MC control below, before real data.
+# ---------------------------------------------------------------------------
+transfer_model:
+  kind: station_pair_mean_native_jacobian
+  mc_corpus: workbook_68_pooled_bank
+  mean_weighting: unweighted
+  do_not_generate_fd_probes: true
+  do_not_refit_real_data: true
+
+# ---------------------------------------------------------------------------
+# MC control (runs before any real calibration residual is read for a solve).
+# Composition mirrors the frozen real calibration/held-out anchor-pair counts.
+# Numerical gates are MC/control-derived and frozen here before held-out is
+# opened, per the campaign rules.
+# ---------------------------------------------------------------------------
+mc_control:
+  seed: 20260905
+  calibration_composition: {"0->1": 227, "0->2": 156, "0->3": 2}
+  # Full held-out evaluation population: primary held-out (14975, 14976) +
+  # 7 expansion monitoring runs + report-only 14977.
+  held_out_composition: {"0->1": 1005, "0->2": 655, "0->3": 15}
+  scenarios:
+    - name: mc_covariance
+      covariance_scale: {x: 1.0, y: 1.0, tx: 1.0, ty: 1.0}
+    - name: real_scale_covariance
+      # Real/MC median covariance ratios from the frozen DQ CSV covariance
+      # columns (covariance metadata only; no residual values used):
+      # x rows ~300x, tx rows ~800x down-weighted on real data.
+      covariance_scale: {x: 300.0, y: 1.0, tx: 800.0, ty: 1.0}
+  injection_amplitude_scaled: 0.10
+  # Pilot-derived (MC-only design feasibility, this session, frozen here):
+  # informed-subspace injection recovery relative deviation <= 0.35;
+  # uninformed-direction leakage into the informed subspace <= 0.35 x
+  # amplitude.
+  injection_recovery_max_relative: 0.35
+  leakage_max_relative: 0.35
+  null_ensemble_replicates: 200
+  null_improvement_quantile: 0.95
+  gauge_invariance_max_relative_diff: 1.0e-8
+
+# ---------------------------------------------------------------------------
+# Pre-fit applicability / linearity audit (calibration subset, report-first).
+# ---------------------------------------------------------------------------
+applicability:
+  # Frozen linear envelope inherited from the WB33-35 / WB68 injection design:
+  # scaled severity |gamma_k| <= 0.15 per informed mode. Exceeding it freezes
+  # real_data_linearized_model_out_of_support; no correction is produced.
+  max_scaled_mode_amplitude: 0.15
+  hard_fail_on_nonfinite: true
+  # The rebuilt bank must reproduce the frozen DQ adjacent-edge CSV rows
+  # exactly; any mismatch is an implementation hard failure.
+  csv_reproduction_max_abs_diff: 0.0
+
+# ---------------------------------------------------------------------------
+# Candidate solver (one-shot, no iteration, no unconstrained Newton).
+# ---------------------------------------------------------------------------
+solver:
+  method: informed_subspace_wls_plus_gauge_null_space
+  # Real calibration information rank in the frozen identifiable basis at the
+  # frozen rank_tolerance. The solve is restricted to the informed subspace;
+  # uninformed identifiable modes receive a zero update explicitly labelled
+  # not_informed_by_real_data (never "measured zero"). If rank is zero the
+  # campaign freezes real_data_identifiable_information_rank_zero.
+  rank_tolerance: 0.01
+  max_informed_condition: 1.0e12
+  bootstrap_replicates: 50
+  bootstrap_seed: 20260905
+  # Gate E inheritance: WB68 source-stability principal-angle gate.
+  bootstrap_max_direction_angle_deg: 15.0
+
+# ---------------------------------------------------------------------------
+# Held-out primary gates (evaluated only after the candidate is frozen).
+# ---------------------------------------------------------------------------
+held_out_gates:
+  # A: held-out weighted residual norm must improve by more than the MC null
+  # ensemble's 95th-percentile spurious improvement (computed in mc_control,
+  # before calibration). delta_chi2 = chi2(candidate) - chi2(zero) must be
+  # negative and |delta_chi2| > null floor.
+  improvement_uses_null_floor: true
+  # B: run-level consistency. Both primary held-out runs (14975, 14976) must
+  # individually improve (delta_chi2 < 0). Leave-one-run-out over all
+  # sufficient runs (>= split.min_anchor_pairs_for_run_gates anchor pairs):
+  # the remaining held-out delta_chi2 must stay negative for every exclusion.
+  primary_held_out_runs: [14975, 14976]
+  # C: no station-pair x observable cell may worsen by more than the
+  # chi-square fluctuation bound 2*sqrt(2*n_cell). Null control: adjacent
+  # (1,2)/(2,3) frozen CSV edges have exactly zero predicted correction;
+  # their chi2 change must be exactly zero.
+  cell_worsening_bound: two_sigma_chi2_fluctuation
+  # D: gauge invariance. The three legal gauges' held-out predicted
+  # observable corrections must agree within the inherited WB77 tolerance.
+  gauge_invariance_max_relative_diff: 1.0e-8
+  # F: DQ slices. Post-correction isolation-channel (residual_y_mm,
+  # residual_ty) run medians must not move away from zero relative to
+  # pre-correction, and no sufficient run may newly cross the frozen entry-52
+  # detector-condition alarm |robust_z| > 5 against the frozen 14973/14974
+  # reference scale (median -3.80966 mm, robust scale 6.71221 mm for dy;
+  # median -0.001780, scale 0.005244 for rx; n=390).
+  frozen_reference_dy_median_mm: -3.80966
+  frozen_reference_dy_robust_scale_mm: 6.71221
+  frozen_reference_rx_median: -0.001780
+  frozen_reference_rx_robust_scale: 0.005244
+  robust_z_detector_condition: 5.0
+  # G: correction amplitude within the frozen linear envelope (same gate as
+  # applicability.max_scaled_mode_amplitude, applied to the frozen candidate).
+
+# ---------------------------------------------------------------------------
+# Decision tree (pre-registered). Exactly one terminal string is frozen.
+# ---------------------------------------------------------------------------
+decision_tree:
+  pass: gauge_fixed_real_data_candidate_diagnostic_pass
+  failures:
+    tracker_information_regression_failed: tracker information SHA/regression mismatch with frozen WB68/77 basis
+    real_data_population_provenance_mismatch: frozen population inventory does not match config expectations
+    real_data_observable_model_transfer_failed: MC control injection/null/gauge-invariance gates fail
+    real_data_diagnostic_inconclusive: non-finite/corrupt calibration data or bank/CSV reproduction mismatch
+    real_data_identifiable_information_rank_zero: real calibration information has no informed identifiable direction
+    real_data_linearized_model_out_of_support: candidate amplitude exceeds the frozen linear envelope
+    real_data_gauge_fixed_candidate_not_source_stable: solver gates or bootstrap stability fail
+    real_data_gauge_invariance_failed: legal gauges predict different held-out observables beyond tolerance
+    real_data_heldout_observable_not_improved: held-out gates A/B/C/F fail
+
+# ---------------------------------------------------------------------------
+# Frozen prohibitions and terminal permissions.
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+external_constraint_ingest_authorized: false
+eligible_external_physical_constraints: []
+do_not_switch_primary_gauge_after_real_data: true
+do_not_repick_split: true
+do_not_select_events_by_residual: true
+do_not_tune_on_held_out: true
+do_not_generate_fd_probes: true
+do_not_run_newton: true
+do_not_write_payload: true
+do_not_restack_2024_r0022_collision_like: true
+do_not_use_external_evidence_as_prior: true
+do_not_reopen_identifiability_rescue: true
+do_not_redefine_identifiable_basis_on_real_data: true
+output_parameter_naming: reconstruction_gauge_representative
+forbidden_output_language:
+  - measured station position
+  - true station position
+  - physical C_dx = 0
+
+output_root: outputs/gauge_fixed_real_data_alignment_diagnostic_v1
