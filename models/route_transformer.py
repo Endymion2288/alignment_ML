@@ -45,6 +45,17 @@ class RouteAwareTransformerConfig:
     route_pair_embedding_dim: int = 16
     route_dropout: float = 0.10
     use_relative_route_representation: bool = False
+    # Route representation mode.  "absolute" (default / historical V2/V4/V5A)
+    # consumes the absolute/global node latent route representation: the
+    # query-pooled route token, the four endpoint latent states s0..s3, the
+    # learned adjacent-edge projections, the station-pair embeddings, and the
+    # base edge logits.  "physical_pair_relative" (Workbook-74 Physical
+    # Pair-Relative Route Encoder) drops the absolute node latent entirely and
+    # consumes only the Workbook-73 R_phys tensor: the three adjacent physical
+    # pair-relative edge observables (3 x edge_feature_dim) plus the frozen
+    # Workbook-64 production edge logits L01/L12/L23 (3).  It never reads
+    # s0..s3, the route query, the learned edge projection, or pair embeddings.
+    route_representation_mode: str = "absolute"
     # Historical V2 checkpoints omit this key and must keep the original
     # route-query -> route_edge_correction path.  RelativeRoute V4 YAML sets
     # the additive complete-route correction explicitly.
@@ -112,27 +123,41 @@ class RouteAwareSparseTransformer(nn.Module):
             raise ValueError("route hidden and pair-embedding dimensions must be positive")
         if not 0.0 <= config.route_dropout < 1.0:
             raise ValueError("route dropout must be in [0, 1)")
+        route_mode = str(config.route_representation_mode)
+        if route_mode not in ("absolute", "physical_pair_relative"):
+            raise ValueError(
+                "route_representation_mode must be 'absolute' or 'physical_pair_relative', "
+                f"got {route_mode!r}"
+            )
         # Constructing the V1 backbone also enforces d=128, 8 heads, 4 blocks,
         # and the 128 -> 256 -> 128 FFN contract.
         self.config = config
         self.backbone = GeometryAwareSparseTransformer(config.backbone_config())
-        self.route_query = nn.Parameter(torch.empty(config.d_model))
-        self.route_node_key = nn.Linear(config.d_model, config.d_model, bias=False)
-        self.route_edge_projection = nn.Sequential(
-            nn.Linear(config.edge_feature_dim, config.d_model),
-            nn.GELU(),
-        )
-        self.route_pair_embedding = nn.Embedding(
-            config.num_station_pairs, config.route_pair_embedding_dim
-        )
-        route_input_dim = (
-            # Query-pooled route token + the ordered four endpoint states.
-            config.d_model + 4 * config.d_model
-            # Ordered adjacent physical edge representations and pair IDs.
-            + 3 * config.d_model + 3 * config.route_pair_embedding_dim
-            # Preserve the backbone's local adjacent edge evidence.
-            + 3
-        )
+        if route_mode == "physical_pair_relative":
+            # Physical Pair-Relative Route Encoder: the route input is exactly
+            # the Workbook-73 R_phys tensor (3 adjacent physical pair-relative
+            # edge observables + 3 frozen edge logits).  No absolute node
+            # latent, route query, learned edge projection, or pair embedding
+            # is constructed, so the trainable head cannot consume them.
+            route_input_dim = 3 * config.edge_feature_dim + 3
+        else:
+            self.route_query = nn.Parameter(torch.empty(config.d_model))
+            self.route_node_key = nn.Linear(config.d_model, config.d_model, bias=False)
+            self.route_edge_projection = nn.Sequential(
+                nn.Linear(config.edge_feature_dim, config.d_model),
+                nn.GELU(),
+            )
+            self.route_pair_embedding = nn.Embedding(
+                config.num_station_pairs, config.route_pair_embedding_dim
+            )
+            route_input_dim = (
+                # Query-pooled route token + the ordered four endpoint states.
+                config.d_model + 4 * config.d_model
+                # Ordered adjacent physical edge representations and pair IDs.
+                + 3 * config.d_model + 3 * config.route_pair_embedding_dim
+                # Preserve the backbone's local adjacent edge evidence.
+                + 3
+            )
         self.route_encoder = nn.Sequential(
             nn.Linear(route_input_dim, config.route_hidden_dim),
             nn.GELU(),
@@ -156,7 +181,8 @@ class RouteAwareSparseTransformer(nn.Module):
             raise RuntimeError("route correction terminal must be linear")
         nn.init.zeros_(terminal.weight)
         nn.init.zeros_(terminal.bias)
-        nn.init.normal_(self.route_query, mean=0.0, std=config.d_model**-0.5)
+        if route_mode != "physical_pair_relative":
+            nn.init.normal_(self.route_query, mean=0.0, std=config.d_model**-0.5)
 
     def _validate_routes(
         self,
@@ -213,8 +239,18 @@ class RouteAwareSparseTransformer(nn.Module):
         score_edge_station_pair: torch.Tensor,
         route_node_indices: torch.Tensor,
         route_score_edge_indices: torch.Tensor,
+        production_edge_logits: torch.Tensor | None = None,
     ) -> RouteAwareTransformerOutput:
-        """Return route-aware adjacent logits without changing candidate rows."""
+        """Return route-aware adjacent logits without changing candidate rows.
+
+        ``production_edge_logits`` is only consulted by the
+        ``physical_pair_relative`` route representation: it is the frozen
+        Workbook-64 production adjacent-edge logits (L01/L12/L23), supplied by
+        the ``RelativeRouteV4Inference`` wrapper so the route head consumes the
+        frozen production edge scorer rather than re-estimating adjacent edge
+        logits.  When ``None`` (standalone forward) the backbone's own base
+        edge logits are used as a fallback.
+        """
         node_states = self.backbone.encode_node_states(
             node_features,
             station_ids,
@@ -248,34 +284,57 @@ class RouteAwareSparseTransformer(nn.Module):
                 delta_route_logits=base_edge_logits.new_empty((0,)),
             )
 
-        route_nodes = node_states[route_node_indices]
-        if self.config.use_relative_route_representation:
-            # Anchor 4-station route endpoint states to Station 0 in latent space
-            ref_node = route_nodes[:, 0:1]
-            diff_nodes = route_nodes[:, 1:] - ref_node
-            rel_route_nodes = torch.cat([ref_node, diff_nodes], dim=1)
-            route_node_features = rel_route_nodes.reshape(routes, -1)
-        else:
-            route_node_features = route_nodes.reshape(routes, -1)
-
-        node_keys = self.route_node_key(route_nodes)
-        query_logits = (node_keys * self.route_query[None, None, :]).sum(dim=-1)
-        query_weights = torch.softmax(query_logits / (self.config.d_model**0.5), dim=1)
-        pooled_nodes = torch.sum(route_nodes * query_weights[:, :, None], dim=1)
-        route_edge_features = score_edge_features[route_score_edge_indices]
-        route_edge_states = self.route_edge_projection(route_edge_features)
-        route_pair_states = self.route_pair_embedding(score_edge_station_pair[route_score_edge_indices])
+        # The additive edge-correction path always keys on the backbone's own
+        # base edge logits (frozen Workbook-64 weights), independent of the
+        # route representation mode.
         route_base_logits = base_edge_logits[route_score_edge_indices]
-        route_input = torch.cat(
-            (
-                pooled_nodes,
-                route_node_features,
-                route_edge_states.reshape(routes, -1),
-                route_pair_states.reshape(routes, -1),
-                route_base_logits,
-            ),
-            dim=-1,
-        )
+        if self.config.route_representation_mode == "physical_pair_relative":
+            # Workbook-74 Physical Pair-Relative Route Encoder.  The route input
+            # is exactly the Workbook-73 R_phys tensor: the three adjacent
+            # physical pair-relative edge observables (the standardized features
+            # entering the frozen edge scorer) plus the frozen Workbook-64
+            # production edge logits L01/L12/L23.  No absolute node latent,
+            # route query, learned edge projection, or pair embedding is read.
+            route_edge_observables = score_edge_features[route_score_edge_indices]
+            route_edge_logits_src = (
+                production_edge_logits if production_edge_logits is not None else base_edge_logits
+            )
+            route_production_logits = route_edge_logits_src[route_score_edge_indices]
+            route_input = torch.cat(
+                (
+                    route_edge_observables.reshape(routes, -1),
+                    route_production_logits,
+                ),
+                dim=-1,
+            )
+        else:
+            route_nodes = node_states[route_node_indices]
+            if self.config.use_relative_route_representation:
+                # Anchor 4-station route endpoint states to Station 0 in latent space
+                ref_node = route_nodes[:, 0:1]
+                diff_nodes = route_nodes[:, 1:] - ref_node
+                rel_route_nodes = torch.cat([ref_node, diff_nodes], dim=1)
+                route_node_features = rel_route_nodes.reshape(routes, -1)
+            else:
+                route_node_features = route_nodes.reshape(routes, -1)
+
+            node_keys = self.route_node_key(route_nodes)
+            query_logits = (node_keys * self.route_query[None, None, :]).sum(dim=-1)
+            query_weights = torch.softmax(query_logits / (self.config.d_model**0.5), dim=1)
+            pooled_nodes = torch.sum(route_nodes * query_weights[:, :, None], dim=1)
+            route_edge_features = score_edge_features[route_score_edge_indices]
+            route_edge_states = self.route_edge_projection(route_edge_features)
+            route_pair_states = self.route_pair_embedding(score_edge_station_pair[route_score_edge_indices])
+            route_input = torch.cat(
+                (
+                    pooled_nodes,
+                    route_node_features,
+                    route_edge_states.reshape(routes, -1),
+                    route_pair_states.reshape(routes, -1),
+                    route_base_logits,
+                ),
+                dim=-1,
+            )
         delta_route_logits = self.route_score(self.route_encoder(route_input)).squeeze(-1)
         # Workbook-72 V5A bounded residual: squash the raw head output onto the
         # solver-semantic O(1) scale before it enters L_corrected.  Applied here
@@ -433,6 +492,12 @@ class RelativeRouteV4Inference(nn.Module):
             score_edge_station_pair,
             route_node_indices,
             route_score_edge_indices,
+            # Frozen Workbook-64 production adjacent-edge logits.  Only the
+            # physical_pair_relative route representation consumes these (as
+            # L01/L12/L23); the absolute/relative modes ignore them.  They are
+            # detached (frozen_out is computed under no_grad), so they enter
+            # the route head as frozen input features, not as a gradient path.
+            production_edge_logits=frozen_out.edge_logits,
         )
         delta = train_out.delta_route_logits
         if delta is None:

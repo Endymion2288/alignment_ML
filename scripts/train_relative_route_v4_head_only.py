@@ -355,9 +355,29 @@ def main() -> None:
 
     trainable_count = sum(p.numel() for p in trainable.parameters() if p.requires_grad)
     frozen_count = sum(p.numel() for p in trainable.parameters() if not p.requires_grad)
+    # The trainable route-head parameter count depends on the route
+    # representation mode.  The historical absolute / Station-0-relative head
+    # consumes the 1075-dim absolute route input (172,513 trainable params).
+    # The Workbook-74 physical_pair_relative head consumes only the 36-dim
+    # R_phys tensor and drops the route query / node key / edge projection /
+    # pair embedding, so it is naturally smaller (21,377 trainable params).
+    # This is a structural property of the hypothesis, not a contract breach;
+    # the frozen Workbook-64 backbone + edge path (614,947) is unchanged.
+    route_mode = str(arch_cfg.get("route_representation_mode", "absolute"))
+    EXPECTED_TRAINABLE_PARAMS = {
+        "absolute": 172513,
+        "physical_pair_relative": 21377,
+    }
+    if route_mode not in EXPECTED_TRAINABLE_PARAMS:
+        raise ValueError(f"Unknown route_representation_mode for parameter audit: {route_mode}")
+    expected_trainable = EXPECTED_TRAINABLE_PARAMS[route_mode]
     print(f"Parameter Audit: Trainable = {trainable_count:,} | Frozen = {frozen_count:,}", flush=True)
-    if trainable_count != 172513:
-        raise ValueError(f"Expected 172,513 trainable parameters, got {trainable_count}")
+    print(f"Route representation mode: {route_mode} (expected trainable = {expected_trainable:,})", flush=True)
+    if trainable_count != expected_trainable:
+        raise ValueError(
+            f"Expected {expected_trainable:,} trainable parameters for mode {route_mode}, "
+            f"got {trainable_count}"
+        )
     if frozen_count != 614947:
         raise ValueError(f"Expected 614,947 frozen parameters, got {frozen_count}")
 
