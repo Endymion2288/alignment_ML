@@ -37,16 +37,21 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from collections import Counter as _Counter
+
+from evaluation.route_metrics import (
+    RouteMetrics,
+    _unique_truth_by_station,
+    assess_adjacent_route_assignment,
+)
 from scripts.audit_four_station_blind_failure_localization import PAYLOADS, _namespace_map
 from scripts.audit_relative_route_v4_generalization import (
     LOGIT_CLIP,
     _load_split,
     _predict_route_details,
-    _produce_truth_rows,
 )
 from scripts.evaluate_relative_route_v4_development import (
     _assert_identity_platt,
-    _evaluate_arm,
     _filter_route_maps,
     _filter_sets,
     _load_v2,
@@ -57,7 +62,18 @@ from scripts.evaluate_relative_route_v4_development import (
 )
 from scripts.run_frozen_association_backbone import _sha256
 from scripts.run_refit_multidof_closure import _json_ready
-from scripts.summarize_four_station_frozen_association import _raw_candidate_audit
+from training.dustbin_aware_route_margin import PACKING_MARGIN
+from training.route_assignment import (
+    assign_adjacent_route_sets,
+    prepare_route_assignment_context,
+)
+from training.route_operating_audit import (
+    STATION_PATH,
+    audit_event_truth_chains,
+    pair_tables_from_sets,
+)
+from training.route_reduction_audit import attach_reduction_audit
+from training.solver_hard_negative_audit import production_hypotheses
 from training.route_aware_transformer import load_relative_route_v4_head_only_artifact
 from training.source_transfer_cv import (
     FAMILY1_DSID_PAIR,
@@ -138,24 +154,84 @@ def _load_arm_flexible(
     }
 
 
-def _pooled_route_metrics(result: Mapping[str, Any]) -> dict[str, object]:
-    """Pool the per-payload route metrics into efficiency / purity / fake."""
-    pm = result.get("payload_metrics") or {}
-    truth = sum(int(m.get("complete_truth_chains", 0)) for m in pm.values())
-    correct = sum(int(m.get("correct_complete_routes", 0)) for m in pm.values())
-    sel_complete = sum(int(m.get("selected_complete_routes", 0)) for m in pm.values())
-    sel_routes = sum(int(m.get("selected_routes", 0)) for m in pm.values())
-    efficiency = (correct / truth) if truth else None
-    purity = (correct / sel_complete) if sel_complete else None
-    fake = sel_routes - correct
+def _evaluate_arm_single_pass(bundle, calibrated_scores, route_maps, config):
+    """Run the frozen unit-capacity solver ONCE per arm and return both the
+    truth rows (for C/D/selected, transitions, catastrophic destruction) and the
+    pooled route metrics (efficiency / purity / fake).
+
+    This is a lean fusion of the Workbook-70 ``_evaluate_arm`` and Workbook-71
+    ``_produce_truth_rows``: those each ran the solver independently (and
+    ``_evaluate_arm`` additionally ran it via
+    ``evaluate_adjacent_route_assignment_sets``), i.e. 3 solver passes per arm.
+    The solver is deterministic, so a single pass yields identical assignments.
+    """
+    rows_all: list[dict[str, object]] = []
+    metrics = RouteMetrics()
+    for payload_id in PAYLOADS:
+        sets, values = _filter_sets(bundle.adjacent_sets, calibrated_scores, payload_id)
+        maps = _filter_route_maps(route_maps, payload_id)
+        context = prepare_route_assignment_context(sets, values, 15, config.station_path)
+        assigned = assign_adjacent_route_sets(
+            sets, values, config, 15, context=context, complete_route_scores_by_event=maps
+        )
+        tables = pair_tables_from_sets(sets, values, values)
+        assigned_by_key = {item.key: item for item in assigned}
+        pending = []
+        event_truth_counts: _Counter = _Counter()
+        for group in context.groups:
+            event = group.event
+            item = assigned_by_key[group.key]
+            pair_tables = tables[group.key]
+            _, unique_by_index = _unique_truth_by_station(event, STATION_PATH)
+            query_map = None if maps is None else maps[group.key]
+            hypotheses = production_hypotheses(
+                event, group.station_matrices, config, complete_route_scores=query_map
+            )
+            truth_rows = audit_event_truth_chains(
+                event, group.station_matrices, pair_tables, config, item.result,
+                complete_route_scores=query_map,
+            )
+            metrics.add(
+                assess_adjacent_route_assignment(
+                    event, item.result, group.station_matrices,
+                    config.station_path, config.score_threshold_by_pair,
+                )
+            )
+            event_truth_counts[group.key] += len(truth_rows)
+            for row in truth_rows:
+                row["sample_id"] = group.key[0]
+                row["payload_id"] = group.key[1]
+                row["run_id"] = group.key[2]
+                row["event_id"] = group.key[3]
+                pending.append((group.key, row, event, unique_by_index, pair_tables, hypotheses, item.result.routes))
+        for event_key, row, event, unique_by_index, pair_tables, hypotheses, selected_routes in pending:
+            attached = attach_reduction_audit(
+                row,
+                event=event,
+                unique_by_index=unique_by_index,
+                pair_tables=pair_tables,
+                hypotheses=hypotheses,
+                selected_routes=selected_routes,
+                n_complete_truth_in_event=int(event_truth_counts[event_key]),
+                margin=float(PACKING_MARGIN),
+            )
+            rows_all.append(attached)
+    return rows_all, metrics
+
+
+def _metrics_from_routemetrics(metrics: "RouteMetrics") -> dict[str, object]:
+    truth = int(metrics.complete_truth_chains)
+    correct = int(metrics.correct_complete_routes)
+    sel_complete = int(metrics.selected_complete_routes)
+    sel_routes = int(metrics.selected_routes)
     return {
         "complete_truth_chains": truth,
         "correct_complete_routes": correct,
         "selected_complete_routes": sel_complete,
         "selected_routes": sel_routes,
-        "efficiency": efficiency,
-        "purity": purity,
-        "fake_selected_routes": int(fake),
+        "efficiency": (correct / truth) if truth else None,
+        "purity": (correct / sel_complete) if sel_complete else None,
+        "fake_selected_routes": int(sel_routes - correct),
     }
 
 
@@ -326,13 +402,6 @@ def main() -> None:
             )
         print(f"  held-out graphs={len(bundle.graphs)} routes={sum(t.size for t in tables.values())}", flush=True)
 
-        payload_samples = {
-            payload_id: [s for s in samples if str(s.payload_id) == payload_id] for payload_id in PAYLOADS
-        }
-        raw_candidate_by_payload = {
-            payload_id: _raw_candidate_audit(payload_samples[payload_id]) for payload_id in PAYLOADS
-        }
-
         arms = {
             "w64": _load_arm_flexible("w64", w64_root=w64_root, head_checkpoint=None, device=device),
             "control": _load_arm_flexible("control", w64_root=w64_root, head_checkpoint=control_ckpt, device=device),
@@ -346,11 +415,7 @@ def main() -> None:
         arm_details: dict[str, Any] = {}
         for name, loaded in arms.items():
             raw, calibrated, route_maps = _score_arm(loaded, bundle, device, args.batch_size)
-            result = _evaluate_arm(
-                loaded, bundle, raw, calibrated, route_maps, config,
-                raw_candidate_by_payload, payload_samples,
-            )
-            rows = _produce_truth_rows(bundle, calibrated, route_maps, config)
+            rows, metrics = _evaluate_arm_single_pass(bundle, calibrated, route_maps, config)
             details = _predict_route_details(
                 loaded["model"], bundle, tables,
                 loaded["artifact"].node_standardizer, loaded["artifact"].edge_standardizer,
@@ -358,11 +423,11 @@ def main() -> None:
             )
             arm_rows[name] = rows
             arm_details[name] = details
-            cd = result["cd_pooled"]
+            cd = cd_counts(rows)
             arm_metrics[name] = {
                 "checkpoint_sha256": loaded["checkpoint_sha256"],
                 "cd_pooled": cd,
-                "route_metrics": _pooled_route_metrics(result),
+                "route_metrics": _metrics_from_routemetrics(metrics),
             }
             print(
                 f"  {name}: C={cd['C']} D={cd['D']} selected={cd['selected']} "
