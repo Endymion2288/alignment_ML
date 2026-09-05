@@ -175,9 +175,7 @@ def _stage_evaluate(config: dict) -> dict:
 
 def _stage_decide(config: dict) -> dict:
     root = _output_root(config)
-    regression = _read_json(root / "tracker_information_regression.json")[
-        "tracker_information_regression"
-    ]
+    regression = _read_json(root / "tracker_information_regression.json")
     control_path = root / "mc_control.json"
     control = _read_json(control_path)["mc_control"] if control_path.is_file() else None
     audit_path = root / "applicability_audit.json"

@@ -163,6 +163,14 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
         raise ValueError("severity scales must stay (5,5,5,60,60,60,0.12)")
     if float(config["tracker_information"]["rank_tolerance"]) != 0.01:
         raise ValueError("rank_tolerance must remain the frozen 0.01")
+    if str(corpus["kind"]) != "physical_central_finite_difference":
+        raise ValueError("tracker information must stay the frozen physical FD corpus")
+    if float(corpus["min_truth_match_fraction"]) != 0.99:
+        raise ValueError("min_truth_match_fraction must stay 0.99")
+    if int(corpus["q_over_p_mode"]) != 0:
+        raise ValueError("q_over_p_mode must stay 0")
+    if str(corpus["anchor_point"]) != "iteration_00_reference":
+        raise ValueError("anchor_point must stay iteration_00_reference")
 
     gauges = config["gauges"]
     if str(gauges["primary"]) != "minimum_norm_scaled_gauge":

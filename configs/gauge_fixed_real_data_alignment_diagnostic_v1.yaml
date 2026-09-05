@@ -41,18 +41,26 @@ inheritance:
 # Tracker information / parameter contract: identical to WB77 (frozen WB68).
 # ---------------------------------------------------------------------------
 tracker_information:
+  # The jacobian_corpus block mirrors the frozen WB77 tracker_information
+  # contract verbatim (same iteration manifest, anchor, truth-match fraction,
+  # q/p mode, splits, parameter order, source IDs).
   jacobian_corpus:
-    physical_root: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1
+    kind: physical_central_finite_difference
+    iteration_manifest: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/iteration_manifest.json
+    anchor_point: iteration_00_reference
+    min_truth_match_fraction: 0.99
+    q_over_p_mode: 0
+    splits: [train, validation]
     parameter_names: [ift_dx_mm, ift_dy_mm, ift_dz_mm, ift_rx_mrad, ift_ry_mrad, ift_rz_mrad, C_dx]
     parameter_scales: [5.0, 5.0, 5.0, 60.0, 60.0, 60.0, 0.12]
-    sources:
+    source_ids:
       - mc24_100043_00200_00299
       - mc24_100043_00600_00699
-      - mc24_100044_00200_00299
-      - mc24_100044_00600_00699
-      - mc24_100045_00200_00299
-      - mc24_100045_00600_00699
-      - mc24_100046_00200_00299
+      - mc24_100044_00300_00399
+      - mc24_100047_00000_00049
+      - mc24_100047_00150_00199
+      - mc24_100048_00000_00049
+      - mc24_100048_00150_00199
   rank_tolerance: 0.01
   rcond: 1.0e-10
   # The frozen WB68/77 identifiable/null basis is reused as-is. No re-SVD on
