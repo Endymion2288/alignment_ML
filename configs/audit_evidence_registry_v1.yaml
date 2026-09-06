@@ -1,0 +1,143 @@
+# T00 — Evidence / reproducibility cleanup.
+# Reconciles the master-audit baseline with the current tree.
+# Does NOT backfill workbooks 75–87 into the 2026-09-05/06 master audit.
+# Does NOT reread sealed tests or rewrite frozen negative results.
+
+schema_version: master-audit-reconciliation-v1
+task: T00
+created_utc: "2026-09-06T14:00:00Z"
+audit_baseline_sha: 0c8a6ca34c6c8b4f505dc153dd0ca8cc7949ce56
+do_not_backfill_post_audit_into_master_audit: true
+do_not_reread_sealed_test: true
+do_not_rewrite_frozen_negatives: true
+geometry_write_allowed: false
+
+pipeline_entries:
+  inference: frozen V2 association / route packing (control only)
+  paired_response_analysis: same-event FD residual WLS (diagnostic, not deployable)
+  real_data_monitoring: residual/DQ only; geometry_write_allowed=false
+
+evidence:
+  - id: E01
+    kind: paired_response_analysis
+    relative_path: outputs/mc24_muon_fasernu_5events_segment_refit_station3_dx1mm_closure/closure.json
+    expected_sha256: 38d9a6d462a79397824b10fd3d9945576c720b85f0bc34e971b01486304505b4
+    lineage: audit_baseline
+    claim: S3 +1 mm rigid translation response
+  - id: E02
+    kind: paired_response_analysis
+    relative_path: outputs/mc24_multidof_ift_iteration01_route_selected_update_validation_physical_edge_deduplicated_v1/route_selected_update.json
+    expected_sha256: e16849a2f47a456318730384ee6752095fed5381cc5970560528b7dad587e437
+    lineage: audit_baseline
+    claim: paired-reference WLS increment
+  - id: E02_arrays
+    kind: paired_response_analysis
+    relative_path: outputs/mc24_multidof_ift_iteration01_route_selected_update_validation_physical_edge_deduplicated_v1/route_selected_update_arrays.npz
+    expected_sha256: 322959624c7a5e7cb53007e04ca7a5b9131d348c53b2e9a138c9956e608c3451
+    lineage: audit_baseline
+    claim: paired-vs-zero-target diagnostic arrays
+  - id: E03
+    kind: inference
+    relative_path: outputs/mc24_v3_expanded_trainval_v3_route_validation_v1/validation_run_contract.json
+    expected_sha256: ed438a2ce2ef5cec7ee131b3f5fd02c0654222dc4e7f6bde2c8459ad35470210
+    lineage: audit_baseline
+    claim: V3 validation contract (frozen negative)
+    frozen_negative: true
+  - id: E04
+    kind: inference
+    relative_path: outputs/mc24_v3_expanded_trainval_v3_route_validation_v1/validation_selected_operating_point.json
+    expected_sha256: 77fb5e16b90b9b9941f9198ae25ee6425deabde6083abb2447a68c330c3cfe50
+    lineage: audit_baseline
+    claim: V3 selected operating point
+    frozen_negative: true
+  - id: E05
+    kind: paired_response_analysis
+    relative_path: outputs/rigid_station_only_tracker_alignment_identifiability_v1/identifiable_basis.json
+    expected_sha256: f8a8a92b02e99c17151b5c7a8918253df823ddd79e385a340fcd8dfae7664229
+    lineage: audit_baseline
+    claim: workbook-73 rigid 5DoF operational rank
+    frozen_negative: true
+    do_not_reinterpret_as_structural_null: true
+  - id: E06
+    kind: paired_response_analysis
+    relative_path: outputs/tracker_only_identifiable_subspace_three_arm_closure_v1/identifiable_basis.json
+    expected_sha256: 367773837eda2d8cb30ee4b0a6f75e3fb49530315e9680e7c964de9bd399e645
+    lineage: audit_baseline
+    claim: workbook-68 identifiable subspace
+    frozen_negative: true
+    bootstrap_semantics: historical_boolean_mask_unverified
+  - id: E07
+    kind: paired_response_analysis
+    relative_path: outputs/cluster_local_observable_cross_run_identifiability_v1/cross_run_subspace.json
+    expected_sha256: dcabec2805652d6d62631cbf3250bb1e11cf5449672e6ec9e95d25fdd7f7e9fd
+    lineage: audit_baseline
+    claim: cluster-local cross-run subspace
+    do_not_treat_as_field_aware_global_alignment: true
+  - id: E08
+    kind: paired_response_analysis
+    relative_path: outputs/cross_source_stable_core_identifiable_subspace_v1/independent_validation.json
+    expected_sha256: 12df6f42209f1069f8e72c6f4d857e108a615dc2e1d6f3dd051f08688a157da0
+    lineage: audit_baseline
+    claim: workbook-69 independent 8/11 gate
+    frozen_negative: true
+  - id: E09
+    kind: real_data_monitoring
+    relative_path: outputs/operating_protocol_v1_final_real_data_closure_v1/reproducibility_manifest.json
+    expected_sha256: 6e93faf9cd32c88979530e2c5df03ab131e880310e92030f6b681aa16465020b
+    lineage: audit_baseline
+    claim: Operating Protocol V1 13-file freeze
+    rehash_manifest_files: true
+
+findings:
+  F01_bootstrap_boolean_mask: still_open
+  F02_paired_reference_oracle: still_open
+  F03_relative_rank_as_structural_null: still_open_do_not_reinterpret
+  F04_cluster_local_chart: still_open
+  F05_covariance_transport: post_audit_investigated_not_a_pass
+  F06_non_spd_chi2: still_open
+  F07_wide_svd_null: still_open
+  F09_overwriteable_reports: still_open
+
+post_audit_lineage:
+  note: >-
+    Workbooks 75–87 exist on the current tree and must be recorded as lineage.
+    They are NOT evidence of the 2026-09-05/06 master audit and must not be
+    backfilled into PROJECT_MASTER_AUDIT.md.
+  entries:
+    - workbook: 81
+      decision: faseracts_propagated_covariance_not_calibrated
+      mechanism: overestimated_transported_fit_covariance
+      backfill_into_master_audit: false
+    - workbook: 82
+      decision: existing_mc_real_wide_ty_support_validated
+      backfill_into_master_audit: false
+    - workbook: 83
+      decision: source_tracklet_fit_covariance_not_calibratable
+      backfill_into_master_audit: false
+    - workbook: 84
+      decision: deterministic_segmentfit_get_state_transform_bug
+      backfill_into_master_audit: false
+    - workbook: 85
+      decision: segmentfit_getstate_repair_insufficient
+      backfill_into_master_audit: false
+    - workbook: 86
+      decision: segmentfit_full_curvilinear_covariance_contract_validated
+      may_satisfy_later: [T11_source_covariance_contract]
+      backfill_into_master_audit: false
+    - workbook: 87
+      decision: faseracts_transport_covariance_not_validated
+      mechanism: q_over_p_uncertainty_semantics
+      frozen_negative: true
+      may_satisfy_later: []
+      backfill_into_master_audit: false
+
+software_provenance_pins:
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  historical_runtime_unverified: true
+  note: >-
+    Calypso/Athena/ACTS pins are copied from later campaign configs. They do
+    not prove the audit-era productions were built from this exact binary.
+
+output_root: outputs/master_audit_reconciliation_v1

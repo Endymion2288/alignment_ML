@@ -6,6 +6,14 @@ refit/Acts chain, and geometry-only chi-square reference were validated before
 the Geometry-Aware Sparse Transformer V1 was trained. Its first sealed test is
 also preserved, including its negative capture-range result.
 
+**Current scientific mainline (2026-09):** the old estimator route
+(fixed residual → WLS + rank screening) is a frozen control, not the future
+path. New work follows `docs/CODE_ROADMAP.md` T00–T41:
+real measurement → field-aware global track likelihood → track nuisance
+profiling. Navigation: `docs/PROJECT_MASTER_AUDIT.md`,
+`docs/CANONICAL_PIPELINE.md`. Frozen V2 / MLP / V3 remain baselines. Do not
+reopen sealed tests, retune rank thresholds, or rewrite frozen negatives.
+
 The canonical input is a flat ROOT tree named `tracklets`, one row per local
 tracklet. It requires explicit station IDs, global `(x, y, z, tx, ty)`,
 the covariance of `[x, y, tx, ty]`, fit quality, hit summary, and MC truth
@@ -36,6 +44,10 @@ dependencies into the LCG user site; subsequent shells only need the `source`
 command above.
 
 ## Current Four-Station Control
+
+> Dated 2026-09-06: the V1/V2/V3, rank-study, and Frozen-V2 association
+> narrative below is historical control. The active plan is
+> `docs/CODE_ROADMAP.md`. Do not treat those campaigns as the next estimator.
 
 MC24 100 GeV FASERnu muons are the current IFT+1+2+3 control sample. The
 repository preserves optional q/p fields, converts field-aware

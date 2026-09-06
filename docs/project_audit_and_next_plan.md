@@ -1,5 +1,11 @@
 # Project Audit and Next-Stage Plan
 
+> **Superseded as the execution plan (2026-09-06).** Keep this file as a
+> historical 2026-08-18 audit. The current scientific mainline and task list
+> are `docs/PROJECT_MASTER_AUDIT.md` and `docs/CODE_ROADMAP.md`. Navigation:
+> `docs/CANONICAL_PIPELINE.md`. Do not backfill later workbooks into the
+> 2026-09-05/06 master audit.
+
 Date: 2026-08-18
 Auditor: AI agent (read-only audit; no new production, training, test-bank generation, or
 architecture development was performed; sealed test event data was never opened — only

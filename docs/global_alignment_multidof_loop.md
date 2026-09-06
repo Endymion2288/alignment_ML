@@ -1,5 +1,10 @@
 # Source-Disjoint Multi-DoF Global Alignment Loop
 
+> **Superseded as the execution plan (2026-09-06).** This document remains a
+> historical physical-control description. Current tasks are
+> `docs/CODE_ROADMAP.md`. Do not reopen rank-rescue or Frozen-V2 deployment
+> from this page.
+
 ## Scope
 
 This is the physical control path for FASER global association and alignment.

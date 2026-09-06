@@ -4,6 +4,12 @@
 refit/Acts 链路和纯几何 chi-square 基线完成验证后，才训练 Geometry-Aware Sparse
 Transformer V1；其第一次封存 test 及未扩大 capture range 的负结果也已保留。
 
+**当前科学主线（2026-09）：** 旧 estimator 路线（固定 residual → WLS + rank
+筛选）只作冻结控制，不是后续路径。新工作按 `docs/CODE_ROADMAP.md` T00–T41：
+真实测量 → 含场全局 track likelihood → 轨迹 nuisance 剖面化。导航见
+`docs/PROJECT_MASTER_AUDIT.md`、`docs/CANONICAL_PIPELINE_cn.md`。Frozen V2 /
+MLP / V3 仍是 baseline。不要打开 sealed test、改 rank 门或改写冻结负结果。
+
 canonical 输入为名为 `tracklets` 的 flat ROOT tree，每行对应一条 local
 tracklet。它要求显式的 station ID、global `(x, y, z, tx, ty)`、状态
 `[x, y, tx, ty]` 的协方差、拟合质量、hit 摘要，以及监督训练所需的 MC
@@ -49,6 +55,9 @@ baseline override 参数即可使用 YAML 配置。脚本会调用
 时才使用 `--include-truth`；具体契约和当前验证边界见下方链接。
 
 ## 当前四站控制样本
+
+> 2026-09-06：下文 V1/V2/V3、rank study 与 Frozen-V2 association 是历史控制。
+> 现行计划见 `docs/CODE_ROADMAP.md`，不要把这些 campaign 当作下一阶段 estimator。
 
 MC24 100 GeV FASERnu muon 是当前 IFT+1+2+3 控制样本。项目现已保留可选 q/p 字段、
 转换 `FaserActsExtrapolationTool` 的 field-aware pair record、验证固定 truth 的
