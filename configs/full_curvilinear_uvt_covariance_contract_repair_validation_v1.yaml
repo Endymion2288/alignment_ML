@@ -1,0 +1,182 @@
+# Workbook 86 pre-registration:
+# Full CurvilinearUVT Branch Covariance Contract Repair Validation V1.
+#
+# *** THIS IS NOT AN ALIGNMENT TASK. ***
+# Workbook 85 froze `segmentfit_getstate_repair_insufficient` with remaining
+# structure `mean_cyy_inflation_on_large_angle_subset`: the beam-track slot
+# map loc1=-y, loc2=+x restores typical-tracklet closure (median chi2 ~ 0.83)
+# but MEAN C_yy is inflated by |t.z|<0.99 tracks.  This campaign asks whether
+# replacing that beam approximation with the FULL Athena CurvilinearUVT
+# (both |t.z| branches) restores source-level covariance closure.
+#
+# Repair scope is CLOSED:
+#   1. full CurvilinearUVT slot map from (curvU, curvV) for EVERY direction
+#   2. d phi/d tx = -ty/r^2  (same sign correction as WB85)
+# Forbidden: scale factors, chi2 tuning, outlier / angle-based rejection,
+# residual-based correction, station-dependent calibration.
+#
+# Same WB83 Stage A split, gates, truth, residual-blind closure.
+# Compares baseline vs WB85 beam repair vs WB86 full CurvilinearUVT repair.
+# Reports |t.z|<0.99 and |t.z|>=0.99 subsets separately.
+
+schema_version: full-curvilinear-uvt-covariance-contract-repair-validation-v1
+workbook: 86
+created_utc: "2026-09-06T10:00:00Z"
+
+inheritance:
+  workbook_81_config: configs/faseracts_propagated_covariance_provenance_closure_v1.yaml
+  workbook_81_config_sha256: 5a13b0cc7273546ebbee4268a853c32c527a68fd263eb82483f3d6e581d5f2b9
+  workbook_81_output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
+  workbook_81_artifact_sha256:
+    propagated_covariance_decision.json: fd605f0ea93dd239a06c4ae8f14a619e1735709963d657b4c9a68575e9db96c2
+    campaign_summary.json: 97a92006163770ee3986a992813b3abb2a58843f7953f25134de1f8412645a4f
+    closure.json: 27ac8820d5e5dc455d63e08e4e037ecbb17847fedba20ca6771c484397e41cf7
+  workbook_81_frozen_decision: faseracts_propagated_covariance_not_calibrated
+  workbook_81_frozen_mechanism: overestimated_transported_fit_covariance
+  workbook_82_config: configs/wide_ty_real_support_matched_mc_coverage_feasibility_v1.yaml
+  workbook_82_config_sha256: b4417b4d9253050c417277641196e0434686a3b03f8bfded663d67b50fd1fe02
+  workbook_82_output_root: outputs/wide_ty_real_support_matched_mc_coverage_feasibility_v1
+  workbook_82_artifact_sha256:
+    wide_ty_mc_support_decision.json: e5386b618e964ad51d03b37b0b19846f9fe0814094ff21d7846fe59d7534cb46
+    campaign_summary.json: 0ba7ed82dd349159f4a1418c23d594e2249083fa0f091153ceda089fdb4d305c
+  workbook_82_frozen_decision: existing_mc_real_wide_ty_support_validated
+  workbook_83_config: configs/propagated_covariance_upstream_repair_mc_validation_v1.yaml
+  workbook_83_config_sha256: 398e78be8e41063062899889ef9e2a2f30afc3c63681631c08b097592d6cdbdd
+  workbook_83_output_root: outputs/propagated_covariance_upstream_repair_mc_validation_v1
+  workbook_83_artifact_sha256:
+    propagated_covariance_upstream_repair_decision.json: eeb7759d835410cc2aefc651923d7e86e7962859d47d37df5f5c6f3b9cbdbd4c
+    campaign_summary.json: 5709877e305c4bb104f358c7b39adf63ccc4f1ab7b9777017ac5a6637929c75b
+    source_closure.json: a9ea84226061b84cf4c02910f37ae308c0bb5f1ebcf0e9e0cc818f6afaf454d6
+  workbook_83_frozen_decision: source_tracklet_fit_covariance_not_calibratable
+  workbook_83_frozen_mechanism: position_xy_swap_with_slope_miscalibration
+  workbook_84_config: configs/segmentfit_covariance_coordinate_contract_audit_v1.yaml
+  workbook_84_config_sha256: 52666fbf6c4d97368d6f18cd12bd0958f7e5a12c9dfb4031a3073f0e2b6aecae
+  workbook_84_output_root: outputs/segmentfit_covariance_coordinate_contract_audit_v1
+  workbook_84_artifact_sha256:
+    segmentfit_covariance_coordinate_contract_decision.json: 30dbad830b4bb88c7272d876565a57ff71942fc4c438068aafe3a68499199f7c
+    campaign_summary.json: af58e29300b756c5706e3599efa6e3f0144c1513cc00e0a4d6f0d18b2432dd4c
+    failure_location_report.json: f748667e3aae9235cd3b1f9e198a7314780366d3717762b028728483b9a1aa0b
+  workbook_84_frozen_decision: deterministic_segmentfit_get_state_transform_bug
+  workbook_84_frozen_mechanism: coordinate_convention_mismatch_and_jacobian_sign_error
+  workbook_85_config: configs/segmentfit_getstate_covariance_transform_repair_validation_v1.yaml
+  workbook_85_config_sha256: 3a465f1850fe029524e9421aa595340d8a1ed94961595335f98d1671fe338ec6
+  workbook_85_output_root: outputs/segmentfit_getstate_covariance_transform_repair_validation_v1
+  workbook_85_artifact_sha256:
+    covariance_repair_decision.json: 32b35bd0cd8183f8a31ca1a8d6b06c2f84f08c2a3c654253bde90ae0f3b6052e
+    campaign_summary.json: cd576dca198a619d26884e061a31b778b95ac5acbd7b41e2cd59891de68c2a05
+    segmentfit_getstate_repair_validation.json: 94062565573156ce18ae52a3498370b655c59cb104d598c98b007a4376043178
+  workbook_85_frozen_decision: segmentfit_getstate_repair_insufficient
+  workbook_85_frozen_mechanism: mean_cyy_inflation_on_large_angle_subset
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  curvilinear_uvt_source: Tracking/TrkEvent/TrkEventPrimitives/TrkEventPrimitives/CurvilinearUVT.icc
+  segment_fit_source: Tracker/TrackerRecAlgs/TrackerSegmentFit/src/SegmentFitAlg.cxx
+  exporter_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  tracklets_file: tracklets.root
+  tracklets_tree: tracklets
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+  station_ids: [0, 1, 2, 3]
+  primary_station_id: 0
+
+truth_reference:
+  join_keys: [run_id, event_id, truth_particle_id]
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: "truth_st{station}_{coord}"
+  truth_momentum_template: "truth_st{station}_{mom}"
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+  physical_acceptance_abs_tx_ty_max: 0.2
+  min_tracklets_per_station: 30
+
+source_closure_metrics:
+  demean_per_station: true
+  whitening: symmetric_eigendecomposition
+  metrics:
+    - mean_z
+    - marginal_rms
+    - cov_z_eigenvalues
+    - chi2_per_ndof
+    - coverage_probability
+    - generalized_eigenvalues
+    - marginal_variance_ratios
+    - position_swap_diagnostic
+    - correlation_orientation
+    - tx_ty_dependence
+    - qoverp_dependence
+  coverage_chi2_quantile_df: 4
+  position_swap_diagnostic: true
+
+source_closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  min_tracklets_per_station: 30
+
+curvilinear_branches:
+  beam_abs_t_dot_z_min: 0.99
+  large_angle_abs_t_dot_z_max: 0.99
+
+repair:
+  allowed:
+    - full_curvilinear_uvt_slot_map_both_branches
+    - getstate_dphi_dtx_sign_correction
+  forbidden:
+    - beam_approximation_loc1_minus_y_loc2_plus_x
+    - covariance_scale_factor
+    - chi2_tuning
+    - outlier_removal
+    - angle_based_rejection
+    - residual_based_correction
+    - station_dependent_calibration
+  reference_position: [0.0, 0.0, 0.0]
+  dz: 0.0
+
+decision_tree:
+  validated: segmentfit_full_curvilinear_covariance_contract_validated
+  not_closed: segmentfit_covariance_model_not_closed_after_coordinate_repair
+
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+held_out_accessed: false
+external_constraint_ingest_authorized: false
+do_not_modify_covariance_with_scale_factors: true
+do_not_add_scale_factors: true
+do_not_tune_parameters_to_chi2: true
+do_not_enter_alignment: true
+do_not_read_real_data_residuals: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_enter_faseracts_propagation: true
+do_not_enter_stage_b: true
+do_not_open_held_out: true
+do_not_reject_by_angle: true
+do_not_drop_outliers: true
+do_not_change_central_prediction_in_covariance_repair: true
+
+output_root: outputs/full_curvilinear_uvt_covariance_contract_repair_validation_v1

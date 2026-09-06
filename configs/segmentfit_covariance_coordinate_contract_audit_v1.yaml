@@ -1,0 +1,118 @@
+schema_version: segmentfit-covariance-coordinate-contract-audit-v1
+workbook: 84
+created_utc: "2026-09-05T00:00:00Z"
+
+# ---------------------------------------------------------------------------
+# Frozen inheritance (SHA-pinned).  WB84 does NOT reopen any closed
+# alignment / identifiability branch.
+# ---------------------------------------------------------------------------
+inheritance:
+  workbook_81_config: configs/faseracts_propagated_covariance_provenance_closure_v1.yaml
+  workbook_81_config_sha256: 5a13b0cc7273546ebbee4268a853c32c527a68fd263eb82483f3d6e581d5f2b9
+  workbook_81_output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
+  workbook_81_artifact_sha256:
+    propagated_covariance_decision.json: fd605f0ea93dd239a06c4ae8f14a619e1735709963d657b4c9a68575e9db96c2
+    campaign_summary.json: 97a92006163770ee3986a992813b3abb2a58843f7953f25134de1f8412645a4f
+    closure.json: 27ac8820d5e5dc455d63e08e4e037ecbb17847fedba20ca6771c484397e41cf7
+  workbook_81_frozen_decision: faseracts_propagated_covariance_not_calibrated
+  workbook_81_frozen_mechanism: overestimated_transported_fit_covariance
+  workbook_82_config: configs/wide_ty_real_support_matched_mc_coverage_feasibility_v1.yaml
+  workbook_82_config_sha256: b4417b4d9253050c417277641196e0434686a3b03f8bfded663d67b50fd1fe02
+  workbook_82_output_root: outputs/wide_ty_real_support_matched_mc_coverage_feasibility_v1
+  workbook_82_artifact_sha256:
+    wide_ty_mc_support_decision.json: e5386b618e964ad51d03b37b0b19846f9fe0814094ff21d7846fe59d7534cb46
+    campaign_summary.json: 0ba7ed82dd349159f4a1418c23d594e2249083fa0f091153ceda089fdb4d305c
+  workbook_82_frozen_decision: existing_mc_real_wide_ty_support_validated
+  workbook_83_config: configs/propagated_covariance_upstream_repair_mc_validation_v1.yaml
+  workbook_83_config_sha256: 398e78be8e41063062899889ef9e2a2f30afc3c63681631c08b097592d6cdbdd
+  workbook_83_output_root: outputs/propagated_covariance_upstream_repair_mc_validation_v1
+  workbook_83_artifact_sha256:
+    propagated_covariance_upstream_repair_decision.json: eeb7759d835410cc2aefc651923d7e86e7962859d47d37df5f5c6f3b9cbdbd4c
+    campaign_summary.json: 5709877e305c4bb104f358c7b39adf63ccc4f1ab7b9777017ac5a6637929c75b
+    source_closure.json: a9ea84226061b84cf4c02910f37ae308c0bb5f1ebcf0e9e0cc818f6afaf454d6
+  workbook_83_frozen_decision: source_tracklet_fit_covariance_not_calibratable
+  workbook_83_frozen_mechanism: position_xy_swap_with_slope_miscalibration
+
+# ---------------------------------------------------------------------------
+# Software provenance (the audited code).
+# ---------------------------------------------------------------------------
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  exporter_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+  segment_fit_source: Tracker/TrackerRecAlgs/TrackerSegmentFit/src/SegmentFitAlg.cxx
+  curvilinear_uvt_source: Tracking/TrkEvent/TrkEventPrimitives/TrkEventPrimitives/CurvilinearUVT.icc
+
+# ---------------------------------------------------------------------------
+# Audit chain:
+#   SegmentFit native state (loc1, loc2, phi, theta, q/p)
+#     -> NtupleDumperAlg covariance transformation
+#     -> exported covariance [x, y, tx, ty]
+# ---------------------------------------------------------------------------
+audit_chain:
+  - "SegmentFit native state: (loc1, loc2, phi, theta, q/p)"
+  - "NtupleDumperAlg covariance transformation"
+  - "exported covariance: [x, y, tx, ty]"
+
+# ---------------------------------------------------------------------------
+# Data: exported tracklet population used for the closure test.  This is MC
+# only; no real-data residual is read.
+# ---------------------------------------------------------------------------
+data:
+  tracklets_root: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/mc24_100043_00200_00299/physical_scan/points/iteration_00_reference/refit/tracklets.root
+  tracklets_tree: tracklets
+  reference_position: [0.0, 0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Synthetic covariance injection test (Cases A-E).
+# ---------------------------------------------------------------------------
+synthetic_injection_cases:
+  A_loc1: "inject only loc1 uncertainty"
+  B_loc2: "inject only loc2 uncertainty"
+  C_phi: "inject only phi uncertainty"
+  D_theta: "inject only theta uncertainty"
+  E_qoverp: "inject q/p uncertainty"
+
+# ---------------------------------------------------------------------------
+# Decision tree: locate the WB83 mechanism.  The three-way success criterion
+# is (1) SegmentFit covariance generation, (2) exporter transform, or
+# (3) coordinate convention mismatch.  A loc1/loc2 <-> x/y permutation is
+# NOT automatically an exporter bug: the exporter may be faithfully applying
+# the Athena Curvilinear contract while SegmentFit mislabels the native basis.
+# ---------------------------------------------------------------------------
+decision_tree:
+  exporter_owns_permutation:
+    description: >-
+      exporter Jacobian permutes loc1/loc2 vs labelled [x, y] incorrectly, or
+      maps (phi, theta) to (tx, ty) incorrectly.
+    action: freeze_as_deterministic_exporter_transform_bug
+  segmentfit_owns_permutation_or_jacobian:
+    description: >-
+      SegmentFitAlg::GetState writes the global (x, y, tx, ty) covariance into
+      the Curvilinear (loc1, loc2, phi, theta) slots under a wrong basis
+      and/or a wrong analytic Jacobian.  The exporter transform is correct.
+    action: freeze_as_deterministic_segmentfit_get_state_transform_bug
+  no_deterministic_transform_bug:
+    description: no deterministic permutation or Jacobian error found.
+    action: trace_upstream_to_segment_fit_hit_error_model_covariance_construction
+
+# ---------------------------------------------------------------------------
+# Frozen terminal permissions / prohibitions.
+# ---------------------------------------------------------------------------
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+held_out_accessed: false
+
+do_not_modify_covariance: true
+do_not_add_scale_factors: true
+do_not_tune_parameters_to_chi2: true
+do_not_enter_alignment: true
+do_not_read_real_data_residuals: true
+do_not_write_geometry_or_conditions_payload: true
+
+output_root: outputs/segmentfit_covariance_coordinate_contract_audit_v1

@@ -1,0 +1,228 @@
+# Workbook 87 pre-registration:
+# FaserActs Propagated Covariance Validation V2.
+#
+# *** THIS IS NOT AN ALIGNMENT TASK. ***
+# Workbook 86 froze `segmentfit_full_curvilinear_covariance_contract_validated`:
+# the SegmentFit source covariance now closes under the full Athena
+# CurvilinearUVT contract.  Source covariance is no longer the limiter.
+# This campaign is the authorized Stage B: does
+#
+#   C_target = J_transport C_source_WB86 J_transport^T  +  process_noise
+#
+# describe the target residual
+#
+#   e_target = propagated fitted state - truth target state
+#
+# on the same source-disjoint MC as WB83/86?
+#
+# WB81 mode 3 is NOT inherited as the answer.  Every mode is recomputed on
+# the WB86-repaired source covariance.
+#
+# Forbidden: real residual, geometry/conditions write, Frozen-V2, real-data
+# calibration, truth q/p as a real-data solution, covariance tuning to chi2=1,
+# deleting the q/p column as the final scheme, scale factors, outlier cuts.
+
+schema_version: faseracts-propagated-covariance-validation-v2
+workbook: 87
+created_utc: "2026-09-06T10:40:00Z"
+
+inheritance:
+  workbook_81_config: configs/faseracts_propagated_covariance_provenance_closure_v1.yaml
+  workbook_81_config_sha256: 5a13b0cc7273546ebbee4268a853c32c527a68fd263eb82483f3d6e581d5f2b9
+  workbook_81_output_root: outputs/faseracts_propagated_covariance_provenance_closure_v1
+  workbook_81_artifact_sha256:
+    propagated_covariance_decision.json: fd605f0ea93dd239a06c4ae8f14a619e1735709963d657b4c9a68575e9db96c2
+    campaign_summary.json: 97a92006163770ee3986a992813b3abb2a58843f7953f25134de1f8412645a4f
+    closure.json: 27ac8820d5e5dc455d63e08e4e037ecbb17847fedba20ca6771c484397e41cf7
+  workbook_81_frozen_decision: faseracts_propagated_covariance_not_calibrated
+  workbook_81_frozen_mechanism: overestimated_transported_fit_covariance
+  workbook_82_config: configs/wide_ty_real_support_matched_mc_coverage_feasibility_v1.yaml
+  workbook_82_config_sha256: b4417b4d9253050c417277641196e0434686a3b03f8bfded663d67b50fd1fe02
+  workbook_82_output_root: outputs/wide_ty_real_support_matched_mc_coverage_feasibility_v1
+  workbook_82_artifact_sha256:
+    wide_ty_mc_support_decision.json: e5386b618e964ad51d03b37b0b19846f9fe0814094ff21d7846fe59d7534cb46
+    campaign_summary.json: 0ba7ed82dd349159f4a1418c23d594e2249083fa0f091153ceda089fdb4d305c
+  workbook_82_frozen_decision: existing_mc_real_wide_ty_support_validated
+  workbook_83_config: configs/propagated_covariance_upstream_repair_mc_validation_v1.yaml
+  workbook_83_config_sha256: 398e78be8e41063062899889ef9e2a2f30afc3c63681631c08b097592d6cdbdd
+  workbook_83_output_root: outputs/propagated_covariance_upstream_repair_mc_validation_v1
+  workbook_83_artifact_sha256:
+    propagated_covariance_upstream_repair_decision.json: eeb7759d835410cc2aefc651923d7e86e7962859d47d37df5f5c6f3b9cbdbd4c
+    campaign_summary.json: 5709877e305c4bb104f358c7b39adf63ccc4f1ab7b9777017ac5a6637929c75b
+    source_closure.json: a9ea84226061b84cf4c02910f37ae308c0bb5f1ebcf0e9e0cc818f6afaf454d6
+  workbook_83_frozen_decision: source_tracklet_fit_covariance_not_calibratable
+  workbook_83_frozen_mechanism: position_xy_swap_with_slope_miscalibration
+  workbook_84_config: configs/segmentfit_covariance_coordinate_contract_audit_v1.yaml
+  workbook_84_config_sha256: 52666fbf6c4d97368d6f18cd12bd0958f7e5a12c9dfb4031a3073f0e2b6aecae
+  workbook_84_output_root: outputs/segmentfit_covariance_coordinate_contract_audit_v1
+  workbook_84_artifact_sha256:
+    segmentfit_covariance_coordinate_contract_decision.json: 30dbad830b4bb88c7272d876565a57ff71942fc4c438068aafe3a68499199f7c
+    campaign_summary.json: af58e29300b756c5706e3599efa6e3f0144c1513cc00e0a4d6f0d18b2432dd4c
+    failure_location_report.json: f748667e3aae9235cd3b1f9e198a7314780366d3717762b028728483b9a1aa0b
+  workbook_84_frozen_decision: deterministic_segmentfit_get_state_transform_bug
+  workbook_84_frozen_mechanism: coordinate_convention_mismatch_and_jacobian_sign_error
+  workbook_85_config: configs/segmentfit_getstate_covariance_transform_repair_validation_v1.yaml
+  workbook_85_config_sha256: 3a465f1850fe029524e9421aa595340d8a1ed94961595335f98d1671fe338ec6
+  workbook_85_output_root: outputs/segmentfit_getstate_covariance_transform_repair_validation_v1
+  workbook_85_artifact_sha256:
+    covariance_repair_decision.json: 32b35bd0cd8183f8a31ca1a8d6b06c2f84f08c2a3c654253bde90ae0f3b6052e
+    campaign_summary.json: cd576dca198a619d26884e061a31b778b95ac5acbd7b41e2cd59891de68c2a05
+    segmentfit_getstate_repair_validation.json: 94062565573156ce18ae52a3498370b655c59cb104d598c98b007a4376043178
+  workbook_85_frozen_decision: segmentfit_getstate_repair_insufficient
+  workbook_85_frozen_mechanism: mean_cyy_inflation_on_large_angle_subset
+  workbook_86_config: configs/full_curvilinear_uvt_covariance_contract_repair_validation_v1.yaml
+  workbook_86_config_sha256: 04c563cad61485ce73746b50d201353841d99cd087a41f5d830525b6d33cc47b
+  workbook_86_output_root: outputs/full_curvilinear_uvt_covariance_contract_repair_validation_v1
+  workbook_86_artifact_sha256:
+    covariance_repair_decision.json: 00944508af21ddf36ad64b79bfe5332c1c090a08303ccc430e8c38e8057186a8
+    campaign_summary.json: ea1f1af9a564c77211e8ed585fe6d97d28d362875eba10270ac93880c4f1d438
+    full_curvilinear_uvt_repair_validation.json: 82831e0b78185e11244389cdc089b43939a82cbf8b9bbede7cf4efbbbcc82131
+  workbook_86_frozen_decision: segmentfit_full_curvilinear_covariance_contract_validated
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  extrapolation_tool_source: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.cxx
+  exporter_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+  curvilinear_uvt_source: Tracking/TrkEvent/TrkEventPrimitives/TrkEventPrimitives/CurvilinearUVT.icc
+
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  propagations_file: propagations.root
+  propagations_tree: propagations
+  tracklets_file: tracklets.root
+  tracklets_tree: tracklets
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  production_q_over_p_mode: 0
+  ntuple_mode_truth_qoverp: 1
+  ntuple_mode_no_qoverp_cov: 3
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+  station_pairs: [[0, 1], [0, 2], [0, 3]]
+  # WB82 candidate is reserved for a later conditional-J campaign only.
+  reserved_conditional_j_support_source_id: floor_muon_100120
+
+truth_reference:
+  join_keys: [run_id, event_id, truth_particle_id]
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: "truth_st{station}_{coord}"
+  truth_momentum_template: "truth_st{station}_{mom}"
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+  physical_acceptance_abs_tx_ty_max: 0.2
+
+closure_metrics:
+  demean_per_pair: true
+  whitening: symmetric_eigendecomposition
+  metrics:
+    - mean_z
+    - marginal_rms
+    - cov_z_eigenvalues
+    - chi2_per_ndof
+    - coverage_probability
+    - lever_arm_dependence
+    - tx_ty_dependence
+  coverage_chi2_quantile_df: 4
+  pencil_direction_analysis: true
+  orientation_vs_scale: true
+
+# Identical to the frozen WB81 Stage-2 gates.  Not tuned after execution.
+closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  pencil_variance_ratio_min: 0.25
+  pencil_variance_ratio_max: 4.0
+  min_pairs_per_pair: 20
+
+modes:
+  0:
+    label: existing_production_covariance
+    role: production_baseline
+  1:
+    label: validated_source_plus_existing_propagation
+    role: part_a_plus_existing_qoverp_transport
+  2:
+    label: validated_source_plus_corrected_qoverp_treatment
+    role: part_a_primary
+  3:
+    label: full_process_noise_model
+    role: part_b
+
+# Part A: C = J_geom C_src_WB86 J_geom^T.  J_geom is the field-free 4D
+# lever-arm Jacobian; WB81 provenance says production has no process noise.
+# Empirically J_geom C_exported J_geom^T matches ntuple mode-3 C_prop.
+part_a:
+  jacobian: geometric_lever_arm
+  process_noise: false
+
+# Part B: Highland MS, first-principles, NOT chi2-tuned.
+# x/X0 is an order-of-magnitude SCT-station budget (3 layers x ~1.5% X0),
+# not fitted.  p is the production tracklet |q/p| (dummy, available on data).
+part_b:
+  model: highland_multiple_scattering
+  material_x_over_x0_per_gap: 0.05
+  material_budget_source: order_of_magnitude_sct_station_not_chi2_tuned
+  momentum_source: production_tracklet_q_over_p
+  include_energy_loss_uncertainty: false
+  include_material_effects_from_acts: false
+
+qoverp_audit:
+  report_with_and_without_dummy_qoverp: true
+  do_not_delete_qoverp_column_as_final_scheme: true
+  dummy_qoverp_is_not_a_physical_momentum_uncertainty: true
+
+decision_tree:
+  validated: faseracts_propagated_covariance_validated
+  not_validated: faseracts_transport_covariance_not_validated
+  mechanisms:
+    - missing_process_noise
+    - q_over_p_uncertainty_semantics
+    - material_model_mismatch
+    - transport_jacobian_error
+
+geometry_write_allowed: false
+official_conditions_write_allowed: false
+real_data_candidate_alignment_authorized: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+held_out_accessed: false
+external_constraint_ingest_authorized: false
+do_not_open_held_out: true
+do_not_read_real_data_residuals: true
+do_not_modify_faseracts_extrapolation_tool: true
+do_not_select_events_by_residual: true
+do_not_drop_pairs_by_condition_or_fit_quality: true
+do_not_use_external_evidence_as_prior: true
+do_not_solve_final_alignment: true
+do_not_tune_covariance_to_chi2: true
+do_not_promote_diagonal_or_capped_or_unit_covariance: true
+do_not_promote_diagnostic_variant_to_production: true
+do_not_promote_mode3_to_production: true
+do_not_use_truth_qoverp_for_real_data_solution: true
+do_not_reverse_optimize_source_covariance_from_target: true
+do_not_change_central_prediction_in_covariance_repair: true
+do_not_delete_qoverp_column_as_final_scheme: true
+do_not_add_scale_factors: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_write_geometry_or_conditions_payload: true
+
+output_root: outputs/faseracts_propagated_covariance_validation_v2
