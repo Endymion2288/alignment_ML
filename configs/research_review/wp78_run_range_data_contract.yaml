@@ -1,0 +1,69 @@
+wp78_run_range_data_contract:
+  workbook: 78
+  experiment: run_range_data_contract_audit_v1
+  training_authorized: false
+  evaluation_authorized: false
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_v5a_frozen_head: false
+  continue_to_15d_relative_wls: false
+  description: >-
+    Read-only audit of why development 00350-00399 is not an exchange test
+    for Family-2 train-range 00100-00149.  No retraining, no architecture
+    or loss change, no Final Blind, no sealed test.
+
+  frozen_boundaries:
+    training_authorized: false
+    final_blind_eval_authorized: false
+    sealed_test_accessed: false
+    continue_to_v5a_frozen_head: false
+    continue_to_15d_relative_wls: false
+
+  inherited_science:
+    wb74: representation transfer inside the train-range family holdout
+    wb75: six-source then frozen development 00350 GATE FAIL
+    wb76: failure is a data-contract mismatch, not a representation failure
+    wb77: P0 contracts frozen; representation study paused
+
+  comparisons:
+    - mc24_100047_00100_00149 vs mc24_100047_00350_00399
+    - mc24_100048_00100_00149 vs mc24_100048_00350_00399
+  matched_payloads:
+    - iteration_00_reference
+    - iteration_00_hard_s3_ry
+  name_only_confound_payloads:
+    - iteration_00_draw_00
+
+  forbidden:
+    - retraining
+    - architecture_change
+    - loss_sweep
+    - B_sweep
+    - domain_adaptation
+    - final_blind
+    - sealed_test
+    - alignment_wls
+    - overwrite_wb74_wb75_wb76_wb77_artifacts
+    - using_00350_as_geometry_holdout
+
+  geometry_holdout_tables:
+    train_seed: 271828
+    heldout_seed: 314159
+    physical_refit_authorized: false
+    overwrite_historical: false
+
+  execution:
+    interactive_allowed:
+      - unit_tests
+    must_use_htcondor:
+      - physical_root_audit
+      - w64_read_only_scoring
+      - geometry_table_write
+    required_run_metadata:
+      - git_sha
+      - resolved_config
+      - dataset_manifest_v2
+      - environment
+      - output_json
+
+  parent_w64_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236

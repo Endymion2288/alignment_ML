@@ -1,0 +1,76 @@
+{
+  "schema": "faser-dataset-contract-v2",
+  "training_authorized": false,
+  "final_blind_eval_authorized": false,
+  "sealed_test_accessed": false,
+  "continue_to_v5a_frozen_head": false,
+  "continue_to_15d_relative_wls": false,
+  "train_domain": {
+    "sources": [
+      "mc24_100043_00200_00299",
+      "mc24_100044_00300_00399",
+      "mc24_100043_00300_00399",
+      "mc24_100044_00200_00299",
+      "mc24_100047_00100_00149",
+      "mc24_100048_00100_00149"
+    ],
+    "run_ranges": {
+      "family1": ["00200_00299", "00300_00399"],
+      "family2": ["00100_00149"]
+    },
+    "geometry_seed": 271828,
+    "reconstruction_version": "s0013-r0022",
+    "propagation_configuration": {
+      "tool": "FaserActsExtrapolationTool",
+      "q_over_p_mode": 0,
+      "physical_geometry_repropagation": true
+    },
+    "event_uid_convention": "source_id:run_id:event_id",
+    "overlay_seed_historical": 20260813
+  },
+  "validation_domain": {
+    "sources": [
+      "mc24_100047_00350_00399",
+      "mc24_100048_00350_00399"
+    ],
+    "run_range": "00350_00399",
+    "status": "already_opened_development_diagnostic",
+    "model_selection": "forbidden",
+    "not_a_geometry_holdout": true,
+    "reconstruction_version": "s0013-r0022"
+  },
+  "heldout_geometry": {
+    "seed": 314159,
+    "physical_refit_authorized": false,
+    "include_hard_s3_ry": false
+  },
+  "heldout_run_range": {
+    "status": "not_authorized"
+  },
+  "prohibited_blind_assets": {
+    "final_blind": [
+      "mc24_100047_00800_00849",
+      "mc24_100048_00800_00849"
+    ],
+    "sealed": [
+      "mc24_100116_*",
+      "mc24_100117_*"
+    ]
+  },
+  "frozen_contracts_for_later_arms": {
+    "utility_contract": "raw_energy_v1",
+    "metric_version": "route_accounting_v2",
+    "solver": "exact_unit_capacity",
+    "candidate_builder": "truth_free_physical_enumeration",
+    "arms": {
+      "A": "W64 canonical energy baseline",
+      "B": "raw physical route scorer",
+      "C": "trainable physical route representation"
+    },
+    "arms_authorized": false
+  },
+  "representation_study": {
+    "authorized": false,
+    "blocked_until": "dataset_contract_v2 accepted and geometry/run-range domains stop being confounded"
+  }
+}

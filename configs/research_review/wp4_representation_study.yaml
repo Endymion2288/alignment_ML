@@ -7,10 +7,17 @@ wp4_representation_study:
   sealed_test_accessed: false
   continue_v5a_frozen_head: false
   continue_to_15d_relative_wls: false
+  paused: true
+  paused_by_workbook: 78
+  paused_reason: >-
+    Train-range 00100-00149 and development 00350-00399 are not the same
+    data contract.  W64 vs raw physical vs trainable comparisons are
+    meaningless until dataset_manifest_v2 is accepted.
   description: >-
     Fair source-and-geometry held-out comparison of frozen W64 energy,
     raw physical route energy, and a trainable physical route representation.
     This file is the protocol only.  It does not authorize Condor training.
+    Execution remains paused after Workbook 78.
 
   frozen_contracts:
     utility_contract: raw_energy_v1
@@ -86,13 +93,18 @@ wp4_representation_study:
         - mc24_100048_00100_00149
       validator: training.source_transfer_cv.validate_fold_sources
     geometry_held_out:
-      status: tables_not_generated
+      status: tables_generated_refit_not_authorized
       train_payload_seed: 271828
       held_out_payload_seed: 314159
       split_seed: 1729
+      artifacts:
+        train: outputs/mc24_four_station_run_range_data_contract_v1/geometry_holdout/train_payloads.json
+        heldout: outputs/mc24_four_station_run_range_data_contract_v1/geometry_holdout/heldout_payloads.json
+        disjointness: outputs/mc24_four_station_run_range_data_contract_v1/geometry_holdout/disjointness.json
       note: >-
-        Generate a new payload table and check disjointness before any
-        training.  Do not reuse reserved-blind 00350_00399 as geometry holdout.
+        New payload tables use seeds 271828 / 314159.  Physical refit is
+        not authorized.  Do not reuse reserved-blind 00350_00399 as
+        geometry holdout.
     development_diagnostic_only:
       sources:
         - mc24_100047_00350_00399
