@@ -1,0 +1,108 @@
+# Stage B / Task A2 — CKF physical q/p covariance export contract.
+# Not alignment.  Does not reopen WB87–WB95.  Does not start a new MC campaign.
+# Reads persisted CKFTrackCollection from the same xAOD already used by WB87/95.
+# Does not refit SegmentFit, does not write /Tracker/Align, does not use truth q/p.
+
+schema_version: qoverp-covariance-export-v1
+task: SB-A2
+workbook: 96
+created_utc: "2026-09-06T14:10:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_task_b_unless_pass: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+
+access_scope: development_validation
+
+state_definition:
+  native_athena: [loc1, loc2, phi, theta, q_over_p]
+  native_frame: curvilinear_or_bound_trackparameters
+  derived_export: [x_mm, y_mm, tx, ty, q_over_p]
+  derived_frame: global_cartesian_slopes
+  q_over_p_native_unit: per_MeV
+  q_over_p_signed: true
+  loc_unit: mm
+  angle_unit: rad
+
+source_collection: CKFTrackCollection
+use_ift: true
+nevents: 100
+skip_events: 0
+covariance_dimension: 5
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+    frozen_mechanism: reconstruction_chain_qoverp_uncertainty_not_exported
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  historical_runtime_unverified: true
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100047_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100047_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+
+acceptance:
+  min_tracks_per_split: 20
+  require_full_5x5: true
+  require_qoverp_cross_terms_exported: true
+  require_some_nonzero_qoverp_cross_term: true
+  dummy_qoverp_per_mev: 1.0e-5
+  dummy_variance_per_mev2: 5.0e-6
+  dummy_match_tolerance: 1.0e-18
+
+output_root: outputs/qoverp_covariance_export_v1
+dump_root: outputs/qoverp_covariance_export_v1/dumps
