@@ -1,0 +1,206 @@
+# Stage B / Task B — ACTS MaterialInteractor / process-noise contract.
+# Not alignment.  Does not reopen WB87/WB95/WB96.  Does not start a new MC campaign.
+# C_in is the persisted CKF 5x5 from WB96.  Model 2 Highland is diagnostic only.
+
+schema_version: acts-process-noise-contract-v1
+task: SB-B
+workbook: 97
+created_utc: "2026-09-06T15:50:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_tune_covariance_to_chi2: true
+do_not_tune_process_noise: true
+do_not_delete_state_variables: true
+do_not_reject_outliers: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_modify_faseracts_extrapolation_tool_source: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+
+access_scope: development_validation
+source_collection: CKFTrackCollection
+use_ift: true
+nevents: 100
+skip_events: 0
+
+state_definition:
+  native_athena: [loc1, loc2, phi, theta, q_over_p]
+  native_frame: curvilinear_or_bound_trackparameters
+  export_state: [x_mm, y_mm, tx, ty]
+  q_over_p_native_unit: per_MeV
+  q_over_p_signed: true
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+  reco_flag: TrackingGeometry.MaterialSource
+  used_by_production_ckf_reco: true
+  used_by_production_ntuple_extrapolation_if_flag_set: true
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  extrapolation_tool_header: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.h
+  extrapolation_tool_source: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.cxx
+  ntuple_dumper_config: PhysicsAnalysis/NtupleDumper/python/NtupleDumperConfig.py
+  ckf2_source: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.cxx
+  tracking_geometry_svc_header: Tracking/Acts/FaserActsGeometry/src/FaserActsTrackingGeometrySvc.h
+  tracking_geometry_config: Tracking/Acts/FaserActsGeometry/python/ActsGeometryConfig.py
+  historical_runtime_unverified: true
+
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+    frozen_mechanism: q_over_p_uncertainty_semantics
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+    frozen_mechanism: reconstruction_chain_qoverp_uncertainty_not_exported
+  workbook_96:
+    config_path: configs/qoverp_covariance_export_v1.yaml
+    config_sha256: 697b71309aaef97565861297c42f7e8ffe7e39382e28533954fd319ae5ba4f4a
+    decision_path: outputs/qoverp_covariance_export_v1/sba2_qoverp_covariance_20260906T144317Z_56c7e891/qoverp_covariance_contract.json
+    decision_sha256: c722ed7b3462d8d56817beec4e23a3c7b8a4b3a179c6192d957cf6d69a8048e0
+    frozen_decision: ckf_qoverp_covariance_export_established
+    contract_established_for_process_noise: true
+
+# Identical to the frozen WB81/WB87/WB93 Stage-2 gates.  Not tuned after execution.
+closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  pencil_variance_ratio_min: 0.25
+  pencil_variance_ratio_max: 4.0
+  min_pairs_per_pair: 20
+
+closure_metrics:
+  demean_per_pair: true
+  whitening: symmetric_eigendecomposition
+  coverage_chi2_quantile_df: 4
+  pencil_direction_analysis: true
+  metrics:
+    - mean_z
+    - marginal_rms
+    - cov_z_eigenvalues
+    - chi2_per_ndof
+    - coverage_probability
+    - lever_arm_dependence
+    - tx_ty_dependence
+
+# Locked before closure.  Do not retune after seeing chi2.
+qoverp_bins_abs_per_mev:
+  high_momentum: [0.0, 1.0e-6]
+  medium_momentum: [1.0e-6, 5.0e-6]
+  low_momentum: [5.0e-6, 1.0]
+
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+station_pairs: [[0, 1], [0, 2], [0, 3]]
+
+models:
+  0:
+    label: no_process_noise
+    equation: C0 = F Cin F^T
+    acts_multiple_scattering: false
+    acts_energy_loss: false
+  1:
+    label: acts_process_noise
+    equation: C1 = F Cin F^T + Q_ACTS
+    acts_multiple_scattering: true
+    acts_energy_loss: true
+    pass_model: true
+  2:
+    label: highland_diagnostic
+    equation: C2 = F Cin F^T + Q_Highland
+    diagnostic_only: true
+    material_x_over_x0_per_gap: 0.05
+    material_budget_source: order_of_magnitude_sct_station_not_chi2_tuned
+
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+  construction_sources:
+    - source_id: mc24_100043_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100047_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100047_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+
+truth_reference:
+  join_keys: [run_id, event_id, truth_particle_id]
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: "truth_st{station}_{coord}"
+  truth_momentum_template: "truth_st{station}_{mom}"
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+  physical_acceptance_abs_tx_ty_max: 0.2
+
+acceptance:
+  min_tracks_per_split: 20
+  dummy_qoverp_per_mev: 1.0e-5
+  dummy_variance_per_mev2: 5.0e-6
+  q_added_relative_floor: 1.0e-18
+
+output_root: outputs/acts_process_noise_contract_v1
+dump_root: outputs/acts_process_noise_contract_v1/dumps
