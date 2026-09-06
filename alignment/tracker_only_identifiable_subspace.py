@@ -54,6 +54,13 @@ from alignment.operating_protocol_v1_final_closure import (
     sha256_file,
 )
 from alignment.physical_jacobian import solve_physical_finite_difference
+from alignment.resampling import (
+    describe_event_draw,
+    event_identity_keys,
+    group_rows_by_event,
+    index_physical_bank,
+    sample_event_keys,
+)
 from alignment.true_cluster_local_residual import (
     RESIDUAL_KIND,
     assert_no_alignment_payload,
@@ -197,8 +204,14 @@ def subspace_from_physical_bank(
     rank_tolerance: float = FROZEN_RANK_TOLERANCE,
     rcond: float = 1.0e-10,
     pair_mask: np.ndarray | None = None,
+    pair_indices: np.ndarray | None = None,
 ) -> tuple[IdentifiableSubspace, dict[str, Any]]:
-    work = bank if pair_mask is None else _masked_bank(bank, np.asarray(pair_mask, dtype=bool))
+    if pair_indices is not None:
+        work = index_physical_bank(bank, pair_indices)
+    elif pair_mask is None:
+        work = bank
+    else:
+        work = _masked_bank(bank, np.asarray(pair_mask, dtype=bool))
     names = tuple(str(name) for name in work["names"])
     declared = np.asarray(work["scales"], dtype=np.float64)
     frozen = frozen_scales_for(names)
@@ -386,13 +399,8 @@ def _pool_campaign_banks(banks: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return _pool_layer_banks(prepared)
 
 
-def _pair_event_groups(bank: Mapping[str, Any]) -> dict[tuple[int, int], list[int]]:
-    groups: dict[tuple[int, int], list[int]] = {}
-    runs = np.asarray(bank["run_id"])
-    events = np.asarray(bank["event_id"])
-    for index, (run, event) in enumerate(zip(runs.tolist(), events.tolist())):
-        groups.setdefault((int(run), int(event)), []).append(int(index))
-    return groups
+def _pair_event_groups(bank: Mapping[str, Any]) -> dict[tuple[str, int, int], list[int]]:
+    return group_rows_by_event(event_identity_keys(bank))
 
 
 def bootstrap_subspaces(
@@ -404,26 +412,65 @@ def bootstrap_subspaces(
     rcond: float,
     min_pairs: int,
 ) -> list[IdentifiableSubspace]:
-    groups = list(_pair_event_groups(bank).values())
+    report = bootstrap_subspaces_report(
+        bank,
+        n_replicates=n_replicates,
+        seed=seed,
+        rank_tolerance=rank_tolerance,
+        rcond=rcond,
+        min_pairs=min_pairs,
+    )
+    return list(report["subspaces"])
+
+
+def bootstrap_subspaces_report(
+    bank: Mapping[str, Any],
+    *,
+    n_replicates: int,
+    seed: int,
+    rank_tolerance: float,
+    rcond: float,
+    min_pairs: int,
+) -> dict[str, Any]:
+    groups = _pair_event_groups(bank)
     if len(groups) < 2:
         raise ValueError("event bootstrap needs at least two events")
-    rng = np.random.default_rng(int(seed))
-    n_pairs = int(np.asarray(bank["anchor_residual"]).shape[0])
-    rows: list[IdentifiableSubspace] = []
-    for _ in range(int(n_replicates)):
-        choice = rng.integers(0, len(groups), size=len(groups))
-        selected = np.zeros(n_pairs, dtype=bool)
-        for index in choice:
-            selected[groups[int(index)]] = True
-        if int(selected.sum()) < int(min_pairs):
+    keys = event_identity_keys(bank)
+    subspaces: list[IdentifiableSubspace] = []
+    draws: list[dict[str, Any]] = []
+    invalid: list[dict[str, Any]] = []
+    for replicate in range(int(n_replicates)):
+        drawn = sample_event_keys(keys, seed=int(seed) + int(replicate))
+        info = describe_event_draw(groups, drawn)
+        if int(info.n_rows) < int(min_pairs):
+            invalid.append(
+                {
+                    "replicate": int(replicate),
+                    "reason": "below_min_pairs",
+                    **info.as_json(),
+                }
+            )
             continue
         subspace, _extras = subspace_from_physical_bank(
-            bank, rank_tolerance=rank_tolerance, rcond=rcond, pair_mask=selected
+            bank,
+            rank_tolerance=rank_tolerance,
+            rcond=rcond,
+            pair_indices=info.row_indices,
         )
-        rows.append(subspace)
-    if not rows:
+        subspaces.append(subspace)
+        draws.append({"replicate": int(replicate), **info.as_json()})
+    if not subspaces:
         raise ValueError("bootstrap produced no valid subspaces")
-    return rows
+    return {
+        "subspaces": subspaces,
+        "n_replicates_requested": int(n_replicates),
+        "n_valid": len(subspaces),
+        "seed": int(seed),
+        "draws": draws,
+        "invalid_replicates": invalid,
+        "boolean_mask_used": False,
+        "historical_rank_not_reinterpreted": True,
+    }
 
 
 def half_split_subspaces(

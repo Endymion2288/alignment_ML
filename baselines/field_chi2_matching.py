@@ -12,6 +12,7 @@ from typing import Iterable, Sequence
 
 import numpy as np
 
+from alignment.numerical_contract import is_spd
 from baselines.chi2_matching import Match
 from datasets.propagation_loader import PropagationRecords
 from datasets.root_loader import EventTracklets
@@ -104,12 +105,7 @@ def _records_for_event_pair(
 
 def _valid_covariance(covariance: np.ndarray) -> bool:
     values = np.asarray(covariance, dtype=np.float64)
-    return bool(
-        values.shape == (4, 4)
-        and np.isfinite(values).all()
-        and np.allclose(values, values.T, rtol=1.0e-7, atol=1.0e-12)
-        and np.all(np.diag(values) > 0.0)
-    )
+    return bool(values.shape == (4, 4) and is_spd(values))
 
 
 def build_field_candidates(

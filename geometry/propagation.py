@@ -32,9 +32,10 @@ def propagate_line(
 
 def mahalanobis_chi2(residual: np.ndarray, covariance: np.ndarray) -> float:
     """Calculate r^T S^-1 r without explicitly inverting S."""
+    from alignment.numerical_contract import require_spd
+
     residual = np.asarray(residual, dtype=np.float64)
-    covariance = np.asarray(covariance, dtype=np.float64)
-    covariance = 0.5 * (covariance + covariance.T)
+    covariance = require_spd(covariance, name="candidate covariance")
     try:
         solution = np.linalg.solve(covariance, residual)
     except np.linalg.LinAlgError as error:

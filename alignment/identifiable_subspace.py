@@ -26,6 +26,7 @@ import numpy as np
 
 from alignment.five_dof_sampling import DEFAULT_SCALES
 from alignment.hierarchical_v1 import C_DX, C_DX_ENVELOPE_MM, HIERARCHICAL_V1_PARAMETERS
+from alignment.numerical_contract import svd_complete_right
 from alignment.physical_jacobian import RESIDUAL_DIMENSION
 from alignment.true_cluster_local_residual import LEAKAGE_RANK_RELATIVE_TOLERANCE
 
@@ -303,8 +304,7 @@ def identifiable_svd(
         raise ValueError("weighted matrix A contains non-finite values")
     # ``matrix`` is already A = W^{1/2} J S, so mixed *native* units are expected
     # and have been removed by S.  Naked mixed-unit SVD is refused elsewhere.
-    left, singular, right_t = np.linalg.svd(matrix, full_matrices=False)
-    right = right_t.T
+    left, singular, right = svd_complete_right(matrix)
     left, right, signs = apply_mode_sign_convention(left, right)
     if singular.size == 0:
         rank = 0
