@@ -1,0 +1,27 @@
+# T12 — measurement-level profiled information pilot.
+# T11 failed.  No physical 18-source run.  No production C_prop.  No new payload.
+
+schema_version: alignment-information-pilot-v1
+task: T12
+created_utc: "2026-09-06T17:40:00Z"
+geometry_write_allowed: false
+do_not_reread_sealed_test: true
+do_not_write_alignment_payload: true
+do_not_use_production_c_prop: true
+do_not_use_straight_line_as_field_model: true
+t11_contract_established: false
+physical_18_source_run: false
+toy_seed: 3
+
+alignment_native_names:
+  - ift_dx_mm
+  - ift_dy_mm
+  - ift_dz_mm
+  - ift_rx_mrad
+  - ift_ry_mrad
+  - ift_rz_mrad
+  - C_dx_mm
+track_state_names: [x_mm, y_mm, tx, ty, q_over_p_per_mev]
+s1_s3_are_reference: true
+
+output_root: outputs/alignment_information_pilot_v1
