@@ -1,0 +1,17 @@
+# T03 — Geometry / SE(3) chart contract.
+# No SQLite/POOL write.  No silent conversion between charts.
+
+schema_version: alignment-chart-contract-v1
+task: T03
+created_utc: "2026-09-06T16:30:00Z"
+geometry_write_allowed: false
+do_not_write_sqlite_or_pool: true
+do_not_silently_convert_charts: true
+round_trip_tolerance: 1.0e-10
+fd_relative_tolerance: 1.0e-6
+
+charts:
+  stations: stations_global_origin_TRzRyRx
+  cluster_local: legacy_cluster_local_station_z_ry_opposite_sign
+
+output_root: outputs/alignment_chart_contract_v1
