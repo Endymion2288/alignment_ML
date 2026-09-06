@@ -1,0 +1,16 @@
+wp1_energy_contract:
+  workbook: 77
+  training_authorized: false
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_to_15d_relative_wls: false
+  utility_contract: raw_energy_v1
+  legacy_decoder: legacy_prob_clip_logit_v1
+  solver: exact_unit_capacity
+  dustbin_energy: 0.0
+  metric_version: route_accounting_v2
+  gates_fail_closed: true
+  description: >-
+    Frozen P0 contract.  New experiments must consume raw_energy_v1 and
+    route_accounting_v2.  Historical V2/V4/V5/W64 artifacts keep the legacy
+    sigmoid-clip-logit decoder and must not be rewritten.

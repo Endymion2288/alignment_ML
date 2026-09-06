@@ -1,0 +1,162 @@
+wp4_representation_study:
+  workbook: 77
+  experiment: representation_study_v1
+  training_authorized: false
+  evaluation_authorized: false
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_v5a_frozen_head: false
+  continue_to_15d_relative_wls: false
+  description: >-
+    Fair source-and-geometry held-out comparison of frozen W64 energy,
+    raw physical route energy, and a trainable physical route representation.
+    This file is the protocol only.  It does not authorize Condor training.
+
+  frozen_contracts:
+    utility_contract: raw_energy_v1
+    solver: exact_unit_capacity
+    metric_version: route_accounting_v2
+    loss_interface: loss_augmented_structured_hinge
+    candidate_builder: truth_free_physical_enumeration
+    parent_w64_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236
+
+  fixed_across_arms:
+    - same physical candidate graphs
+    - same 2/3/4 contiguous route set
+    - same exact unit-capacity solver
+    - same raw_energy_v1 utility
+    - same route_accounting_v2 metrics
+    - same source / geometry split
+    - no sigmoid-clip-logit complete-route decode
+    - no V4/V5 additive complete-only correction as the objective
+
+  arms:
+    A_frozen_w64_energy:
+      role: baseline
+      trainable: false
+      energy: canonical sum of frozen W64 adjacent edge logits plus unmatched penalty
+      note: >-
+        W64 parent and normalizers saw all six authorized train sources.
+        Arm A is therefore a production baseline, not a fully source-unseen
+        representation.  Disclose this in every table.
+    B_raw_physical_route_energy:
+      role: information-bottleneck probe
+      trainable: low_capacity_energy_scorer_only
+      inputs:
+        - residual_x_mm
+        - residual_y_mm
+        - residual_tx
+        - residual_ty
+        - pull_x
+        - pull_y
+        - pull_tx
+        - pull_ty
+        - log1p_chi2
+        - combined_covariance_logdet
+        - delta_z_mm
+        - tracklet state x/y/tx/ty
+        - route_length
+        - missing_station_mask
+      architecture: two_layer_mlp_width_128_or_smaller
+      note: No frozen W64 latent, no complete-only correction head.
+    C_trainable_physical_route_representation:
+      role: shared multi-length representation
+      trainable: shared_encoder_plus_energy_scorer
+      inputs: same as arm B
+      architecture: low_capacity_shared_route_encoder
+      note: Edge classification may be auxiliary only.  Route energy is the objective.
+
+  splits:
+    authorized_train_sources:
+      - mc24_100043_00200_00299
+      - mc24_100044_00300_00399
+      - mc24_100043_00300_00399
+      - mc24_100044_00200_00299
+      - mc24_100047_00100_00149
+      - mc24_100048_00100_00149
+    source_held_out:
+      scheme: two_fold_family_cv
+      family1:
+        - mc24_100043_00200_00299
+        - mc24_100044_00300_00399
+        - mc24_100043_00300_00399
+        - mc24_100044_00200_00299
+      family2:
+        - mc24_100047_00100_00149
+        - mc24_100048_00100_00149
+      validator: training.source_transfer_cv.validate_fold_sources
+    geometry_held_out:
+      status: tables_not_generated
+      train_payload_seed: 271828
+      held_out_payload_seed: 314159
+      split_seed: 1729
+      note: >-
+        Generate a new payload table and check disjointness before any
+        training.  Do not reuse reserved-blind 00350_00399 as geometry holdout.
+    development_diagnostic_only:
+      sources:
+        - mc24_100047_00350_00399
+        - mc24_100048_00350_00399
+      use: already_opened_development_diagnostic
+      model_selection: forbidden
+    final_blind_never_open:
+      sources:
+        - mc24_100047_00800_00849
+        - mc24_100048_00800_00849
+    sealed_never_open:
+      prefixes:
+        - mc24_100116
+        - mc24_100117
+
+  seeds:
+    primary_train: 20260905
+    replicate:
+      - 20260906
+      - 20260907
+
+  execution:
+    interactive_allowed:
+      - unit_tests
+      - deterministic_synthetic_smoke
+    must_use_htcondor:
+      - formal_training
+      - corpus_build
+      - bulk_evaluation
+    required_run_metadata:
+      - git_sha
+      - resolved_config_sha
+      - dataset_manifest_sha
+      - checkpoint_ancestry
+      - evaluation_json
+      - metric_version
+      - utility_contract
+
+  gates:
+    required_metric_version: route_accounting_v2
+    fail_closed: true
+    specs:
+      - name: complete_efficiency
+        metric: complete_track_efficiency
+        op: ">="
+        bound: null
+        note: Bound is set only when the study is authorized; missing bound fail-closes.
+      - name: complete_fake
+        metric: complete_fake_rate
+        op: "<="
+        bound: null
+      - name: all_route_purity
+        metric: all_route_purity
+        op: ">="
+        bound: null
+    scientific_question: >-
+      Does association failure persist after the utility/metric/loss contracts
+      are fixed when the input is (A) frozen W64 energy, (B) raw physical
+      route features, or (C) a trainable physical representation?
+    not_the_question: highest_development_accuracy
+
+  forbidden:
+    - v4_or_v5a_loss_or_bound_sweeps
+    - automatic_promotion_of_wb74_or_wb75_heads
+    - opening_final_blind_or_sealed
+    - rewriting_historical_gate_json
+    - using_00350_for_architecture_or_operating_point_selection
