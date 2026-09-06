@@ -1,0 +1,28 @@
+# T11 — covariance / transport contract.
+# Inherits WB87.  Does not rerun Stage B or 18-source HTCondor.
+# Does not rescale covariance or use truth q/p as a deployment seed.
+
+schema_version: transport-covariance-contract-v1
+task: T11
+created_utc: "2026-09-06T17:20:00Z"
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_deployment_seed: true
+do_not_reread_sealed_test: true
+do_not_rerun_wb87_stage_b: true
+eighteen_source_jobs_submitted: false
+
+state_names: [x_mm, y_mm, tx, ty]
+q_over_p_native_unit: per_MeV
+math_relative_error: 1.0e-6
+fd_relative_error: 1.0e-3
+
+workbook_87:
+  config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+  config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+  decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+  decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+  frozen_decision: faseracts_transport_covariance_not_validated
+  frozen_mechanism: q_over_p_uncertainty_semantics
+
+output_root: outputs/transport_covariance_contract_v1
