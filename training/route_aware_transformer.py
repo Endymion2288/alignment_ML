@@ -167,21 +167,19 @@ def _empty_route_table() -> RouteCandidateTable:
     )
 
 
-def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandidateTable:
-    """Materialize only complete chains already present in physical adjacencies.
+def enumerate_physical_complete_route_chains(
+    graph: TransformerGraph,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Walk existing adjacent edges into complete 4-station chains.
 
-    The graph must be ``full_event`` so local node indices are original event
-    rows.  No candidate is cut by score, chi2, truth, synthetic role, or a
-    learned feature.  Truth/synthetic provenance below creates supervision
-    labels and audit buckets only after the physical route set is fixed.
+    The walk is truth-free: it uses only station IDs and physical adjacency.
+    Missing MC labels must not change the returned ``(nodes, edges)`` tables.
     """
     if graph.node_features.shape[0] != graph.event.size:
         raise ValueError("route candidates require a full-event graph node table")
     expected_station_ids = np.asarray(graph.event.station_id, dtype=np.int64)
     if not np.array_equal(graph.station_ids, expected_station_ids):
         raise ValueError("route candidates require full-event station ordering")
-    if graph.event.truth_particle_id is None:
-        raise ValueError("route-aware V2 training requires MC truth particle IDs")
     pair_ids = _adjacent_pair_ids()
     maps: list[dict[int, list[tuple[int, int]]]] = [dict(), dict(), dict()]
     for row, (source, target, pair_id) in enumerate(
@@ -209,12 +207,43 @@ def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandida
                     node_rows.append((source_zero, source_one, source_two, source_three))
                     edge_rows.append((edge_zero_one, edge_one_two, edge_two_three))
     if not node_rows:
-        return _empty_route_table()
-    nodes = np.asarray(node_rows, dtype=np.int64)
-    edges = np.asarray(edge_rows, dtype=np.int64)
-    truth = np.asarray(graph.event.truth_particle_id, dtype=np.int64)[nodes]
-    labels = np.all(truth >= 0, axis=1) & np.all(truth == truth[:, :1], axis=1)
-    fake_endpoint = np.any(truth < 0, axis=1)
+        return (
+            np.empty((0, 4), dtype=np.int64),
+            np.empty((0, 3), dtype=np.int64),
+        )
+    return np.asarray(node_rows, dtype=np.int64), np.asarray(edge_rows, dtype=np.int64)
+
+
+def attach_route_candidate_labels(
+    graph: TransformerGraph,
+    node_indices: np.ndarray,
+    score_edge_indices: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Attach supervision after the physical route set is already fixed.
+
+    Truth IDs never create or delete a candidate.  When MC truth is absent,
+    every route is unlabeled and ``fake_endpoint`` is false; hard-negative
+    flags still follow synthetic role / score-edge provenance.
+    """
+    nodes = np.asarray(node_indices, dtype=np.int64)
+    edges = np.asarray(score_edge_indices, dtype=np.int64)
+    if nodes.ndim != 2 or nodes.shape[1] != 4:
+        raise ValueError("complete-route node table must have shape [routes, 4]")
+    if edges.shape != (nodes.shape[0], 3):
+        raise ValueError("complete-route edge table must align with the node table")
+    if not nodes.shape[0]:
+        return (
+            np.empty(0, dtype=bool),
+            np.empty(0, dtype=bool),
+            np.empty(0, dtype=bool),
+        )
+    if graph.event.truth_particle_id is None:
+        labels = np.zeros(nodes.shape[0], dtype=bool)
+        fake_endpoint = np.zeros(nodes.shape[0], dtype=bool)
+    else:
+        truth = np.asarray(graph.event.truth_particle_id, dtype=np.int64)[nodes]
+        labels = np.all(truth >= 0, axis=1) & np.all(truth == truth[:, :1], axis=1)
+        fake_endpoint = np.any(truth < 0, axis=1)
     roles = graph.event.synthetic_role
     hard_negative = np.zeros(nodes.shape[0], dtype=bool)
     if roles is not None:
@@ -224,12 +253,31 @@ def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandida
         )
     hard_negative |= np.any(np.asarray(graph.score_hard_negative, dtype=bool)[edges], axis=1)
     hard_negative &= ~labels
+    return (
+        np.asarray(labels, dtype=bool),
+        np.asarray(fake_endpoint, dtype=bool),
+        np.asarray(hard_negative, dtype=bool),
+    )
+
+
+def enumerate_complete_route_candidates(graph: TransformerGraph) -> RouteCandidateTable:
+    """Materialize only complete chains already present in physical adjacencies.
+
+    The graph must be ``full_event`` so local node indices are original event
+    rows.  No candidate is cut by score, chi2, truth, synthetic role, or a
+    learned feature.  Truth/synthetic provenance creates supervision labels
+    and audit buckets only after the physical route set is fixed.
+    """
+    nodes, edges = enumerate_physical_complete_route_chains(graph)
+    if not nodes.shape[0]:
+        return _empty_route_table()
+    labels, fake_endpoint, hard_negative = attach_route_candidate_labels(graph, nodes, edges)
     return RouteCandidateTable(
         node_indices=nodes,
         score_edge_indices=edges,
-        labels=np.asarray(labels, dtype=bool),
-        fake_endpoint=np.asarray(fake_endpoint, dtype=bool),
-        hard_negative=np.asarray(hard_negative, dtype=bool),
+        labels=labels,
+        fake_endpoint=fake_endpoint,
+        hard_negative=hard_negative,
     )
 
 
