@@ -1,0 +1,113 @@
+# Stage B / Task A — physical q/p uncertainty semantics.
+# Not alignment.  Does not reopen T00–T12, WB81–WB94, or sealed test.
+# Does not start a new source campaign.  Does not export a new ntuple.
+# Does not use truth q/p as a real-data solution or alignment seed.
+# Does not delete the q/p column.  Does not rescale covariance.
+
+schema_version: qoverp-semantics-contract-v1
+task: SB-A
+workbook: 95
+created_utc: "2026-09-06T13:50:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_truth_q_over_p_as_deployment_seed: true
+do_not_delete_qoverp_column_as_final_scheme: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_submit_eighteen_source_jobs: true
+do_not_write_geometry_or_conditions_payload: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+
+access_scope: development_validation
+
+state_definition:
+  native_athena: [loc1, loc2, phi, theta, q_over_p]
+  q_over_p_native_unit: per_MeV
+  q_over_p_signed: true
+  export_tracklet_state: [x_mm, y_mm, tx, ty]
+  magnetic_transport_requires_physical_qoverp: true
+
+segmentfit_dummy:
+  source_file: Tracker/TrackerRecAlgs/TrackerSegmentFit/src/SegmentFitAlg.cxx
+  function: GetState
+  qoverp_per_mev: 1.0e-5
+  variance_scale: 50000.0
+  correlation_with_loc_and_angles: 0.0
+  physical: false
+
+ckf_export:
+  collection: CKFTrackCollection
+  ntuple_prefix: Track_
+  mean_state_exported: true
+  covariance_exported: false
+  qoverp_correlation_exported: false
+
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+    frozen_mechanism: q_over_p_uncertainty_semantics
+  workbook_93:
+    config_path: configs/transport_covariance_contract_v1.yaml
+    config_sha256: 094ed2ffb9829c57f62108b792a7f572d3e35bfa938e08e7c0745aaae0ea879e
+    decision_path: outputs/transport_covariance_contract_v1/t11_transport_contract_20260906T131401Z_1eaa3063/aggregate/decision.json
+    decision_sha256: 4fdc4042afd9cefc18231a653dd92aec37c6342840285ed4fd9284a661d2dd90
+    frozen_verdict: FAIL
+    contract_established_for_t12: false
+  workbook_94:
+    config_path: configs/alignment_information_pilot_v1.yaml
+    config_sha256: 337bd1beb97dfa618f2f6a149919e7913c1412a435e866a1ac3bbb0916bd3c76
+    decision_path: outputs/alignment_information_pilot_v1/t12_information_pilot_20260906T131658Z_dda3dac9/aggregate/resource_decision.json
+    decision_sha256: beebab008ec0a65c9701b2bc3e08df8a7ec0dd0d7e431e22588f67bb04aa788c
+    frozen_verdict: blocked_on_t11
+    conditional_go: false
+    unconstrained_tracker_only_stopped: true
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  historical_runtime_unverified: true
+  segmentfit_source: Tracker/TrackerRecAlgs/TrackerSegmentFit/src/SegmentFitAlg.cxx
+  ntuple_dumper_source: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+  ntuple_dumper_header: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.h
+
+mc_data:
+  source_root_template: >-
+    outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  tracklets_file: tracklets.root
+  tracklets_tree: tracklets
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+    - mc24_100043_00200_00299
+    - mc24_100043_00300_00399
+    - mc24_100043_00400_00499
+    - mc24_100044_00200_00299
+    - mc24_100044_00300_00399
+  validation_source_ids:
+    - mc24_100047_00000_00049
+    - mc24_100047_00050_00099
+    - mc24_100048_00000_00049
+    - mc24_100048_00050_00099
+
+acceptance:
+  require_estimate: true
+  require_uncertainty: true
+  require_correlation: true
+  require_reconstruction_chain_provenance: true
+  dummy_qoverp_match_tolerance_per_mev: 1.0e-18
+  dummy_variance_match_tolerance_per_mev2: 1.0e-18
+
+output_root: outputs/qoverp_semantics_contract_v1
