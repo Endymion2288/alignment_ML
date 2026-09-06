@@ -1,0 +1,28 @@
+# T10 — paired-target vs zero-target WLS on frozen iteration-01 arrays.
+# No new refit.  No sealed test.  Thresholds are not retuned.
+
+schema_version: reference-oracle-gap-v1
+task: T10
+created_utc: "2026-09-06T17:00:00Z"
+geometry_write_allowed: false
+do_not_reread_sealed_test: true
+do_not_retune_gates: true
+zero_target_is_not_correct_likelihood: true
+
+gates:
+  dx_dy_mm: 0.1
+  ry_mrad: 1.0
+
+splits:
+  validation:
+    arrays: outputs/mc24_multidof_ift_iteration01_route_selected_update_validation_physical_edge_deduplicated_v1/route_selected_update_arrays.npz
+    arrays_sha256: 322959624c7a5e7cb53007e04ca7a5b9131d348c53b2e9a138c9956e608c3451
+    report: outputs/mc24_multidof_ift_iteration01_route_selected_update_validation_physical_edge_deduplicated_v1/route_selected_update.json
+    report_sha256: e16849a2f47a456318730384ee6752095fed5381cc5970560528b7dad587e437
+  train:
+    arrays: outputs/mc24_multidof_ift_iteration01_route_selected_update_train_physical_edge_deduplicated_v1/route_selected_update_arrays.npz
+    arrays_sha256: dc7cb0d06d806bbb0e7d45ba978d742c1cd6f9d6176e0ec4b1e8dd9e26abf9ec
+    report: outputs/mc24_multidof_ift_iteration01_route_selected_update_train_physical_edge_deduplicated_v1/route_selected_update.json
+    report_sha256: 622d95298c860c305a583b38e7aba2d31ec7b3e9df9f3eacbce4e2fb8c7fbd67
+
+output_root: outputs/reference_oracle_gap_v1
