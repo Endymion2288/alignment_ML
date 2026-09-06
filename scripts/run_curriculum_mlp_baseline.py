@@ -513,6 +513,9 @@ def main() -> None:
             "or use scripts/run_frozen_route_level_scan.py / "
             "scripts/run_frozen_geometry_aware_transformer_v1_scan.py"
         )
+    from datasets.access_policy import refuse_allow_sealed_test_flag
+
+    refuse_allow_sealed_test_flag()
     manifest_path, samples, manifest = load_synthetic_curriculum_manifest(args.synthetic_manifest)
     config_path = Path(args.config).expanduser().resolve()
     root_config, config = _load_config(config_path)

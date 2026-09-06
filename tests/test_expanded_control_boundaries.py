@@ -113,9 +113,11 @@ def test_station_pair_loader_defaults_to_the_sealed_test_boundary(tmp_path):
 
 
 def test_station_pair_loader_resolves_test_only_with_evaluate_test(tmp_path):
+    from datasets.access_policy import AccessPolicyError
+
     manifest = _three_split_manifest(tmp_path)
 
-    with pytest.raises(FileNotFoundError, match="sealed_test"):
+    with pytest.raises(AccessPolicyError, match="not a development license"):
         _station_pair_load_manifest_for_scope(manifest, evaluate_test=True)
 
 
@@ -125,7 +127,9 @@ def test_global_assignment_loader_forbids_test_unless_explicitly_permitted(tmp_p
     _, samples, _ = _load_manifest_for_scope(manifest, validation_only=True)
 
     assert {sample.split for sample in samples} == {"train", "validation"}
-    with pytest.raises(FileNotFoundError, match="sealed_test"):
+    from datasets.access_policy import AccessPolicyError
+
+    with pytest.raises(AccessPolicyError, match="not a development license"):
         _load_manifest_for_scope(manifest, validation_only=False)
 
 

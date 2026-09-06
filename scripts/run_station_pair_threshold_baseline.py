@@ -19,7 +19,7 @@ import numpy as np
 from baselines.field_chi2_matching import pair_feature_names
 from baselines.global_assignment import AssignmentConfig
 from baselines.mlp_pair_classifier import load_pair_classifier
-from datasets.physical_curriculum import CurriculumSample, load_synthetic_curriculum_manifest
+from datasets.physical_curriculum import CurriculumSample
 from evaluation.metrics import assess_event_matches
 from scripts.run_global_assignment_mlp_baseline import (
     DEFAULT_CONFIG,
@@ -54,15 +54,17 @@ def _load_manifest_for_scope(
     """Load only the assets permitted by the declared execution scope.
 
     Without ``--evaluate-test`` the sealed test split's paths and event assets
-    are never resolved by this legacy entry point.
+    are never resolved by this legacy entry point.  ``evaluate_test=True`` is
+    no longer a license to open sealed test assets.
     """
+    from datasets.access_policy import AccessPolicyError, AccessScope, load_curriculum_for_scope
+
     if evaluate_test:
-        return load_synthetic_curriculum_manifest(manifest_path)
-    return load_synthetic_curriculum_manifest(
-        manifest_path,
-        require_all_splits=False,
-        allowed_splits=("train", "validation"),
-    )
+        raise AccessPolicyError(
+            "station-pair loader cannot open the test split; "
+            "--evaluate-test is not a development license"
+        )
+    return load_curriculum_for_scope(manifest_path, AccessScope.DEVELOPMENT_VALIDATION)
 
 
 def _select_magnitude(

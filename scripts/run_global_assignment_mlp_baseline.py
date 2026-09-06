@@ -34,7 +34,6 @@ from baselines.multistation_assignment import MultiStationAssignmentConfig
 from datasets.physical_curriculum import (
     CurriculumSample,
     condition_axis_label,
-    load_synthetic_curriculum_manifest,
     uniform_condition_axis,
 )
 from evaluation.pairwise_metrics import apply_temperature, binary_calibration, calibration_report
@@ -109,13 +108,14 @@ def _load_manifest_for_scope(
     manifest_path: str | Path, *, validation_only: bool
 ) -> tuple[Path, list[CurriculumSample], Mapping[str, object]]:
     """Load only the assets permitted by the declared execution scope."""
-    if validation_only:
-        return load_synthetic_curriculum_manifest(
-            manifest_path,
-            require_all_splits=False,
-            allowed_splits=("train", "validation"),
+    from datasets.access_policy import AccessPolicyError, AccessScope, load_curriculum_for_scope
+
+    if not validation_only:
+        raise AccessPolicyError(
+            "global-assignment loader cannot open the test split; "
+            "--allow-sealed-test is not a development license"
         )
-    return load_synthetic_curriculum_manifest(manifest_path)
+    return load_curriculum_for_scope(manifest_path, AccessScope.DEVELOPMENT_VALIDATION)
 
 
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:

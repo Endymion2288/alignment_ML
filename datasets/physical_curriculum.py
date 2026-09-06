@@ -88,6 +88,8 @@ def load_synthetic_curriculum_manifest(
     *,
     require_all_splits: bool = True,
     allowed_splits: Sequence[str] | None = None,
+    access_scope: object | None = None,
+    access_capability: object | None = None,
 ) -> tuple[Path, list[CurriculumSample], dict[str, Any]]:
     """Load a physical synthetic manifest and enforce its provenance contract.
 
@@ -147,6 +149,24 @@ def load_synthetic_curriculum_manifest(
                 )
         if split not in requested_splits:
             continue
+        if access_scope is not None:
+            from datasets.access_policy import authorize_path, authorize_split
+
+            authorize_split(split, access_scope, capability=access_capability)
+            for field_name in (
+                "physical_tracklets",
+                "physical_propagations",
+                "physical_payload_manifest",
+                "synthetic_tracklets",
+                "field_candidates",
+            ):
+                if field_name in raw:
+                    authorize_path(
+                        raw[field_name],
+                        access_scope,
+                        split=split,
+                        capability=access_capability,
+                    )
         uids = raw.get("source_event_uids")
         if not isinstance(uids, list) or not uids or not all(isinstance(uid, str) for uid in uids):
             raise ValueError(f"source '{source_id}' has no explicit original event provenance")
