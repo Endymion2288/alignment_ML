@@ -1,0 +1,68 @@
+wp85b_fwer_protocol:
+  workbook: 85b
+  phase: 85b_fwer_controlled_physical_alignment_protocol_v2
+  experiment: wb85b_fwer_protocol_v1
+  parent_workbook: 85a-r1
+  frozen_parent: 4station@fe00c0a9674b861f408e5c7e6c0d00163a42d116
+  executable: false
+  qualification_authorized: false
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  looked_at_physical_alignment_outcomes: false
+  wb86_automatically_authorized: false
+  preserve_historical_wb85: true
+  preserve_historical_wb85a: true
+  preserve_historical_wb85a_r1: true
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  description: >-
+    Prospective FWER-controlled statistical protocol v2.  Fixed Bonferroni
+    alpha_LS = alpha_cov = 0.025.  Does not claim WB85 already guaranteed
+    qualification-level FWER = 0.05.  Does not run WB86.
+
+  statistical_family:
+    H_LS: projected-z location/scale calibration
+    H_cov: projected 95% interval coverage calibration
+    multiplicity: fixed_bonferroni
+    familywise_alpha: 0.05
+    alpha_LS: 0.025
+    alpha_cov: 0.025
+    critical_LS: 23.33666415864534
+    critical_cov: 14.44937533544792
+
+  fwer_claim:
+    primary_statistical_FWER_cap: 0.05
+    conditional_on_valid_analyzable_execution: true
+    unconditional_overall_qualification_false_fail_le_0.05: false
+
+  identifiable_stratum_counts:
+    identity_fixed_dz: 299
+    identity_finite_survey_prior: 303
+    identifiable_translation_fixed_dz: 311
+    identifiable_translation_finite_survey_prior: 298
+    identifiable_rotation_fixed_dz: 300
+    identifiable_rotation_finite_survey_prior: 283
+
+  joint_null:
+    n_monte_carlo: 20000
+    seed: 2026090820
+    simulation_is_not_the_fwer_proof: true
+
+  power:
+    n_monte_carlo: 4000
+    seed: 2026090821
+    required_alternatives:
+      - persistent_mean_0.35_one_stratum
+      - scale_1.25_one_stratum
+
+  official_runner:
+    uses_smoke_tested_executor: false
+    uses_smoke_tested_primitives: true
+    dedicated_e2e_smoke_required: true
+
+  forbidden:
+    - rewriting_wb85_wb85a_wb85a_r1
+    - reading_physical_alignment_outcomes
+    - executing_wb86
+    - alpha_allocation_sweep
+    - fitting_thresholds_to_wb85a_r1_correlations
+    - claiming_unconditional_overall_false_fail_0.05
