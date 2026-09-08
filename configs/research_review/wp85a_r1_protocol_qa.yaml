@@ -1,0 +1,90 @@
+wp85a_r1_protocol_qa:
+  workbook: 85a-r1
+  phase: 85a_r1_joint_null_runtime_smoke_provenance
+  experiment: wb85a_r1_protocol_qa_v1
+  parent_workbook: 85a
+  frozen_parent: 4station@fe00c0a9674b861f408e5c7e6c0d00163a42d116
+  executable: false
+  qualification_authorized: false
+  training_authorized: false
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  final_blind_eval_authorized: false
+  sealed_test_accessed: false
+  is_wb83_rerun: false
+  modifies_wb84_corpus: false
+  new_physical_replicas_authorized: false
+  looked_at_physical_alignment_outcomes: false
+  wb86_automatically_authorized: false
+  preserve_historical_wb85a_v1: true
+  continue_v5a_frozen_head: false
+  continue_route_energy_rewrite: false
+  continue_hybrid_expansion: false
+  continue_residual_calibration: false
+  continue_to_15d_relative_wls: false
+  description: >-
+    Corrected internally coherent joint-null calibration, reproduction of
+    individual gate / power QA, official Calypso/ACTS runtime smoke, and
+    generating-code provenance closure.  Does not run WB86 and does not
+    read WB84 physical alignment outcomes.
+
+  provenance: calypso_physical_independent_v1
+  n_qualified_exports: 2394
+  identifiable_stratum_counts:
+    identity_fixed_dz: 299
+    identity_finite_survey_prior: 303
+    identifiable_translation_fixed_dz: 311
+    identifiable_translation_finite_survey_prior: 298
+    identifiable_rotation_fixed_dz: 300
+    identifiable_rotation_finite_survey_prior: 283
+
+  joint_null:
+    generator: synthetic_theta_hat_and_spd_covariance
+    coverage: official_symmetric_gaussian_interval
+    n_monte_carlo: 20000
+    seed: 2026090819
+    official_joint_target_is_independent_union_0.0975: false
+    scientific_overall_false_fail_cap: 0.05
+
+  historical_wb85a_independent_null:
+    z: N(0,1)
+    coverage: Bernoulli(0.95)
+    n_monte_carlo: 20000
+    seed: 2026090817
+    independent_union_expectation: 0.0975
+    not_the_official_joint_null_target: true
+
+  primary_alternatives:
+    mean_shift: 0.35
+    scale: 1.25
+    redesigned_from_wb83_failed_cells: false
+    analytic_power_is_approximation: true
+    mc_is_empirical_qa: true
+    scale_1_25_discrepancy_reported_as_is: true
+
+  official_engine: calypso_segmentfit_acts_mode0
+  runtime_smoke:
+    source_id: mc24_100047_00100_00149
+    skip_events: 0
+    nevents: 1
+    below_wb84_skip_base: true
+    condor_required: true
+
+  forbidden_official_fallbacks:
+    - toy_uniform_By
+    - fixed_first_step_measurements
+    - cached_old_measurements
+    - lab_only_transport
+    - silent_fallback
+
+  forbidden:
+    - inspecting_physical_alignment_outcomes
+    - executing_physical_qualification
+    - modifying_wb83_or_wb84_artifacts
+    - rewriting_historical_wb85a_v1
+    - using_00350_00800_100116_100117_final_blind_sealed
+    - retuning_wb85_thresholds
+    - silently_changing_alpha
+    - automatically_authorizing_wb86
+    - creating_or_running_wb86

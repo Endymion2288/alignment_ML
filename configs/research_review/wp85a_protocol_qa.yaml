@@ -1,0 +1,63 @@
+wp85a_protocol_qa:
+  workbook: 85a
+  phase: 85a_independent_protocol_qa
+  experiment: wb85a_protocol_qa_v1
+  parent_workbook: 85
+  executable: false
+  qualification_authorized: false
+  training_authorized: false
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  final_blind_eval_authorized: false
+  sealed_test_accessed: false
+  is_wb83_rerun: false
+  modifies_wb84_corpus: false
+  new_physical_replicas_authorized: false
+  looked_at_physical_alignment_outcomes: false
+  wb86_automatically_authorized: false
+  continue_v5a_frozen_head: false
+  continue_route_energy_rewrite: false
+  continue_hybrid_expansion: false
+  continue_residual_calibration: false
+  continue_to_15d_relative_wls: false
+  description: >-
+    Independent QA of the frozen WB85 global statistical protocol and the
+    future physical execution contract.  Synthetic null / power only.
+    Does not run physical alignment qualification and does not read WB84
+    alignment outcomes.
+
+  provenance: calypso_physical_independent_v1
+  n_qualified_exports: 2394
+  identifiable_stratum_counts:
+    identity_fixed_dz: 299
+    identity_finite_survey_prior: 303
+    identifiable_translation_fixed_dz: 311
+    identifiable_translation_finite_survey_prior: 298
+    identifiable_rotation_fixed_dz: 300
+    identifiable_rotation_finite_survey_prior: 283
+
+  synthetic_null:
+    z: N(0,1)
+    coverage: Bernoulli(0.95)
+    n_monte_carlo: 20000
+    seed: 2026090817
+
+  primary_alternatives:
+    mean_shift: 0.35
+    scale: 1.25
+    redesigned_from_wb83_failed_cells: false
+
+  official_engine: calypso_segmentfit_acts_mode0
+  forbidden_official_fallbacks:
+    - toy_uniform_By
+    - fixed_first_step_measurements
+    - lab_only_transport
+
+  forbidden:
+    - inspecting_physical_alignment_outcomes
+    - executing_physical_qualification
+    - modifying_wb83_or_wb84_artifacts
+    - adding_weak_mode_to_primary_after_seeing_results
+    - result_dependent_protocol_changes
+    - automatically_authorizing_wb86
