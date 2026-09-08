@@ -6,6 +6,7 @@ __pycache__/
 data/*.root
 outputs/*
 !outputs/.gitkeep
+build/
 
 # Kerberos credential caches must never be tracked
 xcheng.cc

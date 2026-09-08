@@ -1,0 +1,320 @@
+schema_version: ckf-fit-covariance-semantics-v1
+task: SB-B11
+workbook: 107
+created_utc: '2026-09-06T21:10:00Z'
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_tune_covariance_to_chi2: true
+do_not_tune_process_noise: true
+do_not_project_q_to_psd: true
+do_not_delete_state_variables: true
+do_not_reject_outliers: true
+do_not_clip_chi2_tails: true
+do_not_rescreen_wb99_tails: true
+do_not_design_selection_from_closure: true
+do_not_use_chi2_in_eligibility: true
+do_not_use_pull_in_eligibility: true
+do_not_use_residual_in_eligibility: true
+do_not_use_truth_in_eligibility: true
+do_not_drop_focus_identity: true
+do_not_use_raw_ckf_as_official_input: true
+do_not_tighten_reconstruction_contract: true
+do_not_invent_empirical_cross_covariance: true
+do_not_claim_conservative_covariance_acceptable: true
+do_not_claim_filter_pass: true
+do_not_declare_covariance_model_fixed: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_modify_faseracts_extrapolation_tool_source: true
+do_not_construct_acts_objects_in_python: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+eligibility_independent_of_closure: true
+access_scope: development_validation
+source_collection: CKFTrackCollection
+official_input_scope: contract_eligible
+state_definition:
+  parameters:
+  - x_mm
+  - y_mm
+  - tx
+  - ty
+  - q_over_p_per_mev
+  units:
+  - mm
+  - mm
+  - '1'
+  - '1'
+  - 1/MeV
+  frame: global_cartesian_slopes_at_surface_z
+  q_over_p_signed: true
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: 24.0.41
+  acts_version: 32.0.2
+  dump_helper: alignment/acts_transport_dump/CkfActsTransportDumpAlg.cxx
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+    frozen_mechanism: q_over_p_uncertainty_semantics
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+    frozen_mechanism: reconstruction_chain_qoverp_uncertainty_not_exported
+  workbook_96:
+    config_path: configs/qoverp_covariance_export_v1.yaml
+    config_sha256: 697b71309aaef97565861297c42f7e8ffe7e39382e28533954fd319ae5ba4f4a
+    decision_path: outputs/qoverp_covariance_export_v1/sba2_qoverp_covariance_20260906T144317Z_56c7e891/qoverp_covariance_contract.json
+    decision_sha256: c722ed7b3462d8d56817beec4e23a3c7b8a4b3a179c6192d957cf6d69a8048e0
+    frozen_decision: ckf_qoverp_covariance_export_established
+  workbook_97:
+    config_path: configs/acts_process_noise_contract_v1.yaml
+    config_sha256: 765dfacaa086610eefe0b2c64cbf38325e28e4b52f755b3e3e43c173bb657baa
+    decision_path: outputs/acts_process_noise_contract_v1/sbb_acts_process_noise_20260906T161525Z_54a1cc8d/acts_process_noise_contract.json
+    decision_sha256: 5f5c900cad6c7f4484fa588cf016a176622003ef7d3c631bc4f0ca2bf4de6637
+    frozen_decision: acts_process_noise_contract_not_established
+    frozen_mechanism: acts_process_noise_not_materialized
+    frozen_failure_type: acts_process_noise_configuration
+  workbook_98:
+    config_path: configs/acts_transport_dump_v1.yaml
+    config_sha256: 1969cde56bd59cb53700420de93dc4d3313b5649b667c4d5cd799ba5855a2f9c
+    decision_path: outputs/acts_transport_dump_v1/sbb0_acts_transport_dump_20260906T172303Z_9825e122/acts_transport_dump_contract.json
+    decision_sha256: 186218ecf205423bbce7676f71acb1d4637c0a3fb1c81fd082ca68a4bd9d7aa0
+    frozen_decision: acts_process_noise_contract_not_established
+    frozen_mechanism: acts_process_noise_closure_failed
+    frozen_situation: acts_q_materialized_closure_failed
+    frozen_failure_type: measurement_track_model_insufficient
+  workbook_99:
+    config_path: configs/acts_transport_diagnosis_v1.yaml
+    config_sha256: 84c7d96c42ee1b04816b5ea485919b5d139e887f4b5111bd1868334a68e55a62
+    decision_path: outputs/acts_transport_diagnosis_v1/sbb3_acts_transport_diagnosis_20260906T180100Z_574d6429/acts_transport_diagnosis_contract.json
+    decision_sha256: 3595c6ef3573947f6ed5ceb5cc835a6fa406cb160c0909f121e6f1cad8ec5fa2
+    tail_path: outputs/acts_transport_diagnosis_v1/sbb3_acts_transport_diagnosis_20260906T180100Z_574d6429/tail_provenance.json
+    tail_sha256: c6ad96f9b019f0ef1f32ec6d5476ebbb99234aab8e9207a2a314ad89e94627ce
+    frozen_decision: acts_transport_covariance_failure_diagnosed
+    frozen_primary_case: high_chi2_tail_dominated
+  workbook_100:
+    config_path: configs/acts_transport_tail_analysis_v1.yaml
+    config_sha256: 6b14c571c316ff3aefa55ecbbd16efe0d900e6dedd710025ed3879a99b48b0d8
+    decision_path: outputs/acts_transport_tail_analysis_v1/sbb4_acts_transport_tail_analysis_20260906T182102Z_a19d9ada/acts_transport_tail_analysis_contract.json
+    decision_sha256: 03c277c621feee891cc0608c05a78b2942180ec6918831624304444f18d8f3be
+    classification_path: outputs/acts_transport_tail_analysis_v1/sbb4_acts_transport_tail_analysis_20260906T182102Z_a19d9ada/tail_failure_classification.json
+    classification_sha256: 4b87eeb9125942f6d6f1b535bc464b38756c50d0176ee3a775ea9aa5b71adf14
+    frozen_decision: acts_transport_tail_uncertainty_analyzed
+    frozen_primary_case: wrong_track_state_dominated
+  workbook_101:
+    config_path: configs/ckf_tail_provenance_v1.yaml
+    config_sha256: 9489dcc0a5dea3c3c07ac313376616a27cc5e62000fde67482a13090bd264cac
+    decision_path: outputs/ckf_tail_provenance_analysis_v1/sbb5_ckf_tail_provenance_20260906T183700Z_f95fb941/ckf_tail_provenance_contract.json
+    decision_sha256: 92e96c6fcd7bd2d0e580f988cc33814e37050108eb27cf96c6a602dbaab6ec43
+    provenance_path: outputs/ckf_tail_provenance_analysis_v1/sbb5_ckf_tail_provenance_20260906T183700Z_f95fb941/ckf_tail_provenance.json
+    provenance_sha256: 37479a16db2328b0384a46abf1689db4d6f19ab913fc3a91a9e2acbb0983f82b
+    frozen_decision: ckf_tail_provenance_audited
+    frozen_primary_case: ckf_reconstruction_failure
+  workbook_102:
+    config_path: configs/ckf_reconstruction_contract_audit_v1.yaml
+    config_sha256: 33987dd489b9b9f2ab3f66b772484d28c0da322e6b3579858c4f66bd48f4f9dd
+    decision_path: outputs/ckf_reconstruction_contract_audit_v1/sbb6_ckf_reconstruction_contract_20260906T191538Z_afbc27fc/ckf_reconstruction_contract_decision.json
+    decision_sha256: 5c5936605e4a1ae722c068a75fb35c05f56820714fee37c496d0ca44267b8b94
+    contract_path: outputs/ckf_reconstruction_contract_audit_v1/sbb6_ckf_reconstruction_contract_20260906T191538Z_afbc27fc/ckf_reconstruction_contract.json
+    contract_sha256: 9bac0c2a5139abf64935ac6e4c521bf9ae80deb70d3156a53d177cf64a47cdd2
+    frozen_decision: ckf_reconstruction_contract_audited
+    frozen_primary_case: reconstruction_input_contract_missing
+  workbook_103:
+    config_path: configs/ckf_reconstruction_contract_v1.yaml
+    config_sha256: e8c1f927e1ba03d418c2ed9b03084b198d09ba15196297a1a13cb5044ec48e3d
+    decision_path: outputs/ckf_contract_validation_v1/sbb7_ckf_contract_validation_20260906T193419Z_6d906fda/ckf_contract_validation_decision.json
+    decision_sha256: a699415777d23770ab63216b92bdef218965264b353a5cee47c8834c264b8ef6
+    frozen_decision: ckf_reconstruction_contract_validated
+    frozen_primary_case: input_scope_mismatch_confirmed
+  workbook_104:
+    config_path: configs/transport_covariance_validation_v3.yaml
+    config_sha256: 9b435e0adb1f24233ad0396b2b5ac46426ab5152f7dd43aa44a583e938bff1e5
+    decision_path: outputs/transport_covariance_validation_v3/sbb8_transport_covariance_v3_20260906T195338Z_e6c68984/transport_covariance_v3_decision.json
+    decision_sha256: 8e620b50a3b5509d39e66e6dd7e1fd7a1a7aed5f53fdf63f53ec2456da266031
+    frozen_decision: transport_covariance_shape_not_validated
+    frozen_primary_case: transport_covariance_shape_not_validated
+  workbook_105:
+    config_path: configs/transport_uncertainty_shape_diagnosis_v1.yaml
+    config_sha256: ec02fd5117fdd1b91fe58c1bdeb01b30cd921649af8485d4dd88bd85519452bf
+    decision_path: outputs/transport_uncertainty_shape_diagnosis_v1/sbb9_transport_uncertainty_shape_20260906T201529Z_793f63dd/transport_uncertainty_shape_decision.json
+    decision_sha256: e29fd93b0dbc9f435934184b93ce550d7dc2e3236177ea47502129c6ec2890f2
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  pencil_variance_ratio_min: 0.25
+  pencil_variance_ratio_max: 4.0
+  min_pairs_per_pair: 20
+closure_metrics:
+  demean_per_pair: true
+  whitening: symmetric_eigendecomposition
+  coverage_chi2_quantile_df: 4
+  pencil_direction_analysis: true
+  metrics:
+  - mean_z
+  - marginal_rms
+  - cov_z_eigenvalues
+  - chi2_per_ndof
+  - coverage_probability
+  - lever_arm_dependence
+  - tx_ty_dependence
+qoverp_bins_abs_per_mev:
+  high_momentum:
+  - 0.0
+  - 1.0e-06
+  medium_momentum:
+  - 1.0e-06
+  - 5.0e-06
+  low_momentum:
+  - 5.0e-06
+  - 1.0
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+station_pairs:
+- - 0
+  - 1
+- - 0
+  - 2
+- - 0
+  - 3
+eligibility:
+  expected_n_stations: 4
+  expected_n_segments: 4
+  require_long_track_equivalent: true
+  require_station_completeness: true
+  require_segment_completeness: true
+  require_covariance_5x5: true
+  require_finite_signed_q_over_p: true
+  require_valid_state_surface: true
+wrong_momentum:
+  abs_log10_p_ratio_min: 1.0
+qoverp_pull_anomaly_abs_min: 5.0
+jacobian_frobenius_rel_tail_min: 0.05
+tail_quantiles:
+- 0.99
+- 0.999
+focus_identities:
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 37
+frozen_provenance_hashes:
+  geometry_hash: 4e965f3631dd4ff6e04b141ac36efc49603a1dfc0625de5ea7558dd929486b15
+  field_hash: 60432de5864cfba361f91f47a694dc111bbb06dcec44434e9682548680460e9c
+  material_map_hash: 0df37bd621e6caac2e223fda12fec32a6f8c49685c7b831181b956e59996433c
+  conditions_hash: d30733216d6eb392dbdbcf5a252fed01ff56a045ade59731ca8419febce7a63d
+truth_reference:
+  join_keys:
+  - run_id
+  - event_id
+  - truth_particle_id
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: truth_st{station}_{coord}
+  truth_momentum_template: truth_st{station}_{mom}
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+acceptance:
+  dummy_qoverp_per_mev: 1.0e-05
+  dummy_variance_per_mev2: 5.0e-06
+  q_added_relative_floor: 1.0e-18
+  min_matched_per_split: 20
+mc_data:
+  source_root_template: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+  - mc24_100043_00200_00299
+  - mc24_100043_00300_00399
+  - mc24_100043_00400_00499
+  - mc24_100044_00200_00299
+  - mc24_100044_00300_00399
+  validation_source_ids:
+  - mc24_100047_00000_00049
+  - mc24_100047_00050_00099
+  - mc24_100048_00000_00049
+  - mc24_100048_00050_00099
+  construction_sources:
+  - source_id: mc24_100043_00200_00299
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+  - source_id: mc24_100043_00300_00399
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+  - source_id: mc24_100043_00400_00499
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  - source_id: mc24_100044_00200_00299
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+  - source_id: mc24_100044_00300_00399
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  validation_sources:
+  - source_id: mc24_100047_00000_00049
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+  - source_id: mc24_100047_00050_00099
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+  - source_id: mc24_100048_00000_00049
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+  - source_id: mc24_100048_00050_00099
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+dump_root: outputs/acts_transport_dump_v1/dumps
+dump_filename: ckf_acts_transport.jsonl
+wb103_output_root: outputs/ckf_contract_validation_v1
+output_root: outputs/ckf_fit_covariance_semantics_v1
+wb105_output_root: outputs/transport_uncertainty_shape_diagnosis_v1
+do_not_rescale_cin: true
+do_not_clip_eigenvalues: true
+do_not_rediagonalize_cin: true
+do_not_empirically_calibrate_cin: true
+do_not_use_kalmanfittertool_fit_as_leave_target_out: true
+pinned_calypso_sources:
+  ckf2_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.cxx
+    sha256: 10ddfedf0c2ac6a26c28b144679a7db55a07da602a2090259903b61db4ce1d20
+  ckf2_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.h
+    sha256: 87e6e692d98492e2ac37efd79dd3d6351de97b95e1df3e9081e7ce674fdd7ca6
+  kalman_fitter_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.cxx
+    sha256: 167c43d949d4b3590cadd5be4b39dfc6a15e1ddd834b2b52e57ca73a3cae7c99
+  kalman_fitter_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.h
+    sha256: c31d789fe83ea3cd58761bae7df7bc49954042f2c294d04e3c96f8a01e4f340d
+  track_fitter_function_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackFitterFunction.cxx
+    sha256: 0fe012875e92266b10fcdcc62a3883f0e5c6d75743aed6ceb2fdc1b1324a411b
+  track_fitter_function_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackFitterFunction.h
+    sha256: 97a30eaafe5167db3c383f5b14f4e673c9b4ff9933cdc53326efa0aa68e3c948
+  create_trk_track_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.cxx
+    sha256: 6d18cc528a818a0aefaa90050acde253eb6f2b4fe1ea6cd221149311777aee51
