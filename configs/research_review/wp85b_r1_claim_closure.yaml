@@ -1,0 +1,41 @@
+wp85b_r1_claim_closure:
+  workbook: 85b-r1
+  phase: 85b_r1_statistical_claim_correction_and_source_freeze
+  experiment: wb85b_r1_claim_closure_v1
+  parent_workbook: 85b
+  runtime_parent: 4station@fe2a97666d688e31380ff27f8550dd629631daea
+  executable: false
+  qualification_authorized: false
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  looked_at_physical_alignment_outcomes: false
+  wb86_automatically_authorized: false
+  preserve_historical_wb85b: true
+  description: >-
+    Wording correction and source-freeze closure only.  Does not change
+    WB85b thresholds, alpha, power alternatives, Monte-Carlo results,
+    solver, runner, or physical contract.  Does not run WB86.
+
+  decision_rule_unchanged:
+    alpha_LS: 0.025
+    alpha_cov: 0.025
+    critical_LS: 23.33666415864534
+    critical_cov: 14.44937533544792
+
+  fwer_claim:
+    bonferroni_inequality: P(A union B) <= P(A) + P(B)
+    nominal_individual_size: 0.025
+    nominal_primary_statistical_FWER_cap: 0.05
+    exact_finite_sample_FWER_proven: false
+    finite_sample_FWER_mathematically_proven: false
+    fwer_le_0.05_is_conditional_on_actual_individual_gate_sizes_le_0.025: true
+
+  runtime_source_snapshot_sha256: 3945d7065c11b007292bbcd3253028dc1f435f0eee8c449c6c363137ddaccbde
+
+  forbidden:
+    - rewriting_wb85_wb85a_wb85a_r1_wb85b
+    - reading_physical_alignment_outcomes
+    - executing_wb86
+    - rerunning_monte_carlo
+    - rerunning_production_smoke
+    - retuning_alpha_or_thresholds
