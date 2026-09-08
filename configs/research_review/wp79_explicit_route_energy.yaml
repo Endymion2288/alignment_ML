@@ -1,0 +1,75 @@
+wp79_explicit_route_energy:
+  workbook: 79
+  experiment: explicit_route_energy_v1
+  training_authorized: true
+  evaluation_authorized: true
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_v5a_frozen_head: false
+  continue_to_15d_relative_wls: false
+  arm_c_authorized: false
+  description: >-
+    First low-capacity Explicit Route Energy Model.  Arm A is frozen W64
+    canonical raw energy.  Arm B is a width-64 MLP on raw physical route
+    features.  Two-fold family source-holdout inside Dataset contract v2.
+    00350 is not a holdout.  New geometry tables are not refit.
+
+  frozen_contracts:
+    utility_contract: raw_energy_v1
+    solver: exact_unit_capacity
+    metric_version: route_accounting_v2
+    loss_interface:
+      - loss_augmented_structured_hinge
+      - differentiable_inclusion_gap_hinge
+    candidate_builder: truth_free_contiguous_2_3_4
+    parent_w64_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236
+    model_contract: explicit_route_energy_b_v1
+    feature_version: raw_physical_route_v1
+
+  arms:
+    A_frozen_w64_energy:
+      trainable: false
+      energy: sum of frozen W64 adjacent base-edge logits plus n_stations * unmatched_penalty
+      disclose: W64 parent saw all six authorized train sources
+    B_raw_physical_route_energy:
+      trainable: true
+      architecture: two_layer_mlp_width_64
+      output: raw route core energy
+      unmatched_penalty: -1.0
+
+  splits:
+    scheme: two_fold_family_cv
+    validator: training.source_transfer_cv.validate_fold_sources
+    validation_payload_ids:
+      - iteration_00_draw_01
+      - iteration_00_draw_01_plus_common
+    forbidden_holdout:
+      - mc24_100047_00350_00399
+      - mc24_100048_00350_00399
+      - mc24_100047_00800_00849
+      - mc24_100048_00800_00849
+      - mc24_100116_*
+      - mc24_100117_*
+
+  corpora:
+    family1: outputs/mc24_four_station_relative_route_v5a_source_transfer_v1/corpora/family1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+    family2: outputs/mc24_four_station_relative_route_v5a_source_transfer_v1/corpora/family2/overlay_synthetic_v1/synthetic_corpus_manifest.json
+
+  seeds:
+    primary_train: 20260905
+
+  execution:
+    must_use_htcondor:
+      - formal_training
+      - bulk_evaluation
+    device: cpu
+    device_reason: >-
+      LCG_110_cuda PyTorch 2.11 has no CC 7.0 kernel image.  FASER-matchable
+      GPU leftovers are V100.  H100 slots require ABP/ATS GPU VO groups.
+      Arm B is a width-64 MLP, so CPU is the formal path.
+    required_run_metadata:
+      - git_sha
+      - resolved_config
+      - dataset_manifest
+      - checkpoint_ancestry
+      - evaluation_json

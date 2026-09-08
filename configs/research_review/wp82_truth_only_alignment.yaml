@@ -1,0 +1,73 @@
+wp82_truth_only_alignment:
+  workbook: 82
+  phase: 82a_contract_and_smoke
+  experiment: wb82_truth_only_smoke_v1
+  training_authorized: false
+  wb81b_closed: true
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  physics_constrained_calibration_supported: false
+  continue_v5a_frozen_head: false
+  continue_route_energy_rewrite: false
+  continue_hybrid_expansion: false
+  continue_residual_calibration: false
+  continue_to_15d_relative_wls: false
+  final_blind_eval_authorized: false
+  sealed_test_accessed: false
+  development_00350_used: false
+  ml_association_authorized: false
+  alignment_oracle_qualified: false
+  description: >-
+    WB82 phase 1: truth-only common-track measurement contract, Schur
+    solver, analytic/SE(3)/field tests, and one smoke closure.  Does not
+    reopen association correction, hybrid, Arm C, or 15D WLS.
+
+  frozen_association:
+    utility_contract: raw_energy_v1
+    solver: exact_unit_capacity
+    parent_w64_untouched: true
+
+  demoted_backends:
+    physical_jacobian: response_regression_diagnostic
+    route_selected_relative_closure: response_regression_diagnostic
+    not_certified_alignment_solver: true
+    not_downstream_oracle: true
+
+  solver:
+    contract: common_track_alignment_v1
+    association: truth_only
+    update_convention: left_se3
+    survey_modes:
+      - fixed_dz
+      - finite_survey_prior
+    max_iterations: 10
+    damping: 1.0e-8
+    automatically_pass_at_max_iterations: false
+    momentum_mode: q_over_p_prior
+    qp_prior_sigma: 1.0e-3
+    phase1_smoke_components:
+      - dx_mm
+      - dy_mm
+    phase1_smoke_stations:
+      - 3
+    note: >-
+      Phase-1 smoke frees only S3 translations, matching the injected
+      S3 dx.  The S1–S3 a+bz slope and free ry are physical JGs, not
+      algebraic gauges, and are not in this smoke.
+
+  execution:
+    hermetic_tests: true
+    smoke_device: cpu
+    must_use_htcondor:
+      - formal_physical_refit
+      - independent_replicas
+      - bulk_closure
+    submit_condor_for_phase1_smoke: false
+
+  forbidden:
+    - association_correction_or_replacement
+    - hybrid_expansion_or_arm_c
+    - domain_adaptation
+    - bound_or_slack_or_loss_sweep
+    - using_00350_as_holdout_or_model_selection
+    - opening_final_blind_or_sealed
+    - calling_smoke_an_oracle

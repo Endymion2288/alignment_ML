@@ -1,0 +1,94 @@
+wp83_truth_only_replica_qualification:
+  workbook: 83
+  phase: 83_independent_truth_only_replicas
+  experiment: wb83_truth_only_replicas_v1
+  parent_workbook: 82
+  training_authorized: false
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  alignment_oracle_qualified: false
+  closed: true
+  further_identical_rerun_authorized: false
+  v1_dag_cluster: 1109787
+  v2_dag_cluster: 1109806
+  continue_v5a_frozen_head: false
+  continue_route_energy_rewrite: false
+  continue_hybrid_expansion: false
+  continue_residual_calibration: false
+  continue_to_15d_relative_wls: false
+  final_blind_eval_authorized: false
+  sealed_test_accessed: false
+  development_00350_used: false
+  ml_alignment_eval_authorized: false
+  ml_association_authorized: false
+  wb82_smoke_is_not_qualification: true
+  description: >-
+    Independent truth-only replica qualification of the common-track
+    solver.  Does not reopen association, does not use W64 selection,
+    and does not promote the WB82 S3-only smoke to an oracle.
+
+  reconstruction_provenance: toy_uniform_By_independent_v1
+  calypso_physical_replicas_available: false
+  overlay_replicas_forbidden: true
+  n_target_replicas: 100
+  n_fit_tracks: 24
+  n_validation_tracks: 8
+  master_seed: 20260907
+  design_seed: 202609070
+  field_y: 0.35
+  hit_sigma_mm: 0.02
+
+  envelopes:
+    translation_mm: 0.5
+    rotation_mrad: 1.0
+    weak_mm: 0.5
+
+  directions_frozen_before_replicas:
+    translation: (4, 1, -2)/sqrt(21) on S1/S2/S3 dx, orthogonal to z
+    rotation: mixed S1/S3 rz, no ry
+    weak: whitened SVD of the design draw, written once to the matrix
+
+  survey_modes:
+    - fixed_dz
+    - finite_survey_prior
+
+  iteration:
+    max_iterations: 10
+    damping: 1.0e-8
+    consecutive_required: 2
+    scaled_update_tol: 1.0e-3
+    validation_rel_tol: 1.0e-3
+    automatically_pass_at_max_iterations: false
+
+  criteria:
+    pull_mean_max: 0.2
+    pull_width_min: 0.8
+    pull_width_max: 1.2
+    coverage_nominal: 0.95
+    coverage_ci_max_width: 0.15
+    min_replicas_for_pass: 100
+    screen_dxdy_mm: 0.1
+    screen_rxry_mrad: 0.1
+    screen_rz_mrad: 1.0
+    screening_note: research-screening only; not a collaboration physics requirement
+    robust_authorized: false
+
+  execution:
+    must_use_htcondor:
+      - replica_generation
+      - iterative_closure
+      - coverage_evaluation
+    submit_interactive_batch: false
+    request_cpus: 2
+    request_memory_mb: 4000
+    job_flavour: tomorrow
+
+  forbidden:
+    - association_retraining
+    - w64_selection
+    - ml_association_closure
+    - hybrid_or_arm_c
+    - using_00350
+    - opening_final_blind_or_sealed
+    - overlay_as_independent_replica
+    - promoting_wb82_smoke
+    - replacing_common_track_with_old_wls

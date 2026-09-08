@@ -1,5 +1,6 @@
 """Neural modules for source-disjoint physical tracklet association studies."""
 
+from .explicit_route_energy import ExplicitRouteEnergyScorer
 from .route_energy import (
     CANONICAL_ENERGY_VERSION,
     LEGACY_DECODER_VERSION,
@@ -15,6 +16,7 @@ from .transformer import GeometryAwareSparseTransformer, SparseTransformerConfig
 __all__ = [
     "CANONICAL_ENERGY_VERSION",
     "LEGACY_DECODER_VERSION",
+    "ExplicitRouteEnergyScorer",
     "GeometryAwareSparseTransformer",
     "RouteEnergyRecord",
     "RouteEnergyTable",

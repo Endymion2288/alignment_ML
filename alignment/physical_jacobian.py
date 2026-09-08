@@ -1,9 +1,15 @@
-"""Multi-parameter finite-difference closure from physical refit responses.
+"""Multi-parameter finite-difference **response / regression diagnostic**.
+
+This module is not a certified alignment solver, not a full alignment
+closure, and not a downstream oracle.  ``continue_to_15d_relative_wls``
+remains false.  Workbook 82 qualifies alignment with
+``alignment/common_track_solver.py`` instead.
 
 The functions here operate only on residuals exported after independently
 writing a real ``/Tracker/Align`` payload and rerunning Calypso's segment
 refit plus mode-0 Acts propagation.  They deliberately do not implement a
-coordinate-level alignment surrogate.
+coordinate-level alignment surrogate.  Pairwise same-event counterfactual
+differences remain a diagnostic, not a scientific validation.
 """
 
 from __future__ import annotations

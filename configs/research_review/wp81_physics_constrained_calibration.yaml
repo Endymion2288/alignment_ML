@@ -1,0 +1,116 @@
+wp81_physics_constrained_calibration:
+  workbook: 81
+  phase: 81b
+  experiment: wb81b_calibration_v1
+  training_authorized: true
+  dataset_export_authorized: true
+  evaluation_authorized: true
+  wb81b_authorized: true
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_v5a_frozen_head: false
+  continue_to_15d_relative_wls: false
+  arm_c_authorized: false
+  wp4_arm_c_authorized: false
+  hybrid_expansion_authorized: false
+  replacement_model_authorized: false
+  development_00350_used: false
+  domain_adaptation_authorized: false
+  description: >-
+    WB81b only: train the frozen WB81 §4 linear residual on family-CV.
+    Uses WB81a materialized boundary checksums.  Does not change the
+    objective, expand the model, or reopen WB80.
+
+  frozen_contracts:
+    utility_contract: raw_energy_v1
+    solver: exact_unit_capacity
+    metric_version: route_accounting_v2
+    candidate_builder: truth_free_contiguous_2_3_4
+    parent_w64_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236
+    residual_slot: RouteEnergyRecord.correction
+    unmatched_penalty: -1.0
+    delta_max: 0.25
+    fake_slack: 0.0
+    accept_eff_gain: 0.01
+    g_theta: linear
+
+  energy:
+    form: U_new(r) = U_W64(r) + ΔU_θ(x_phys(r))
+    U_W64: frozen sum of raw adjacent base-edge logits plus n_stations * penalty
+    delta_features: raw_physical_route_v1
+    delta_sees_w64_logits: false
+    delta_sees_w64_latent: false
+    complete_only_asymmetric_correction: false
+    identity: ΔU = 0 reproduces Arm A assignment exactly
+    bound: tanh output times delta_max
+    delta_max: 0.25
+    calibrated_arm: D
+    not_wp4_arm_c: true
+    not_wb80_hybrid: true
+
+  identity:
+    theta: 0
+    delta_u: 0.0
+    required_equal:
+      - selected_route_set
+      - complete_track_efficiency
+      - complete_fake_rate
+      - complete_track_purity
+      - all_route_purity
+    fail_action: stop_do_not_train
+
+  wb81a_checksums:
+    family1_ds100043_100044:
+      t_neg: 1071
+      t_near: 5718
+      t_comf: 0
+      f_a: 77
+      flippable_neg_under_delta_max: 919
+    family2_ds100047_100048:
+      t_neg: 463
+      t_near: 2785
+      t_comf: 0
+      f_a: 56
+      flippable_neg_under_delta_max: 458
+
+  loss:
+    terms:
+      - L_gap
+      - L_keep
+    lai_used: false
+    fake_loss_weight: false
+    bin_weights:
+      negative: 2.0
+      near_zero: 1.0
+      comfortable: 0.0
+
+  checkpoint:
+    same_family_fake_hard_gate: complete_fake_rate(U_new) <= complete_fake_rate(U_W64)
+    fake_slack: 0.0
+    holdout_used_for_selection: false
+    if_no_admitted_epoch: restore_DeltaU_0_and_stop
+
+  verdict:
+    calibration_acceptable: holdout_fake_new <= holdout_fake_A AND holdout_eff_new >= holdout_eff_A + 0.01
+    both_folds_required_for_supported: true
+
+  execution:
+    must_use_htcondor:
+      - formal_training
+      - formal_bulk_evaluation
+    device: cpu
+    submit_condor: true
+    write_training_code: true
+
+  forbidden:
+    - retrain_v5a_or_w64_or_wb79_arm_b
+    - wp4_representation_study_arm_c
+    - hybrid_expansion_or_wb80_arm_c
+    - replacement_route_energy_scorer
+    - domain_adaptation
+    - using_00350_as_holdout_or_model_selection
+    - opening_final_blind_or_sealed
+    - hyperparameter_sweep_on_delta_max_or_fake_slack
+    - complete_only_legacy_correction_head
+    - width_or_depth_sweep
+    - changing_plus_0_01_after_seeing_numbers

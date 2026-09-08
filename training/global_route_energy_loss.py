@@ -120,3 +120,32 @@ def loss_augmented_structured_hinge(
         "target_utility": float(target_utility.detach().cpu()),
         "competitor_utility": float(competitor_utility.detach().cpu()),
     }
+
+
+def differentiable_inclusion_gap_hinge(
+    energies: torch.Tensor,
+    table: RouteEnergyTable,
+    target_route_ids: Sequence[int],
+    *,
+    margin: float = 0.0,
+) -> torch.Tensor:
+    """Hinge on exact inclusion gaps with discrete selections treated as oracles.
+
+    ``inclusion_gap`` freezes the forced-in / forced-out sets; gradients then
+    flow through the same route energies the solver saw.
+    """
+    if energies.ndim != 1 or int(energies.numel()) != table.size:
+        raise ValueError("route energies must align with the energy table")
+    if not target_route_ids:
+        raise ValueError("inclusion-gap hinge requires at least one target route")
+    gap_margin = require_finite("margin", margin)
+    id_to_index = {int(record.route_id): index for index, record in enumerate(table.records)}
+    terms = []
+    for route_id in target_route_ids:
+        counterfactual = inclusion_gap(table, int(route_id))
+        in_idx = [id_to_index[int(item)] for item in counterfactual.forced_in_selected]
+        out_idx = [id_to_index[int(item)] for item in counterfactual.forced_out_selected]
+        forced_in = energies[in_idx].sum() if in_idx else energies.sum() * 0.0
+        forced_out = energies[out_idx].sum() if out_idx else energies.sum() * 0.0
+        terms.append(torch.relu(energies.new_tensor(gap_margin) - (forced_in - forced_out)))
+    return torch.stack(terms).mean()

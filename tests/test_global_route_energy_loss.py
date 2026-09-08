@@ -15,6 +15,7 @@ from models.route_energy import (
     route_kind,
 )
 from training.global_route_energy_loss import (
+    differentiable_inclusion_gap_hinge,
     hamming_loss_augmentation,
     inclusion_gap_hinge,
     loss_augmented_structured_hinge,
@@ -71,6 +72,16 @@ def test_loss_augmented_inference_selects_the_compatible_rival_set():
     result["loss"].backward()
     assert energies.grad is not None
     # Gradients flow through the selected competitor minus the target set.
+    np.testing.assert_allclose(energies.grad.detach().cpu().numpy(), np.asarray([-1.0, 1.0, 1.0]))
+
+
+def test_differentiable_inclusion_gap_hinge_uses_the_exact_set_oracle():
+    table = _two_rival_table()
+    energies = torch.tensor([10.0, 6.0, 6.0], dtype=torch.float64, requires_grad=True)
+    loss = differentiable_inclusion_gap_hinge(energies, table, [0], margin=0.0)
+    assert float(loss.detach()) == pytest.approx(2.0)
+    loss.backward()
+    assert energies.grad is not None
     np.testing.assert_allclose(energies.grad.detach().cpu().numpy(), np.asarray([-1.0, 1.0, 1.0]))
 
 

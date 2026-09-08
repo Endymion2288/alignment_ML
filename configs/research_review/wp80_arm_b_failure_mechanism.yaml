@@ -1,0 +1,118 @@
+wp80_arm_b_failure_mechanism:
+  workbook: 80
+  experiment: wb80_failure_mechanism_v1
+  training_authorized: true
+  evaluation_authorized: true
+  final_blind_authorized: false
+  sealed_test_accessed: false
+  continue_v5a_frozen_head: false
+  continue_to_15d_relative_wls: false
+  arm_c_authorized: false
+  wp4_arm_c_authorized: false
+  v5a_retrain_authorized: false
+  domain_adaptation_authorized: false
+  description: >-
+    Attribute the Workbook-79 Arm B family-holdout gap.  Same candidate
+    graphs, same truth-free 2/3/4 enumeration, same exact solver, same
+    raw_energy_v1 utility, same route_accounting_v2 metric.  Arm A and
+    Arm B are frozen.  Ablation C is a low-capacity hybrid energy scorer
+    on raw physical features plus raw W64 edge logits.  It is not wp4
+    representation-study Arm C.
+
+  frozen_contracts:
+    utility_contract: raw_energy_v1
+    solver: exact_unit_capacity
+    metric_version: route_accounting_v2
+    loss_interface:
+      - loss_augmented_structured_hinge
+      - differentiable_inclusion_gap_hinge
+    candidate_builder: truth_free_contiguous_2_3_4
+    parent_w64_sha256: 0c3a28704cc01151fab7ac943e41338e859b5dde1502c0b10e2f12ada04e6236
+    arm_b_model_contract: explicit_route_energy_b_v1
+    hybrid_model_contract: hybrid_route_energy_c_v1
+    hybrid_feature_version: raw_physical_plus_w64_logits_v1
+
+  arms:
+    A_sum_raw_w64_edge_logits:
+      trainable: false
+      energy: sum of frozen W64 adjacent base-edge logits plus n_stations * unmatched_penalty
+      disclose: W64 parent saw all six authorized train sources
+    B_raw_physical_route_mlp:
+      trainable: false
+      source: outputs/mc24_four_station_explicit_route_energy_v1/{fold}/arm_b_checkpoint.json
+      note: Frozen Workbook-79 checkpoint.  Do not retrain.
+    C_physical_plus_w64_logits:
+      trainable: true
+      architecture: two_layer_mlp_width_64
+      inputs: raw_physical_route_v1 plus three hop logits, logit sum, hop count
+      output: raw route core energy
+      unmatched_penalty: -1.0
+      not_wp4_arm_c: true
+
+  audit:
+    strata:
+      - n_stations_2_3_4
+      - route_length
+      - w64_inclusion_gap_bins
+      - truth_vs_fake
+      - near_dustbin_abs_1
+    same_family_val: true
+    pre_registered_reading:
+      c_recovers_a:
+        abs_eff: 0.02
+        abs_fake: 0.02
+      c_beats_a:
+        min_eff_gain: 0.02
+        fake_not_worse: true
+      b_tracks_a_ranking:
+        spearman_complete_truth: 0.80
+      physical_lacks_in_sample:
+        same_family_eff_b_minus_a: -0.03
+        and_c_recovers_a: true
+
+  splits:
+    scheme: two_fold_family_cv
+    validator: training.source_transfer_cv.validate_fold_sources
+    validation_payload_ids:
+      - iteration_00_draw_01
+      - iteration_00_draw_01_plus_common
+    forbidden_holdout:
+      - mc24_100047_00350_00399
+      - mc24_100048_00350_00399
+      - mc24_100047_00800_00849
+      - mc24_100048_00800_00849
+      - mc24_100116_*
+      - mc24_100117_*
+
+  corpora:
+    family1: outputs/mc24_four_station_relative_route_v5a_source_transfer_v1/corpora/family1/overlay_synthetic_v1/synthetic_corpus_manifest.json
+    family2: outputs/mc24_four_station_relative_route_v5a_source_transfer_v1/corpora/family2/overlay_synthetic_v1/synthetic_corpus_manifest.json
+    wb79_arm_b: outputs/mc24_four_station_explicit_route_energy_v1
+
+  seeds:
+    primary_train: 20260905
+
+  execution:
+    must_use_htcondor:
+      - formal_training
+      - bulk_evaluation
+    device: cpu
+    device_reason: >-
+      Same as Workbook 79.  LCG_110_cuda PyTorch 2.11 has no CC 7.0
+      kernel.  Formal jobs stay on CPU, 8 cores / 32 GB.
+    required_run_metadata:
+      - git_sha
+      - resolved_config
+      - dataset_manifest
+      - checkpoint_ancestry
+      - evaluation_json
+      - stratified_audit_json
+      - interpretation_json
+
+  forbidden:
+    - retrain_v5a_or_w64_or_wb79_arm_b
+    - wp4_representation_study_arm_c
+    - domain_adaptation
+    - using_00350_as_holdout_or_model_selection
+    - opening_final_blind_or_sealed
+    - hyperparameter_sweep

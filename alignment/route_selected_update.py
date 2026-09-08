@@ -1,12 +1,15 @@
-"""Truth-free route-selected observations for physical alignment iterations.
+"""Truth-free route-selected observations for **response / regression diagnostics**.
+
+This module is not a certified alignment solver, not a full alignment
+closure, and not a downstream oracle.  Same-event observation-bank
+intersection is a conditional response, not ``selection → solve → update →
+refit``.  Workbook 82 does not reopen this path.
 
 The frozen association backbone can emit either a diagnostic straight-line
-leave-one-out residual or, for the physical alignment objective, the exact
-mode-0 ACTS residual of every selected adjacent route edge.  This module
-aligns those records across a central payload, central-difference probes, and
-a separately refitted reference target using only synthetic/original tracklet
-provenance.  It intentionally does not inspect truth particle IDs or MC
-association labels.
+leave-one-out residual or the exact mode-0 ACTS residual of every selected
+adjacent route edge.  This module aligns those records across a central
+payload, central-difference probes, and a separately refitted reference
+target using only synthetic/original tracklet provenance.
 """
 
 from __future__ import annotations

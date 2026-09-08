@@ -12,7 +12,15 @@ wp4_representation_study:
   paused_reason: >-
     Train-range 00100-00149 and development 00350-00399 are not the same
     data contract.  W64 vs raw physical vs trainable comparisons are
-    meaningless until dataset_manifest_v2 is accepted.
+    meaningless until dataset_manifest_v2 is accepted.  Workbook 79
+    authorizes only the family-CV Arm A/B first phase on historical
+    overlay corpora.  Workbook 80 hybrid ablation C (physical + W64
+    logits) is a failure-mechanism probe, not this study's Arm C.  This
+    file stays paused: geometry-holdout A/B/C and representation Arm C
+    remain unauthorized.      Workbook 81 is a constrained residual
+    calibration on frozen W64 energy, not this study's Arm C and not a
+    hybrid expansion.  Workbook 81b trains that residual (Arm D) only;
+    it still does not authorize representation-study Arm C.
   description: >-
     Fair source-and-geometry held-out comparison of frozen W64 energy,
     raw physical route energy, and a trainable physical route representation.

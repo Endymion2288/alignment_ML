@@ -1,0 +1,107 @@
+wp85_physical_alignment_qualification:
+  workbook: 85
+  phase: 85_physical_alignment_qualification_protocol
+  experiment: wb85_physical_alignment_protocol_v1
+  parent_workbook: 84
+  executable: false
+  qualification_authorized: false
+  training_authorized: false
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  final_blind_eval_authorized: false
+  sealed_test_accessed: false
+  is_wb83_rerun: false
+  modifies_wb84_corpus: false
+  new_physical_replicas_authorized: false
+  looked_at_physical_alignment_outcomes: false
+  continue_v5a_frozen_head: false
+  continue_route_energy_rewrite: false
+  continue_hybrid_expansion: false
+  continue_residual_calibration: false
+  continue_to_15d_relative_wls: false
+  description: >-
+    Freeze a prospective, multiplicity-aware, fail-closed physical
+    common-track alignment qualification protocol for the WB84
+    calypso_physical_independent_v1 corpus.  Does not run alignment.
+
+  provenance: calypso_physical_independent_v1
+  n_qualified_exports: 2394
+  n_physical_geometry_families: 4
+  geometry_families:
+    - identity
+    - identifiable_translation
+    - identifiable_rotation
+    - weak_jg_diagnostic
+  survey_tags_are_reconstruction_physics: false
+  survey_modes:
+    - fixed_dz
+    - finite_survey_prior
+  paired_event_comparison_forbidden: true
+
+  charts:
+    translation:
+      families: [identity, identifiable_translation]
+      free: [s1_dx_mm, s1_dy_mm, s2_dx_mm, s2_dy_mm, s3_dx_mm, s3_dy_mm]
+      mode_status: identifiable
+    rotation:
+      families: [identifiable_rotation]
+      free: [s1_rz_mrad, s3_rz_mrad]
+      mode_status: identifiable
+    weak_jg_diagnostic:
+      families: [weak_jg_diagnostic]
+      free: [s3_dx_mm, s3_ry_mrad]
+      mode_status: weak
+
+  primary_gate:
+    method: M2_global_location_scale_gof
+    chosen_because_it_would_pass_wb83: false
+    statistic: T_LS
+    df: 12
+    alpha: 0.05
+    weak_excluded: true
+    not_wb83_every_cell_gate: true
+
+  coverage:
+    statistic: T_cov
+    nominal: 0.95
+    not_every_cell_cp_must_contain_0.95: true
+    grossly_below_nominal:
+      empirical_lt: 0.70
+      or_cp95_upper_lt: 0.80
+
+  multiplicity:
+    diagnostic_families: [translation, rotation, weak-JG, survey-prior]
+    correction: Holm
+    diagnostics_are_not_reselection: true
+
+  sample_size:
+    n_min_per_identifiable_stratum: 200
+    redesigned_from_wb83_failed_cells: false
+    post_hoc_pooling_forbidden: true
+    primary_location_alternative: 0.35
+    primary_scale_alternative: 1.25
+    power_target: 0.80
+
+  solver:
+    module: common_track_solver
+    implementation_fixed: true
+    max_iterations: 10
+    automatically_pass_at_max_iterations: false
+    robust_irls: false
+    toy_uniform_By_official: false
+
+  forbidden:
+    - association_retraining
+    - w64_selection
+    - v5a
+    - route_energy_hybrid_calibration
+    - using_00350
+    - using_00800
+    - using_100116_100117
+    - opening_final_blind_or_sealed
+    - wb83_rerun
+    - modifying_wb84_corpus
+    - new_physical_replicas
+    - inspecting_physical_alignment_outcomes
+    - result_dependent_protocol_changes
