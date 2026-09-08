@@ -3,6 +3,7 @@
 日期： 2026-09-08
 分支： `4station`
 冻结 parent： `4station@fe00c0a9674b861f408e5c7e6c0d00163a42d116`
+生成代码 commit： `4station@582316b662fe9f5d7ad1bd1f5957a3258af7e6bf`
 任务： 修正 WB85a 把 `z` 与 coverage 当成独立合成量的 joint-null，补上官方 Calypso/ACTS runtime smoke，并冻结实际产生 QA 的 generating-code identity。不执行 WB86，不读取 WB84 physical alignment outcomes，不覆盖历史 WB85a artifact。
 
 ---
