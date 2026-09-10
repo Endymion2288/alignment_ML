@@ -1,0 +1,315 @@
+# Yasu line / Stage 2 — 3ST CKF q/p calibration.
+# Official CKFTrackCollectionWithoutIFT native signed q/p is the only
+# reconstructed momentum observable.  Truth is a calibration reference
+# only: it must not enter the fit, seed, prior, prediction, or geometry
+# solve.  Not alignment.  Not IFT residual weak-mode.  Not B14M/B15.
+# Not Measurement Model V2.  Does not reopen WB87–WB118.  Does not
+# start a new MC campaign.  Binning, gates, splits, and outlier rules
+# are frozen here before any batch result is inspected.
+
+schema_version: three-st-qp-calibration-v1
+task: YASU-S2
+workbook: 119
+created_utc: "2026-09-08T16:40:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_truth_as_fit_seed_or_prior: true
+do_not_replace_fit_qoverp_with_truth: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_residual_conditional: true
+do_not_treat_lto_as_without_ift: true
+do_not_treat_four_station_ckf_as_without_ift: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_force_pass_by_threshold: true
+do_not_drop_sign_flip_tracks: true
+do_not_drop_high_momentum_tail: true
+do_not_drop_large_pull: true
+do_not_pick_favorable_momentum_range: true
+do_not_introduce_ad_hoc_prior: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+residual_conditional_authorized: false
+b14m_reopen_authorized: false
+b15_authorized: false
+
+access_scope: development_validation
+frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML
+
+source_collection: CKFTrackCollectionWithoutIFT
+contrast_four_station_collection: CKFTrackCollection
+ift_station_id: 0
+three_station_ids: [1, 2, 3]
+official_truth_station: 1
+official_truth_station_name: upstream_S1
+truth_role: calibration_reference_only
+
+# Inherited WB87/WB98 station z.  Do not re-derive from this campaign.
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+
+state_definition:
+  native_athena: [loc1, loc2, phi, theta, q_over_p]
+  native_parameter_type: Trk::CurvilinearParameters
+  native_frame: curvilinear_trackparameters
+  export_parameters: [x_mm, y_mm, tx, ty, q_over_p_per_mev]
+  export_frame: global_cartesian_slopes_at_surface_z
+  q_over_p_native_unit: per_MeV
+  q_over_p_acts_unit: per_GeV
+  q_over_p_signed: true
+  charge_sign: sign_of_q_over_p
+  loc_unit: mm
+  angle_unit: rad
+  covariance_dimension: 5
+  tx_ty_definition: "px/pz, py/pz from TrackParameters.momentum()"
+
+truth_definition:
+  matching_tool: TrackTruthMatchingTool
+  matching_method: majority_barcode_from_SCT_SDO_Map_deposits_on_MOT
+  momentum_tool: FiducialParticleTool
+  momentum_method: average_FaserSiHit_momentum_per_station
+  official_q_over_p: "truthParticle.charge() / |p_truth| at official_truth_station"
+  official_formula_source: NtupleDumperAlg.cxx tracklet path
+  production_q_over_p: "truthParticle.charge() / truthParticle.p() diagnostic only"
+  tx_ty_truth: "px/pz, py/pz from station-1 FiducialParticleTool momentum"
+  not_a_fit_input: true
+  not_a_prior: true
+  not_a_geometry_solve: true
+
+primary_quantities:
+  - delta_q_over_p
+  - pull_z_q_over_p
+  - sign_agreement
+  - coverage_68
+  - coverage_95
+  - pull_mean
+  - pull_width
+  - charge_even_bias
+  - charge_odd_bias
+
+# Frozen before any batch inspection.  Edges are physical, not data-driven.
+binning:
+  abs_q_over_p_per_mev_edges: [0.0, 2.0e-7, 1.0e-6, 5.0e-6, 1.0e5]
+  abs_q_over_p_labels:
+    - qp_near_zero_p_ge_5tev
+    - high_p_1_to_5tev
+    - mid_200gev_to_1tev
+    - high_curvature_p_lt_200gev
+  p_truth_mev_edges: [0.0, 2.0e5, 5.0e5, 1.0e6, 2.0e6, 1.0e12]
+  p_truth_labels:
+    - p_lt_200gev
+    - p_200_500gev
+    - p_500_1000gev
+    - p_1000_2000gev
+    - p_ge_2000gev
+  tx_edges: [-1.0, -0.010, -0.005, 0.0, 0.005, 0.010, 1.0]
+  tx_labels:
+    - tx_lt_m0p010
+    - tx_m0p010_to_m0p005
+    - tx_m0p005_to_0
+    - tx_0_to_0p005
+    - tx_0p005_to_0p010
+    - tx_ge_0p010
+  ty_edges: [-1.0, -0.010, -0.005, 0.0, 0.005, 0.010, 1.0]
+  ty_labels:
+    - ty_lt_m0p010
+    - ty_m0p010_to_m0p005
+    - ty_m0p005_to_0
+    - ty_0_to_0p005
+    - ty_0p005_to_0p010
+    - ty_ge_0p010
+  high_momentum_abs_q_over_p_labels:
+    - qp_near_zero_p_ge_5tev
+  high_momentum_p_labels:
+    - p_ge_2000gev
+
+sample_rules:
+  primary_sample: truth_matched_without_ift_with_finite_s1_truth_qoverp_and_sigma
+  keep_sign_flip: true
+  keep_high_momentum_tail: true
+  keep_large_pull: true
+  unmatched_excluded_from_delta_kept_in_selection: true
+  nan_s1_truth_excluded_from_delta_kept_in_selection: true
+  match_fraction_is_diagnostic_not_a_cut: true
+  do_not_pick_best_track_per_event: true
+  construction_maps_to_access_split: train
+  validation_maps_to_access_split: validation
+
+gates:
+  min_tracks_per_split_contract: 3
+  min_matched_per_split_contract: 3
+  min_tracks_for_physics_verdict: 200
+  min_n_coverage: 100
+  min_n_stratum: 30
+  min_n_high_momentum: 20
+  min_n_charge: 30
+  abs_mean_pull_max: 0.50
+  stratum_abs_mean_pull_max: 1.00
+  high_momentum_abs_mean_pull_max: 1.00
+  sign_agreement_min: 0.95
+  sign_agreement_hard_min: 0.90
+  high_momentum_sign_agreement_min: 0.90
+  coverage_68_min: 0.50
+  coverage_68_max: 0.86
+  coverage_95_min: 0.85
+  coverage_95_max: 0.99
+  pull_rms_min: 0.70
+  pull_rms_max: 1.40
+  min_tracks_per_event: 0.50
+  max_unmatched_rate: 0.20
+  max_fit_failure_rate: 0.10
+  coverage_z68: 1.0
+  coverage_z95: 1.96
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+  reco_flag: TrackingGeometry.MaterialSource
+  used_by_production_ckf_reco: true
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  historical_runtime_unverified: true
+
+pinned_calypso_sources:
+  track_truth_matching_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackTruthMatchingTool.h
+    sha256: 456c6c6f0817cfc4c3502a593b071949f50a6e0789b7c3d610fc83b90f3e613a
+  track_truth_matching_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackTruthMatchingTool.cxx
+    sha256: b9677886c93a5b1ef0e2ae04296d4d21fd71358839dbf0c2f16096286cdb47e4
+  itrack_truth_matching_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/FaserActsKalmanFilter/ITrackTruthMatchingTool.h
+    sha256: ed8b78dba720aaf2df0df8d1ecfa948e71fa68b95a3c474f459d84c94b927b30
+  fiducial_particle_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/FiducialParticleTool.h
+    sha256: 2f43e4b26e7e4f3362f580b61f085d82750534e62981cb0c50e47dc10a31b01a
+  fiducial_particle_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/FiducialParticleTool.cxx
+    sha256: 0640711a927e1fc9e428e35c9d15c15e8f0afa9cf4fd7322a492f7d9f0e59c16
+  ifiducial_particle_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/FaserActsKalmanFilter/IFiducialParticleTool.h
+    sha256: 64b9d25ef186a731ac89e4c26f6a701efc3c14a4f15c5e287fac86ac2e6f8b25
+  ntuple_dumper_alg_cxx:
+    path: PhysicsAnalysis/NtupleDumper/src/NtupleDumperAlg.cxx
+    sha256: d104b9fec859351b5f2b46d8bc4fd75157ba28a324de42e9a6072cbf9c652bce
+  faser_reco_py:
+    path: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+    sha256: 6ec49afa4d3df784418d0ef69da78e683aad1cce7e182202e8d058c33095b034
+
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+  workbook_96:
+    config_path: configs/qoverp_covariance_export_v1.yaml
+    config_sha256: 697b71309aaef97565861297c42f7e8ffe7e39382e28533954fd319ae5ba4f4a
+    decision_path: outputs/qoverp_covariance_export_v1/sba2_qoverp_covariance_20260906T144317Z_56c7e891/qoverp_covariance_contract.json
+    decision_sha256: c722ed7b3462d8d56817beec4e23a3c7b8a4b3a179c6192d957cf6d69a8048e0
+    frozen_decision: ckf_qoverp_covariance_export_established
+  workbook_109:
+    config_path: configs/leave_target_out_state_materialization_v1.yaml
+    config_sha256: 6c4393ee8202a4b641b25599fd0b48eeba08b0930996217a25bda5cbc16cd0d7
+    decision_path: outputs/leave_target_out_state_materialization_v1/sbb13_leave_target_out_state_20260906T223538Z_6d55f3e4/leave_target_out_state_materialization_decision.json
+    decision_sha256: af7ccd055c2ff3d34f92429e37be19a89ed90a9b0db11ec6770c161c79b6e933
+    frozen_decision: leave_target_out_state_materialization_established
+    note: LTO keeps IFT; it is not the 3ST q/p source
+  workbook_117:
+    config_path: configs/ckf_without_ift_definition_v1.yaml
+    config_sha256: 952646a6e8642b1cfadb880e6309706fba14bbc8a96273f91fa90495f8a8c8cd
+    decision_path: outputs/ckf_without_ift_definition_v1/yasu_s0_without_ift_definition_20260908T125042Z_8559fecc/ckf_without_ift_definition_contract.json
+    decision_sha256: 6eb3d9afaa3cbfc0cc46af8fa75ba254e71dd5da0198f8363ab69804fdc47ec1
+    frozen_decision: ckf_without_ift_definition_established
+    artifact_root: local
+    note: Stage 0 official WithoutIFT definition
+  workbook_118:
+    config_path: configs/three_st_to_ift_prediction_v1.yaml
+    config_sha256: 5bb8db94bbdb040da2245ff46d2b446ee59c9bced416d38dfab5a2c529589936
+    decision_path: outputs/three_st_to_ift_prediction_v1/yasu_s1_three_st_to_ift_prediction_20260908T131812Z_b30ae4b2/three_st_to_ift_prediction_contract.json
+    decision_sha256: 437c0072cb40d3e6610f352e70872aa127bdf7d98c7ca1cd38ceebb6d4c0ef8c
+    frozen_decision: three_st_to_ift_prediction_established
+    artifact_root: local
+    note: Stage 1 independent 3ST→IFT chain; authorizes this calibration only
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+  batch_construction_sources:
+    - source_id: mc24_100043_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  batch_validation_sources:
+    - source_id: mc24_100047_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100047_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+
+smoke:
+  nevents: 20
+  skip_events: 0
+  campaign: smoke
+
+batch:
+  nevents: -1
+  skip_events: 0
+  campaign: batch
+
+acceptance:
+  min_tracks_per_split: 3
+  require_zero_ift_hits_on_without_ift: true
+  require_full_5x5: true
+  require_station_decoded_by_fasersct_id: true
+  dummy_qoverp_per_mev: 1.0e-5
+  dummy_variance_per_mev2: 5.0e-6
+  dummy_match_tolerance: 1.0e-18
+
+output_root: outputs/three_st_qp_calibration_v1
+dump_root: outputs/three_st_qp_calibration_v1/dumps
+dump_filename: three_st_qp_calibration.jsonl
+event_filename: three_st_qp_events.jsonl

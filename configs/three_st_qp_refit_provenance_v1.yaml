@@ -1,0 +1,209 @@
+# Yasu-S2H — CKF / KalmanFitter-refit provenance minimum diagnostic export.
+# Executes the WB123-authorized ≤20 focus-event contract.
+# Does not flip WB119.  Does not enter S3, alignment, weak-mode,
+# B14M/B15, or MM V2.  Does not change fitter, seed, hits, geometry,
+# field, covariance scale, outlier policy, or collection definition.
+
+schema_version: three-st-qp-refit-provenance-v1
+task: YASU-S2H
+workbook: 124
+created_utc: "2026-09-09T13:00:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_truth_as_fit_seed_or_prior: true
+do_not_replace_fit_qoverp_with_truth: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_residual_conditional: true
+do_not_flip_s2_to_pass: true
+do_not_set_trusted_observable_true: true
+do_not_change_fitter_seed_hits_geometry: true
+do_not_submit_large_reconstruction_dump: true
+do_not_replace_focus_after_seeing_results: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+residual_conditional_authorized: false
+b14m_reopen_authorized: false
+b15_authorized: false
+three_st_qp_trusted_observable: false
+
+access_scope: development_validation
+frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML
+
+source_collection: CKFTrackCollectionWithoutIFT
+official_truth_station: 1
+ift_station_id: 0
+max_focus_events: 20
+
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+
+# Frozen before any new dump inspection.  skip_index is Athena SkipEvents
+# in the single source xAOD (event_id repeats across chained files).
+# Selection rule (applied once to WB119 batch dumps, never replaced):
+#   6 WB119/123 identities in the first file (skip=event_id);
+#   first 5 validation + first 3 construction S2-front dirty
+#   (missing S1 or n_mot<12) in skip order;
+#   first 3+3 complete n_mot=18 S1-front controls not in the frozen six.
+focus_identities:
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 8, track_index: 0, skip_index: 8, role: frozen_wb119, reason: large_pull}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 16, track_index: 0, skip_index: 16, role: frozen_wb119, reason: large_pull}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 6, track_index: 0, skip_index: 6, role: frozen_wb119, reason: sign_flip}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 9, track_index: 0, skip_index: 9, role: frozen_wb119, reason: sign_flip}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 15, track_index: 0, skip_index: 15, role: frozen_wb119, reason: large_pull}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 16, track_index: 0, skip_index: 16, role: frozen_wb119, reason: large_pull}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 50, track_index: 0, skip_index: 50, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 84, track_index: 0, skip_index: 84, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=6;missing_two_or_more"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 150, track_index: 0, skip_index: 150, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=8;missing_s1"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 174, track_index: 0, skip_index: 174, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=11;missing_s1"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 177, track_index: 0, skip_index: 177, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=4;missing_two_or_more"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 50, track_index: 0, skip_index: 50, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=10;missing_s1"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 58, track_index: 0, skip_index: 58, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 92, track_index: 0, skip_index: 92, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 1, track_index: 0, skip_index: 1, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 5, track_index: 0, skip_index: 5, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 10, track_index: 0, skip_index: 10, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 0, track_index: 0, skip_index: 0, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 1, track_index: 0, skip_index: 1, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 7, track_index: 0, skip_index: 7, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete"}
+
+binning:
+  front_near_s1_abs_mm: 80.0
+  front_near_s2_abs_mm: 50.0
+  ckf_target_hole_chi2: -99.0
+  ckf_target_hole_ndof: 0
+
+# Frozen before dump inspection.
+gates:
+  min_tracks_contract: 3
+  min_s2_front_association: 4
+  fallback_s2_fraction_min: 0.80
+  fallback_s2_fraction_max_reject: 0.20
+  qp_shift_abs_min: 1.0e-6
+  qp_shift_rel_min: 0.50
+  sigma_log_ratio_min: 0.693147
+  front_z_match_abs_mm: 1.0
+  abs_mean_floor: 1.0e-12
+
+sample_rules:
+  reuse_existing_xaod_only: true
+  truth_offline_join_only: true
+  diagnostic_refit_does_not_replace_persisted: true
+  max_written_tracks: 20
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+
+pinned_calypso_sources:
+  create_trk_track_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.cxx
+    sha256: 6d18cc528a818a0aefaa90050acde253eb6f2b4fe1ea6cd221149311777aee51
+  create_trk_track_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.h
+    sha256: 29d3237c318fcd3f3b2171c5381dff625f74a74129aea2da1d18bc20d71b0d9d
+  kalman_fitter_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.cxx
+    sha256: 167c43d949d4b3590cadd5be4b39dfc6a15e1ddd834b2b52e57ca73a3cae7c99
+  kalman_fitter_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.h
+    sha256: c31d789fe83ea3cd58761bae7df7bc49954042f2c294d04e3c96f8a01e4f340d
+  ckf2_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.cxx
+    sha256: 10ddfedf0c2ac6a26c28b144679a7db55a07da602a2090259903b61db4ce1d20
+  ckf2_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.h
+    sha256: 87e6e692d98492e2ac37efd79dd3d6351de97b95e1df3e9081e7ce674fdd7ca6
+  ckf2_config_py:
+    path: Tracking/Acts/FaserActsKalmanFilter/python/CKF2Config.py
+    sha256: 4497dd722230dcdf9d5f9c2a3dc54fec534b50f048c2fe8b28ca6d3817a393c5
+  faser_reco_py:
+    path: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+    sha256: 6ec49afa4d3df784418d0ef69da78e683aad1cce7e182202e8d058c33095b034
+
+inheritance:
+  workbook_117:
+    config_path: configs/ckf_without_ift_definition_v1.yaml
+    config_sha256: 952646a6e8642b1cfadb880e6309706fba14bbc8a96273f91fa90495f8a8c8cd
+    decision_path: outputs/ckf_without_ift_definition_v1/yasu_s0_without_ift_definition_20260908T125042Z_8559fecc/ckf_without_ift_definition_contract.json
+    decision_sha256: 6eb3d9afaa3cbfc0cc46af8fa75ba254e71dd5da0198f8363ab69804fdc47ec1
+    frozen_decision: ckf_without_ift_definition_established
+    artifact_root: local
+  workbook_118:
+    config_path: configs/three_st_to_ift_prediction_v1.yaml
+    config_sha256: 5bb8db94bbdb040da2245ff46d2b446ee59c9bced416d38dfab5a2c529589936
+    decision_path: outputs/three_st_to_ift_prediction_v1/yasu_s1_three_st_to_ift_prediction_20260908T131812Z_b30ae4b2/three_st_to_ift_prediction_contract.json
+    decision_sha256: 437c0072cb40d3e6610f352e70872aa127bdf7d98c7ca1cd38ceebb6d4c0ef8c
+    frozen_decision: three_st_to_ift_prediction_established
+    artifact_root: local
+  workbook_119:
+    config_path: configs/three_st_qp_calibration_v1.yaml
+    config_sha256: c99629feb6fb4fd3d4be9ddd7db59ac374c4b81731df32be9376b29c31439855
+    decision_path: outputs/three_st_qp_calibration_v1/yasu_s2_three_st_qp_calibration_batch_20260908T175453Z_c6f5561a/three_st_qp_calibration_contract.json
+    decision_sha256: b326532b381d7240ba0615bf3e4825f5a20c9b0b242a3c40cc52f25e97da3a43
+    frozen_decision: three_st_qp_calibration_not_established
+    artifact_root: local
+  workbook_120:
+    config_path: configs/three_st_qp_failure_diagnosis_v1.yaml
+    config_sha256: f48bb02584eb222e6834270c7abcd6303005d4381415667378fadad3c5bb15fe
+    decision_path: outputs/three_st_qp_failure_diagnosis_v1/yasu_s2d_three_st_qp_failure_diagnosis_batch_20260908T190106Z_b5bf3e74/three_st_qp_failure_diagnosis_contract.json
+    decision_sha256: de0fa6cc8ab8cfa74399a4369fdcc90b5c6c0179d145c25ac8832341ba4b32f0
+    frozen_decision: three_st_qp_failure_diagnosis_recorded
+    artifact_root: local
+  workbook_121:
+    config_path: configs/three_st_qp_root_cause_audit_v1.yaml
+    config_sha256: 67856d74bd96cdc50f6087e4126fa0c9f4447ae145a19a78b98cc23f31807ee7
+    decision_path: outputs/three_st_qp_root_cause_audit_v1/yasu_s2e_three_st_qp_root_cause_batch_20260908T210534Z_f1fa87c2/three_st_qp_root_cause_contract.json
+    decision_sha256: e2c042c9d5e5611f2bb18535fb4ba31b1612c010be042b3f7fd88e5d18ea7e11
+    frozen_decision: three_st_qp_root_cause_recorded
+    artifact_root: local
+  workbook_122:
+    config_path: configs/three_st_qp_mean_decomposition_v1.yaml
+    config_sha256: 1e294c7339689b7b8c6a3e60b2c2df46ad0b16a1c5ecc440742ed4aa09ee2fa1
+    decision_path: outputs/three_st_qp_mean_decomposition_v1/yasu_s2f_three_st_qp_mean_decomposition_batch_20260908T224209Z_06d45778/three_st_qp_mean_decomposition_contract.json
+    decision_sha256: 27f61c7f36aa9ad135fedcd2c7b22403abccb27f2a5d4b303d84a31c26f5cb4f
+    frozen_decision: three_st_qp_mean_decomposition_recorded
+    artifact_root: local
+  workbook_123:
+    config_path: configs/three_st_qp_tail_source_audit_v1.yaml
+    config_sha256: a757c6ac6576d4989522259c4b45b9e79ca713666f397ecae73986c97051f3b0
+    decision_path: outputs/three_st_qp_tail_source_audit_v1/yasu_s2g_three_st_qp_tail_source_batch_20260909T081928Z_89657e0f/three_st_qp_tail_source_contract.json
+    decision_sha256: 446989727517e8c8815757c8a3077c880b1498fa0e657779cf7af876b7feda5a
+    frozen_decision: three_st_qp_tail_source_recorded
+    artifact_root: local
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+
+output_root: outputs/three_st_qp_refit_provenance_v1
+dump_root: outputs/three_st_qp_refit_provenance_v1/dumps
+dump_filename: three_st_qp_refit_provenance.jsonl
+event_filename: three_st_qp_refit_provenance_events.jsonl
+wb119_dump_root: outputs/three_st_qp_calibration_v1/dumps
+wb119_dump_filename: three_st_qp_calibration.jsonl
+wb119_event_filename: three_st_qp_events.jsonl
+wb119_join_campaign: batch

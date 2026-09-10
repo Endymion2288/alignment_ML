@@ -1,0 +1,3 @@
+#include "CkfThreeStQpMeasurementBendingAlg.h"
+
+DECLARE_COMPONENT(CkfThreeStQpMeasurementBendingAlg)

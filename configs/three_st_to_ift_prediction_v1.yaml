@@ -1,0 +1,187 @@
+# Yasu line / Stage 1 — independent 3ST→IFT prediction chain.
+# Official CKFTrackCollectionWithoutIFT native 5D+5×5 is the only prediction
+# source.  IFT measurements come from SCT_ClusterContainer and must not enter
+# the prediction.  Not alignment.  Does not reopen WB87–WB116.  Does not
+# start a new MC campaign.  Small-sample semantic contract only.
+
+schema_version: three-st-to-ift-prediction-v1
+task: YASU-S1
+workbook: 118
+created_utc: "2026-09-08T13:20:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_treat_lto_as_without_ift: true
+do_not_treat_four_station_ckf_as_without_ift: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_force_pass_by_threshold: true
+do_not_equate_warning_count_with_reconstruction_loss: true
+do_not_scan_acts_boundary_in_this_stage: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+mc_qp_calibration_authorized: false
+residual_conditional_authorized: false
+b14m_reopen_authorized: false
+b15_authorized: false
+
+access_scope: development_validation
+frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML
+
+source_collection: CKFTrackCollectionWithoutIFT
+contrast_four_station_collection: CKFTrackCollection
+independent_measurement_container: SCT_ClusterContainer
+ift_station_id: 0
+three_station_ids: [1, 2, 3]
+target_station: 0
+propagation_direction: backward
+official_transport_tool: FaserActsExtrapolationTool
+official_prediction_model: model1_acts_process_noise
+diagnostic_prediction_model: model0_no_process_noise
+boundary_scan_is_stage_6: true
+
+# Inherited WB87/WB98 station z.  Do not re-derive from this campaign.
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+
+state_definition:
+  native_athena: [loc1, loc2, phi, theta, q_over_p]
+  native_parameter_type: Trk::CurvilinearParameters
+  native_frame: curvilinear_trackparameters
+  export_parameters: [x_mm, y_mm, tx, ty, q_over_p_per_mev]
+  export_frame: global_cartesian_slopes_at_surface_z
+  q_over_p_native_unit: per_MeV
+  q_over_p_acts_unit: per_GeV
+  q_over_p_signed: true
+  charge_sign: sign_of_q_over_p
+  loc_unit: mm
+  angle_unit: rad
+  covariance_dimension: 5
+
+residual_definition:
+  kind: independent_ift_cluster_local_loc0
+  measurement: "FaserSCT_Cluster.localPosition Trk::locX"
+  prediction: "Acts BoundTrackParameters loc0 on the IFT wafer surface"
+  formula: "r = loc0_cluster - loc0_predicted"
+  unit: mm
+  variance_diagnostic: "(0.08 mm)^2 / 12 from WB116; not a gate"
+  inside_bounds_required_for_residual: false
+  source: SCT_ClusterContainer
+  station_decoder: FaserSCT_ID
+  prediction_uses_ift_measurement: false
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+  reco_flag: TrackingGeometry.MaterialSource
+  used_by_production_ckf_reco: true
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+  historical_runtime_unverified: true
+
+pinned_calypso_sources:
+  extrapolation_tool_h:
+    path: Tracking/Acts/FaserActsGeometryInterfaces/FaserActsGeometryInterfaces/IFaserActsExtrapolationTool.h
+    sha256: 23a4a5fe778431750c6f6bcff32a584f39a9750a01c1a4ca664323bd644a1c38
+  extrapolation_tool_cxx:
+    path: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.cxx
+    sha256: c5176ff75b27b4a035ecd82c01947bff35db27a21be7d6b5876ea1ccd9c1483a
+  cluster_local_dump_cxx:
+    path: PhysicsAnalysis/NtupleDumper/src/ClusterLocalDumpAlg.cxx
+    sha256: 9d28f473765adb9981666b7cb6cea5d8f95aec064aa3ab5f2b2c7afe839040dc
+  faser_reco_py:
+    path: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+    sha256: 6ec49afa4d3df784418d0ef69da78e683aad1cce7e182202e8d058c33095b034
+  circle_fit_seed_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFitTrackSeedTool.cxx
+    sha256: 1709335ca446d475a8fbd33d0530c8009b632c1ffbbe4049f92545b80c413bbd
+  si_detector_element_cxx:
+    path: Tracker/TrackerDetDescr/TrackerReadoutGeometry/src/SiDetectorElement.cxx
+    sha256: a4394f8491ad860a987abd68b71aa42cb63e595bc4e7c6ded350cc773d2c9ed8
+
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+  workbook_96:
+    config_path: configs/qoverp_covariance_export_v1.yaml
+    config_sha256: 697b71309aaef97565861297c42f7e8ffe7e39382e28533954fd319ae5ba4f4a
+    decision_path: outputs/qoverp_covariance_export_v1/sba2_qoverp_covariance_20260906T144317Z_56c7e891/qoverp_covariance_contract.json
+    decision_sha256: c722ed7b3462d8d56817beec4e23a3c7b8a4b3a179c6192d957cf6d69a8048e0
+    frozen_decision: ckf_qoverp_covariance_export_established
+  workbook_109:
+    config_path: configs/leave_target_out_state_materialization_v1.yaml
+    config_sha256: 6c4393ee8202a4b641b25599fd0b48eeba08b0930996217a25bda5cbc16cd0d7
+    decision_path: outputs/leave_target_out_state_materialization_v1/sbb13_leave_target_out_state_20260906T223538Z_6d55f3e4/leave_target_out_state_materialization_decision.json
+    decision_sha256: af7ccd055c2ff3d34f92429e37be19a89ed90a9b0db11ec6770c161c79b6e933
+    frozen_decision: leave_target_out_state_materialization_established
+    note: LTO keeps IFT; it is not the 3ST prediction source
+  workbook_117:
+    config_path: configs/ckf_without_ift_definition_v1.yaml
+    config_sha256: 952646a6e8642b1cfadb880e6309706fba14bbc8a96273f91fa90495f8a8c8cd
+    decision_path: outputs/ckf_without_ift_definition_v1/yasu_s0_without_ift_definition_20260908T125042Z_8559fecc/ckf_without_ift_definition_contract.json
+    decision_sha256: 6eb3d9afaa3cbfc0cc46af8fa75ba254e71dd5da0198f8363ab69804fdc47ec1
+    frozen_decision: ckf_without_ift_definition_established
+    artifact_root: local
+    note: Stage 0 official WithoutIFT definition; authorizes this chain only
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+
+smoke:
+  nevents: 20
+  skip_events: 0
+  max_steps: 10000
+
+acceptance:
+  min_tracks_per_split: 3
+  min_events_with_ift_clusters: 1
+  min_plane_predictions_per_split: 1
+  require_zero_ift_hits_on_without_ift: true
+  require_full_5x5: true
+  require_station_decoded_by_fasersct_id: true
+  dummy_qoverp_per_mev: 1.0e-5
+  dummy_variance_per_mev2: 5.0e-6
+  dummy_match_tolerance: 1.0e-18
+
+output_root: outputs/three_st_to_ift_prediction_v1
+dump_root: outputs/three_st_to_ift_prediction_v1/dumps
+dump_filename: three_st_to_ift_prediction.jsonl
+event_filename: three_st_to_ift_events.jsonl

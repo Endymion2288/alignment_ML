@@ -1,0 +1,336 @@
+# Yasu-S2J — batch calibration of WB125 bending_raw and CKF mapping audit.
+# Does not enter S3, E[r_IFT|q/p], E[r_IFT|bending], alignment, weak-mode,
+# B14M/B15, or MM V2.  Does not flip WB119.  Does not change the frozen
+# YZ bending_raw definition, fitter, seed, hits, geometry, field,
+# covariance scale, or collection.
+
+schema_version: three-st-qp-measurement-bending-batch-v1
+task: YASU-S2J
+workbook: 126
+created_utc: "2026-09-09T17:50:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_truth_as_fit_seed_or_prior: true
+do_not_replace_fit_qoverp_with_truth: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_residual_conditional: true
+do_not_compute_e_r_ift_given_qp: true
+do_not_compute_e_r_ift_given_bending: true
+do_not_flip_s2_to_pass: true
+do_not_set_trusted_observable_true: true
+do_not_change_fitter_seed_hits_geometry: true
+do_not_change_bending_definition: true
+do_not_use_fitted_qp_in_bending: true
+do_not_use_seed_B_as_official_jacobian: true
+do_not_invent_sigma_b: true
+do_not_convert_bending_to_qp: true
+do_not_auto_submit_without_smoke: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+residual_conditional_authorized: false
+b14m_reopen_authorized: false
+b15_authorized: false
+three_st_qp_trusted_observable: false
+measurement_uncertainty_propagated: false
+official_qp_like_jacobian_authorized: false
+inspect_only_measurement_dump_authorized: true
+
+access_scope: development_validation
+frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML
+
+source_collection: CKFTrackCollectionWithoutIFT
+official_truth_station: 1
+ift_station_id: 0
+
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+
+# Identical to WB125.  Do not change.
+bending_plane: YZ
+orthogonal_plane: XZ
+coordinate_source: MOT_matched_space_point_else_detel_localToGlobal
+centroid_definition: unique_space_point_mean_per_station_else_reconstructed_MOT_cluster_mean
+not_a_centroid_source:
+  - persisted_front_xyz
+  - fitted_q_over_p
+  - native_5x5
+  - truth_q_over_p
+  - seed_circle_center
+
+observable:
+  name: bending_raw
+  unit: radian
+  formula: atan((y2-y1)/(z2-z1)) - atan((y3-y2)/(z3-z2))
+  companion_sagitta: sagitta_y_mm
+  sagitta_formula: y2 - (y1 + (y3-y1)*(z2-z1)/(z3-z1))
+  orthogonal_control: bending_x
+  orthogonal_formula: atan((x2-x1)/(z2-z1)) - atan((x3-x2)/(z3-z2))
+  sign_convention: plus_bending_is_plus_charge
+  circle_fit_charge_rule: cy_lt_0_is_plus_one
+  truth_role: source_disjoint_mc_calibration_reference_only
+  sigma_b: not_invented
+  qp_like_conversion: unauthorized
+  inherited_from: workbook_125
+
+seed_only_constants:
+  circle_fit_B_tesla: 0.55
+  magnetic_rigidity_gev_per_tm: 0.3
+  mev_per_gev: 0.001
+  source: CircleFitTrackSeedTool.cxx:334-345
+  official: false
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+
+pinned_calypso_sources:
+  circle_fit_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFit.cxx
+    sha256: d9b12915293be08017e62c719808e67452b1e54b10db60374166092b05ae6542
+  circle_fit_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFit.h
+    sha256: 3322a2c4831fabcf08d90e0bfb9b80ac1cf10b7bf4ec0184ddf3e1facac09849
+  circle_fit_seed_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFitTrackSeedTool.cxx
+    sha256: 1709335ca446d475a8fbd33d0530c8009b632c1ffbbe4049f92545b80c413bbd
+  circle_fit_seed_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFitTrackSeedTool.h
+    sha256: 05c76038ea06cc07c0e8d385f4e64695ec914ed651daec496b99c52ac551787c
+  create_trk_track_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.cxx
+    sha256: 6d18cc528a818a0aefaa90050acde253eb6f2b4fe1ea6cd221149311777aee51
+  create_trk_track_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.h
+    sha256: 29d3237c318fcd3f3b2171c5381dff625f74a74129aea2da1d18bc20d71b0d9d
+  kalman_fitter_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.cxx
+    sha256: 167c43d949d4b3590cadd5be4b39dfc6a15e1ddd834b2b52e57ca73a3cae7c99
+  kalman_fitter_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.h
+    sha256: c31d789fe83ea3cd58761bae7df7bc49954042f2c294d04e3c96f8a01e4f340d
+  ckf2_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.cxx
+    sha256: 10ddfedf0c2ac6a26c28b144679a7db55a07da602a2090259903b61db4ce1d20
+  ckf2_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.h
+    sha256: 87e6e692d98492e2ac37efd79dd3d6351de97b95e1df3e9081e7ce674fdd7ca6
+  ckf2_config_py:
+    path: Tracking/Acts/FaserActsKalmanFilter/python/CKF2Config.py
+    sha256: 4497dd722230dcdf9d5f9c2a3dc54fec534b50f048c2fe8b28ca6d3817a393c5
+  faser_reco_py:
+    path: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+    sha256: 6ec49afa4d3df784418d0ef69da78e683aad1cce7e182202e8d058c33095b034
+
+# Frozen before batch inspection.
+gates:
+  min_clean_contract: 8
+  min_clean_recorded: 5000
+  min_fit_flip_recorded: 1000
+  min_high_p_2tev: 100
+  min_p_1_to_2tev: 100
+  min_low_p: 50
+  min_matched_cell: 20
+  min_matched_fraction: 0.30
+  sign_agree_present: 0.85
+  spearman_abs_present: 0.30
+  orthogonal_spearman_abs_max: 0.25
+  high_p_sign_drop: 0.15
+  high_p_raw_fidelity_min: 0.85
+  fit_extra_flip_frac: 0.05
+  source_rel_range_matched: 0.50
+  mapping_class_a_frac: 0.50
+  mapping_class_c_frac: 0.50
+  unresolvable_abs_bending: 1.0e-5
+  extreme_pull_abs: 10.0
+  min_station_dz_mm: 1.0
+  abs_mean_floor: 1.0e-12
+  wb119_n_fit_flip_expected: 243758
+  wb119_n_fit_flip_rel_tol: 0.20
+
+# Frozen before batch inspection.  Same p/tx/ty edges as WB119.
+binning:
+  p_truth_edges_mev: [0.0, 2.0e5, 5.0e5, 1.0e6, 2.0e6, 1.0e12]
+  p_truth_labels:
+    - p_lt_200gev
+    - p_200_500gev
+    - p_500_1000gev
+    - p_1000_2000gev
+    - p_ge_2000gev
+  high_p_limit_label: p_ge_2000gev
+  mid_high_p_label: p_1000_2000gev
+  low_p_label: p_lt_200gev
+  tx_edges: [-1.0, -0.010, -0.005, 0.0, 0.005, 0.010, 1.0]
+  tx_labels:
+    - tx_lt_m0p010
+    - tx_m0p010_to_m0p005
+    - tx_m0p005_to_0
+    - tx_0_to_0p005
+    - tx_0p005_to_0p010
+    - tx_ge_0p010
+  ty_edges: [-1.0, -0.010, -0.005, 0.0, 0.005, 0.010, 1.0]
+  ty_labels:
+    - ty_lt_m0p010
+    - ty_m0p010_to_m0p005
+    - ty_m0p005_to_0
+    - ty_0_to_0p005
+    - ty_0p005_to_0p010
+    - ty_ge_0p010
+  abs_bending_edges: [0.0, 1.0e-5, 5.0e-5, 2.0e-4, 1.0e-3, 1.0]
+  abs_bending_labels:
+    - abs_b_unresolvable
+    - abs_b_small
+    - abs_b_mid
+    - abs_b_large
+    - abs_b_very_large
+
+sample_rules:
+  reuse_existing_xaod_only: true
+  measurement_only_construction: true
+  truth_offline_join_only: true
+  truth_calibration_reference_only: true
+  point_estimator_only: true
+  no_official_qp_jacobian: true
+  report_clean_and_dirty_separately: true
+  do_not_delete_dirty: true
+  same_nine_wb119_sources: true
+  source_match_on: [charge, p_bin, tx_bin, ty_bin, topology]
+  tx_ty_source: measurement_chord_s1_to_s3
+  wb119_denominator: all_truth_matched_primary
+  smoke_reuse_wb125_contract: true
+
+comparison_classes:
+  - truth_bending_same_fitted_flip
+  - truth_and_bending_unresolvable
+  - bending_sign_flip
+  - fitted_qp_extreme_tail
+
+inheritance:
+  workbook_117:
+    config_path: configs/ckf_without_ift_definition_v1.yaml
+    config_sha256: 952646a6e8642b1cfadb880e6309706fba14bbc8a96273f91fa90495f8a8c8cd
+    decision_path: outputs/ckf_without_ift_definition_v1/yasu_s0_without_ift_definition_20260908T125042Z_8559fecc/ckf_without_ift_definition_contract.json
+    decision_sha256: 6eb3d9afaa3cbfc0cc46af8fa75ba254e71dd5da0198f8363ab69804fdc47ec1
+    frozen_decision: ckf_without_ift_definition_established
+    artifact_root: local
+  workbook_118:
+    config_path: configs/three_st_to_ift_prediction_v1.yaml
+    config_sha256: 5bb8db94bbdb040da2245ff46d2b446ee59c9bced416d38dfab5a2c529589936
+    decision_path: outputs/three_st_to_ift_prediction_v1/yasu_s1_three_st_to_ift_prediction_20260908T131812Z_b30ae4b2/three_st_to_ift_prediction_contract.json
+    decision_sha256: 437c0072cb40d3e6610f352e70872aa127bdf7d98c7ca1cd38ceebb6d4c0ef8c
+    frozen_decision: three_st_to_ift_prediction_established
+    artifact_root: local
+  workbook_119:
+    config_path: configs/three_st_qp_calibration_v1.yaml
+    config_sha256: c99629feb6fb4fd3d4be9ddd7db59ac374c4b81731df32be9376b29c31439855
+    decision_path: outputs/three_st_qp_calibration_v1/yasu_s2_three_st_qp_calibration_batch_20260908T175453Z_c6f5561a/three_st_qp_calibration_contract.json
+    decision_sha256: b326532b381d7240ba0615bf3e4825f5a20c9b0b242a3c40cc52f25e97da3a43
+    frozen_decision: three_st_qp_calibration_not_established
+    artifact_root: local
+  workbook_120:
+    config_path: configs/three_st_qp_failure_diagnosis_v1.yaml
+    config_sha256: f48bb02584eb222e6834270c7abcd6303005d4381415667378fadad3c5bb15fe
+    decision_path: outputs/three_st_qp_failure_diagnosis_v1/yasu_s2d_three_st_qp_failure_diagnosis_batch_20260908T190106Z_b5bf3e74/three_st_qp_failure_diagnosis_contract.json
+    decision_sha256: de0fa6cc8ab8cfa74399a4369fdcc90b5c6c0179d145c25ac8832341ba4b32f0
+    frozen_decision: three_st_qp_failure_diagnosis_recorded
+    artifact_root: local
+  workbook_121:
+    config_path: configs/three_st_qp_root_cause_audit_v1.yaml
+    config_sha256: 67856d74bd96cdc50f6087e4126fa0c9f4447ae145a19a78b98cc23f31807ee7
+    decision_path: outputs/three_st_qp_root_cause_audit_v1/yasu_s2e_three_st_qp_root_cause_batch_20260908T210534Z_f1fa87c2/three_st_qp_root_cause_contract.json
+    decision_sha256: e2c042c9d5e5611f2bb18535fb4ba31b1612c010be042b3f7fd88e5d18ea7e11
+    frozen_decision: three_st_qp_root_cause_recorded
+    artifact_root: local
+  workbook_122:
+    config_path: configs/three_st_qp_mean_decomposition_v1.yaml
+    config_sha256: 1e294c7339689b7b8c6a3e60b2c2df46ad0b16a1c5ecc440742ed4aa09ee2fa1
+    decision_path: outputs/three_st_qp_mean_decomposition_v1/yasu_s2f_three_st_qp_mean_decomposition_batch_20260908T224209Z_06d45778/three_st_qp_mean_decomposition_contract.json
+    decision_sha256: 27f61c7f36aa9ad135fedcd2c7b22403abccb27f2a5d4b303d84a31c26f5cb4f
+    frozen_decision: three_st_qp_mean_decomposition_recorded
+    artifact_root: local
+  workbook_123:
+    config_path: configs/three_st_qp_tail_source_audit_v1.yaml
+    config_sha256: a757c6ac6576d4989522259c4b45b9e79ca713666f397ecae73986c97051f3b0
+    decision_path: outputs/three_st_qp_tail_source_audit_v1/yasu_s2g_three_st_qp_tail_source_batch_20260909T081928Z_89657e0f/three_st_qp_tail_source_contract.json
+    decision_sha256: 446989727517e8c8815757c8a3077c880b1498fa0e657779cf7af876b7feda5a
+    frozen_decision: three_st_qp_tail_source_recorded
+    artifact_root: local
+  workbook_124:
+    config_path: configs/three_st_qp_refit_provenance_v1.yaml
+    config_sha256: bd88ed9fb34ca5a3c1777407fc95c6f29867e3c583749a5606e85882ece748b4
+    decision_path: outputs/three_st_qp_refit_provenance_v1/yasu_s2h_three_st_qp_refit_provenance_batch_20260909T150728Z_aebef4ed/three_st_qp_refit_provenance_contract.json
+    decision_sha256: 01bcf3a924ae4a0363ddbe6f53f295e9bdc6f728cf42ca83a6f2ac418657d4a4
+    frozen_decision: three_st_qp_refit_provenance_recorded
+    artifact_root: local
+  workbook_125:
+    config_path: configs/three_st_qp_measurement_bending_v1.yaml
+    config_sha256: b03976103cf8df63ebc10a6db6bc709a077e6b61bc0b8d7df2078f199fe2b4a4
+    decision_path: outputs/three_st_qp_measurement_bending_v1/yasu_s2i_three_st_qp_measurement_bending_contract_20260909T170948Z_9164bf14/three_st_qp_measurement_bending_contract.json
+    decision_sha256: d11537b731846b4fc4b7e5cd71d95b62258a32bea24c79a9286166c6edac3f97
+    frozen_decision: three_st_qp_measurement_bending_contract_established
+    artifact_root: local
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  validation_sources:
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+  batch_construction_sources:
+    - source_id: mc24_100043_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00200_00299
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+    - source_id: mc24_100044_00300_00399
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  batch_validation_sources:
+    - source_id: mc24_100047_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100047_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+    - source_id: mc24_100048_00050_00099
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+
+smoke:
+  nevents: 20
+  skip_events: 0
+  campaign: smoke
+  reuse_wb125_contract: true
+  wb125_dump_root: outputs/three_st_qp_measurement_bending_v1/dumps/contract
+
+batch:
+  nevents: -1
+  skip_events: 0
+  campaign: batch
+
+output_root: outputs/three_st_qp_measurement_bending_batch_v1
+dump_root: outputs/three_st_qp_measurement_bending_batch_v1/dumps
+dump_filename: three_st_qp_measurement_bending.jsonl
+event_filename: three_st_qp_measurement_bending_events.jsonl
+condor_root: outputs/three_st_qp_measurement_bending_batch_v1/condor
