@@ -179,6 +179,77 @@ def main() -> int:
         help="B14T diagnostic maxSteps overlay; 0 unused",
     )
     parser.add_argument(
+        "--enable-jacobian-continuity",
+        action="store_true",
+        help="B14J: four-rung supporting-plane Jacobian continuity audit",
+    )
+    parser.add_argument(
+        "--enable-map-smoothness",
+        action="store_true",
+        help="B14K: source-to-measurement map smoothness root-cause audit",
+    )
+    parser.add_argument(
+        "--map-smoothness-repeats",
+        type=int,
+        default=3,
+        help="B14K identical-theta repeat count",
+    )
+    parser.add_argument(
+        "--enable-derivative-contract",
+        action="store_true",
+        help="B14L: ACTS transportJacobian vs fixed FD derivative contract",
+    )
+    parser.add_argument(
+        "--enable-official-supporting-plane-jacobian",
+        action="store_true",
+        help="B14U: official supporting-plane free-state Jacobian contract",
+    )
+    parser.add_argument(
+        "--enable-field-gradient-variational-repair",
+        action="store_true",
+        help="B14X: diagnostic-only field-gradient tangent; does not change h_i",
+    )
+    parser.add_argument(
+        "--enable-focus86-segment-reference",
+        action="store_true",
+        help="B14Y: 86 required-hop independent segment reference; does not change h_i",
+    )
+    parser.add_argument(
+        "--enable-focus86-common-grid-shadow",
+        action="store_true",
+        help="B14Z: 86 common-grid shadow segment reference; does not change h_i",
+    )
+    parser.add_argument(
+        "--enable-shadow-mean-transport-contract",
+        action="store_true",
+        help="B14ZA: production-vs-shadow mean transport contract; no derivative",
+    )
+    parser.add_argument(
+        "--enable-profile-basin-diagnosis",
+        action="store_true",
+        help="B14MS: diagnose frozen WB129 endpoints; does not change the optimizer",
+    )
+    parser.add_argument(
+        "--enable-profile-globalization-repair",
+        action="store_true",
+        help="B14MT: explicit profile + range-space trust region; chi2 unchanged",
+    )
+    parser.add_argument(
+        "--basin-source-jsonl",
+        default="",
+        help="WB129 profile_optimize JSONL used as frozen endpoints",
+    )
+    parser.add_argument(
+        "--basin-run-continuation",
+        action="store_true",
+        help="B14MS: run A/B nuisance continuation on failure identities",
+    )
+    parser.add_argument(
+        "--no-basin-run-continuation",
+        action="store_true",
+        help="B14MS: skip continuation (stationarity / line-search / cross-start only)",
+    )
+    parser.add_argument(
         "--select-event-ids",
         default="",
         help="Comma-separated event numbers; empty means all",
@@ -238,7 +309,37 @@ def main() -> int:
     alg.ProfileSupportingPlane = True
     alg.ProfileRecordStepperPath = bool(args.profile_record_stepper_path)
     alg.ProfileDiagnosticMaxSteps = int(args.profile_diagnostic_max_steps)
-    if bool(args.enable_profile_numerics):
+    alg.EnableJacobianContinuity = bool(args.enable_jacobian_continuity)
+    alg.EnableMapSmoothness = bool(args.enable_map_smoothness)
+    alg.MapSmoothnessRepeats = int(args.map_smoothness_repeats)
+    alg.EnableDerivativeContract = bool(args.enable_derivative_contract)
+    alg.EnableOfficialSupportingPlaneJacobian = bool(
+        args.enable_official_supporting_plane_jacobian
+    )
+    alg.EnableFieldGradientVariationalRepair = bool(
+        args.enable_field_gradient_variational_repair
+    )
+    alg.EnableFocus86SegmentReference = bool(
+        args.enable_focus86_segment_reference
+    )
+    alg.EnableFocus86CommonGridShadow = bool(
+        args.enable_focus86_common_grid_shadow
+    )
+    alg.EnableShadowMeanTransportContract = bool(
+        args.enable_shadow_mean_transport_contract
+    )
+    alg.EnableProfileBasinDiagnosis = bool(args.enable_profile_basin_diagnosis)
+    alg.EnableProfileGlobalizationRepair = bool(
+        args.enable_profile_globalization_repair
+    )
+    alg.BasinSourceJsonl = str(args.basin_source_jsonl)
+    if bool(args.enable_profile_basin_diagnosis):
+        alg.BasinRunContinuation = not bool(args.no_basin_run_continuation)
+    if (
+        bool(args.enable_profile_numerics)
+        or bool(args.enable_profile_basin_diagnosis)
+        or bool(args.enable_profile_globalization_repair)
+    ):
         alg.ProfileMaxIterations = 50
     if str(args.select_event_ids).strip():
         alg.SelectEventIds = [

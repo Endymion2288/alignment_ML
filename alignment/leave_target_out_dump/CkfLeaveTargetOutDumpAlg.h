@@ -121,6 +121,45 @@ class CkfLeaveTargetOutDumpAlg : public AthAlgorithm {
   Gaudi::Property<int> m_profileDiagnosticMaxSteps{
       this, "ProfileDiagnosticMaxSteps", 0,
       "B14T diagnostic maxSteps overlay; 0 means unused"};
+  Gaudi::Property<bool> m_enableJacobianContinuity{
+      this, "EnableJacobianContinuity", false,
+      "B14J: four-rung supporting-plane Jacobian continuity audit; default off"};
+  Gaudi::Property<bool> m_enableMapSmoothness{
+      this, "EnableMapSmoothness", false,
+      "B14K: source-to-measurement map smoothness root-cause audit; default off"};
+  Gaudi::Property<int> m_mapSmoothnessRepeats{
+      this, "MapSmoothnessRepeats", 3,
+      "B14K identical-theta repeat count; not a perturbation"};
+  Gaudi::Property<bool> m_enableDerivativeContract{
+      this, "EnableDerivativeContract", false,
+      "B14L: ACTS transportJacobian vs fixed FD derivative contract; default off"};
+  Gaudi::Property<bool> m_enableOfficialSupportingPlaneJacobian{
+      this, "EnableOfficialSupportingPlaneJacobian", false,
+      "B14U: official supporting-plane free-state Jacobian; default off"};
+  Gaudi::Property<bool> m_enableFieldGradientVariationalRepair{
+      this, "EnableFieldGradientVariationalRepair", false,
+      "B14X: diagnostic-only field-gradient tangent; does not change h_i"};
+  Gaudi::Property<bool> m_enableFocus86SegmentReference{
+      this, "EnableFocus86SegmentReference", false,
+      "B14Y: 86 required-hop independent segment reference; does not change h_i"};
+  Gaudi::Property<bool> m_enableFocus86CommonGridShadow{
+      this, "EnableFocus86CommonGridShadow", false,
+      "B14Z: 86 common-grid shadow segment reference; does not change h_i"};
+  Gaudi::Property<bool> m_enableShadowMeanTransportContract{
+      this, "EnableShadowMeanTransportContract", false,
+      "B14ZA/B14ZC: certified shadow mean; FD only when official Jacobian is also on"};
+  Gaudi::Property<bool> m_enableProfileBasinDiagnosis{
+      this, "EnableProfileBasinDiagnosis", false,
+      "B14MS: diagnose WB129 endpoints; does not change the optimizer"};
+  Gaudi::Property<std::string> m_basinSourceJsonl{
+      this, "BasinSourceJsonl", "",
+      "WB129 profile_optimize JSONL used as frozen endpoints"};
+  Gaudi::Property<bool> m_basinRunContinuation{
+      this, "BasinRunContinuation", true,
+      "B14MS: run 21-point A/B nuisance continuation on failure identities"};
+  Gaudi::Property<bool> m_enableProfileGlobalizationRepair{
+      this, "EnableProfileGlobalizationRepair", false,
+      "B14MT: explicit profile + range-space trust region; does not change chi2"};
 
   const FaserSCT_ID* m_idHelper{nullptr};
   std::mutex m_mutex;

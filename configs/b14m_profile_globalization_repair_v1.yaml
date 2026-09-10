@@ -1,0 +1,1920 @@
+schema_version: b14m-profile-globalization-repair-v1
+task: SB-B14MT
+workbook: 131
+created_utc: '2026-09-10T13:30:00Z'
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_dummy_segmentfit_covariance: true
+do_not_inject_synthetic_qoverp: true
+do_not_tune_covariance_to_chi2: true
+do_not_tune_process_noise: true
+do_not_project_q_to_psd: true
+do_not_delete_state_variables: true
+do_not_reject_outliers: true
+do_not_clip_chi2_tails: true
+do_not_rescreen_wb99_tails: true
+do_not_design_selection_from_closure: true
+do_not_use_chi2_in_eligibility: true
+do_not_use_pull_in_eligibility: true
+do_not_use_residual_in_eligibility: true
+do_not_use_truth_in_eligibility: true
+do_not_drop_focus_identity: true
+do_not_use_raw_ckf_as_official_input: true
+do_not_tighten_reconstruction_contract: true
+do_not_invent_empirical_cross_covariance: true
+do_not_claim_conservative_covariance_acceptable: true
+do_not_claim_filter_pass: true
+do_not_declare_covariance_model_fixed: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_b15_without_lto_cin_contract: true
+do_not_claim_transport_covariance_validated: true
+do_not_rescale_or_clip_lto_cin: true
+do_not_choose_seed_scale_from_closure: true
+do_not_introduce_target_independent_prior: true
+do_not_instantiate_prior_in_production: true
+do_not_add_prior_into_wb109_cin: true
+do_not_delete_qoverp: true
+do_not_fix_qoverp: true
+do_not_enter_b14p: true
+do_not_enter_b14m: false
+do_not_enter_b14n: true
+do_not_enter_b14t: true
+do_not_enter_b14j: true
+do_not_enter_b14k: true
+do_not_enter_b14l: true
+do_not_enter_b14u: true
+do_not_enter_b14v: true
+do_not_enter_b14w: true
+do_not_enter_b14x: true
+do_not_enter_b14y: true
+do_not_enter_b14z: true
+do_not_enter_b14za: true
+do_not_enter_b14zb: true
+do_not_enter_b14zc: true
+do_not_enter_b14mr: true
+do_not_select_best_fd_step: true
+do_not_switch_official_likelihood_to_direct: true
+do_not_reopen_b14m_before_jacobian_contract: false
+do_not_run_restart_before_jacobian_contract: false
+do_not_submit_1989: true
+do_not_change_optimizer: false
+do_not_change_termination_rule: false
+do_not_change_line_search: false
+do_not_change_parameter_scaling: true
+do_not_change_pinv_relative: true
+do_not_add_random_restarts: true
+do_not_take_min_of_four_restarts_as_fix: true
+do_not_use_held_out_to_select_basin: true
+do_not_enter_b14ms: true
+do_not_enter_b14mt: false
+do_not_submit_full_sample_preflight: true
+do_not_enter_wb130_full_sample: true
+do_not_invent_optimizer_tolerance: true
+do_not_retune_gauss_newton: true
+do_not_drop_event_37: true
+do_not_drop_event_86: true
+do_not_replace_37_with_44: true
+do_not_use_target_for_line_search: true
+do_not_use_target_for_stopping: true
+do_not_use_target_for_restart_selection: true
+do_not_treat_rank_lt_5_as_fail: true
+do_not_blame_86_historical_fd: true
+do_not_reuse_wb119_dummy_cov_bounded_transportJacobian: true
+do_not_reuse_wb120_incomplete_rk_free: true
+do_not_reuse_wb124_adaptive_dopri5: true
+do_not_reuse_wb125_classical_rk4_shadow: true
+do_not_claim_5d_cin_repaired: true
+do_not_use_arbitrary_max_steps_as_official_fix: true
+do_not_use_arbitrary_boundary_tolerance: true
+do_not_add_measurement_update_in_evaluator: true
+do_not_merge_class_m_and_class_s: true
+do_not_claim_physical_nonidentifiability: true
+do_not_enter_b15: true
+do_not_rewrite_profile_math: true
+do_not_change_statistical_model: true
+do_not_treat_propagation_failure_as_nonidentifiability: true
+do_not_treat_rank_deficiency_as_failure: true
+do_not_invent_chi2_penalty_for_propagation_failure: true
+do_not_interpret_scaling_as_prior: true
+do_not_submit_full_sample_without_smoke_gate: true
+do_not_execute_marginalization: true
+do_not_use_wb109_cin_as_likelihood: true
+do_not_use_wb107_cin_as_likelihood: true
+do_not_use_truth_residual_as_likelihood: true
+do_not_use_target_station_measurement_in_fit: true
+do_not_use_ridge: true
+do_not_fill_null_space_with_seed: true
+do_not_force_5d_lto_covariance: true
+do_not_treat_pinv_null_as_zero_uncertainty: true
+do_not_select_best_seed: true
+do_not_fix_nuisance_to_seed: true
+profiling_is_primary_contract: true
+marginalization_executed: false
+do_not_use_full_track_ckf_as_prior: true
+do_not_use_wb107_cin_as_prior: true
+do_not_use_truth_as_prior: true
+do_not_use_closure_derived_prior: true
+do_not_use_seed_scale_as_prior: true
+do_not_use_arbitrary_gaussian_prior: true
+do_not_reread_sealed_test: true
+do_not_start_new_source_campaign: true
+do_not_write_geometry_or_conditions_payload: true
+do_not_modify_faseracts_extrapolation_tool_source: true
+do_not_construct_acts_objects_in_python: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+measurement_model_validated: false
+unconstrained_tracker_only_stopped: true
+eligibility_independent_of_closure: true
+access_scope: development_validation
+source_collection: CKFTrackCollection
+official_input_scope: contract_eligible
+state_definition:
+  parameters:
+  - x_mm
+  - y_mm
+  - tx
+  - ty
+  - q_over_p_per_mev
+  units:
+  - mm
+  - mm
+  - '1'
+  - '1'
+  - 1/MeV
+  frame: global_cartesian_slopes_at_surface_z
+  q_over_p_signed: true
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: 24.0.41
+  acts_version: 32.0.2
+  dump_helper: alignment/leave_target_out_dump/CkfLeaveTargetOutDumpAlg.cxx
+inheritance:
+  workbook_87:
+    config_path: configs/faseracts_propagated_covariance_validation_v2.yaml
+    config_sha256: dd9c1f457536735c2841a5d5a58fe28f9291de808ddc09fbbf5431b6a7438fa1
+    decision_path: outputs/faseracts_propagated_covariance_validation_v2/propagated_covariance_decision.json
+    decision_sha256: 3f88a67b97d41f1b8cc0c823ac6c95cac995e970fc80f47e41b21cfba5d42526
+    frozen_decision: faseracts_transport_covariance_not_validated
+    frozen_mechanism: q_over_p_uncertainty_semantics
+  workbook_95:
+    config_path: configs/qoverp_semantics_contract_v1.yaml
+    config_sha256: ccd6f8d8c7bc15daf5f5eef41340a4e5d25ad4a62397872c18ccf1afd5f5d29a
+    decision_path: outputs/qoverp_semantics_contract_v1/sba_qoverp_semantics_20260906T135614Z_9e948c39/qoverp_semantics_contract.json
+    decision_sha256: d4508fc6728d92fdacfde72758f081c54b24df121028d0d75fc0d4d2571b70e2
+    frozen_decision: physical_qoverp_semantics_not_established
+    frozen_mechanism: reconstruction_chain_qoverp_uncertainty_not_exported
+  workbook_96:
+    config_path: configs/qoverp_covariance_export_v1.yaml
+    config_sha256: 697b71309aaef97565861297c42f7e8ffe7e39382e28533954fd319ae5ba4f4a
+    decision_path: outputs/qoverp_covariance_export_v1/sba2_qoverp_covariance_20260906T144317Z_56c7e891/qoverp_covariance_contract.json
+    decision_sha256: c722ed7b3462d8d56817beec4e23a3c7b8a4b3a179c6192d957cf6d69a8048e0
+    frozen_decision: ckf_qoverp_covariance_export_established
+  workbook_97:
+    config_path: configs/acts_process_noise_contract_v1.yaml
+    config_sha256: 765dfacaa086610eefe0b2c64cbf38325e28e4b52f755b3e3e43c173bb657baa
+    decision_path: outputs/acts_process_noise_contract_v1/sbb_acts_process_noise_20260906T161525Z_54a1cc8d/acts_process_noise_contract.json
+    decision_sha256: 5f5c900cad6c7f4484fa588cf016a176622003ef7d3c631bc4f0ca2bf4de6637
+    frozen_decision: acts_process_noise_contract_not_established
+    frozen_mechanism: acts_process_noise_not_materialized
+    frozen_failure_type: acts_process_noise_configuration
+  workbook_98:
+    config_path: configs/acts_transport_dump_v1.yaml
+    config_sha256: 1969cde56bd59cb53700420de93dc4d3313b5649b667c4d5cd799ba5855a2f9c
+    decision_path: outputs/acts_transport_dump_v1/sbb0_acts_transport_dump_20260906T172303Z_9825e122/acts_transport_dump_contract.json
+    decision_sha256: 186218ecf205423bbce7676f71acb1d4637c0a3fb1c81fd082ca68a4bd9d7aa0
+    frozen_decision: acts_process_noise_contract_not_established
+    frozen_mechanism: acts_process_noise_closure_failed
+    frozen_situation: acts_q_materialized_closure_failed
+    frozen_failure_type: measurement_track_model_insufficient
+  workbook_99:
+    config_path: configs/acts_transport_diagnosis_v1.yaml
+    config_sha256: 84c7d96c42ee1b04816b5ea485919b5d139e887f4b5111bd1868334a68e55a62
+    decision_path: outputs/acts_transport_diagnosis_v1/sbb3_acts_transport_diagnosis_20260906T180100Z_574d6429/acts_transport_diagnosis_contract.json
+    decision_sha256: 3595c6ef3573947f6ed5ceb5cc835a6fa406cb160c0909f121e6f1cad8ec5fa2
+    tail_path: outputs/acts_transport_diagnosis_v1/sbb3_acts_transport_diagnosis_20260906T180100Z_574d6429/tail_provenance.json
+    tail_sha256: c6ad96f9b019f0ef1f32ec6d5476ebbb99234aab8e9207a2a314ad89e94627ce
+    frozen_decision: acts_transport_covariance_failure_diagnosed
+    frozen_primary_case: high_chi2_tail_dominated
+  workbook_100:
+    config_path: configs/acts_transport_tail_analysis_v1.yaml
+    config_sha256: 6b14c571c316ff3aefa55ecbbd16efe0d900e6dedd710025ed3879a99b48b0d8
+    decision_path: outputs/acts_transport_tail_analysis_v1/sbb4_acts_transport_tail_analysis_20260906T182102Z_a19d9ada/acts_transport_tail_analysis_contract.json
+    decision_sha256: 03c277c621feee891cc0608c05a78b2942180ec6918831624304444f18d8f3be
+    classification_path: outputs/acts_transport_tail_analysis_v1/sbb4_acts_transport_tail_analysis_20260906T182102Z_a19d9ada/tail_failure_classification.json
+    classification_sha256: 4b87eeb9125942f6d6f1b535bc464b38756c50d0176ee3a775ea9aa5b71adf14
+    frozen_decision: acts_transport_tail_uncertainty_analyzed
+    frozen_primary_case: wrong_track_state_dominated
+  workbook_101:
+    config_path: configs/ckf_tail_provenance_v1.yaml
+    config_sha256: 9489dcc0a5dea3c3c07ac313376616a27cc5e62000fde67482a13090bd264cac
+    decision_path: outputs/ckf_tail_provenance_analysis_v1/sbb5_ckf_tail_provenance_20260906T183700Z_f95fb941/ckf_tail_provenance_contract.json
+    decision_sha256: 92e96c6fcd7bd2d0e580f988cc33814e37050108eb27cf96c6a602dbaab6ec43
+    provenance_path: outputs/ckf_tail_provenance_analysis_v1/sbb5_ckf_tail_provenance_20260906T183700Z_f95fb941/ckf_tail_provenance.json
+    provenance_sha256: 37479a16db2328b0384a46abf1689db4d6f19ab913fc3a91a9e2acbb0983f82b
+    frozen_decision: ckf_tail_provenance_audited
+    frozen_primary_case: ckf_reconstruction_failure
+  workbook_102:
+    config_path: configs/ckf_reconstruction_contract_audit_v1.yaml
+    config_sha256: 33987dd489b9b9f2ab3f66b772484d28c0da322e6b3579858c4f66bd48f4f9dd
+    decision_path: outputs/ckf_reconstruction_contract_audit_v1/sbb6_ckf_reconstruction_contract_20260906T191538Z_afbc27fc/ckf_reconstruction_contract_decision.json
+    decision_sha256: 5c5936605e4a1ae722c068a75fb35c05f56820714fee37c496d0ca44267b8b94
+    contract_path: outputs/ckf_reconstruction_contract_audit_v1/sbb6_ckf_reconstruction_contract_20260906T191538Z_afbc27fc/ckf_reconstruction_contract.json
+    contract_sha256: 9bac0c2a5139abf64935ac6e4c521bf9ae80deb70d3156a53d177cf64a47cdd2
+    frozen_decision: ckf_reconstruction_contract_audited
+    frozen_primary_case: reconstruction_input_contract_missing
+  workbook_103:
+    config_path: configs/ckf_reconstruction_contract_v1.yaml
+    config_sha256: e8c1f927e1ba03d418c2ed9b03084b198d09ba15196297a1a13cb5044ec48e3d
+    decision_path: outputs/ckf_contract_validation_v1/sbb7_ckf_contract_validation_20260906T193419Z_6d906fda/ckf_contract_validation_decision.json
+    decision_sha256: a699415777d23770ab63216b92bdef218965264b353a5cee47c8834c264b8ef6
+    frozen_decision: ckf_reconstruction_contract_validated
+    frozen_primary_case: input_scope_mismatch_confirmed
+  workbook_104:
+    config_path: configs/transport_covariance_validation_v3.yaml
+    config_sha256: 9b435e0adb1f24233ad0396b2b5ac46426ab5152f7dd43aa44a583e938bff1e5
+    decision_path: outputs/transport_covariance_validation_v3/sbb8_transport_covariance_v3_20260906T195338Z_e6c68984/transport_covariance_v3_decision.json
+    decision_sha256: 8e620b50a3b5509d39e66e6dd7e1fd7a1a7aed5f53fdf63f53ec2456da266031
+    frozen_decision: transport_covariance_shape_not_validated
+    frozen_primary_case: transport_covariance_shape_not_validated
+  workbook_105:
+    config_path: configs/transport_uncertainty_shape_diagnosis_v1.yaml
+    config_sha256: ec02fd5117fdd1b91fe58c1bdeb01b30cd921649af8485d4dd88bd85519452bf
+    decision_path: outputs/transport_uncertainty_shape_diagnosis_v1/sbb9_transport_uncertainty_shape_20260906T201529Z_793f63dd/transport_uncertainty_shape_decision.json
+    decision_sha256: e29fd93b0dbc9f435934184b93ce550d7dc2e3236177ea47502129c6ec2890f2
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+  workbook_106:
+    config_path: configs/leave_target_out_prediction_contract_v1.yaml
+    config_sha256: 54d6c38fdfeb0897e01385ab2259e2f8fb36bc3e580083620060ec0b8cd66f3b
+    decision_path: outputs/leave_target_out_prediction_contract_v1/sbb10_leave_target_out_20260906T211854Z_951d7052/leave_target_out_prediction_decision.json
+    decision_sha256: f8e2140f0c7f057ba8b8c616695bf003b7681625ee5daf75d1b0af23b0fedf67
+    frozen_decision: leave_target_out_prediction_contract_not_established
+    frozen_primary_case: leave_target_out_prediction_contract_not_established
+  workbook_107:
+    config_path: configs/ckf_fit_covariance_semantics_v1.yaml
+    config_sha256: 3fd0a8a22d45c6025ca7baffed70708467cc2960954851b41f53e58dc81977de
+    decision_path: outputs/ckf_fit_covariance_semantics_v1/sbb11_ckf_covariance_semantics_20260906T211908Z_596ac546/ckf_fit_covariance_semantics_decision.json
+    decision_sha256: d65200270fab5a3c796b03c2b5c67b3280ad6afdea569518650d90ddee3aade6
+    frozen_decision: ckf_fit_covariance_semantics_audited
+    frozen_primary_case: official_cin_is_global_kf_refit_front_state
+  workbook_108:
+    config_path: configs/transport_covariance_validation_v4.yaml
+    config_sha256: 42f4d89904be71ecd8fb7c9a9808769bcc6ebbe69b1e7d0f72f5443a88d52575
+    decision_path: outputs/transport_covariance_validation_v4/sbb12_transport_covariance_v4_20260906T212151Z_2112e1b4/transport_covariance_v4_decision.json
+    decision_sha256: 666859d4a032a93c80f50b36dab8f67267e246b138efe333dc2aa9bb58445deb
+    frozen_decision: leave_target_out_prediction_contract_not_established
+    frozen_primary_case: leave_target_out_arms_unavailable
+  workbook_109:
+    config_path: configs/leave_target_out_state_materialization_v1.yaml
+    config_sha256: 6c4393ee8202a4b641b25599fd0b48eeba08b0930996217a25bda5cbc16cd0d7
+    decision_path: outputs/leave_target_out_state_materialization_v1/sbb13_leave_target_out_state_20260906T223538Z_6d55f3e4/leave_target_out_state_materialization_decision.json
+    decision_sha256: af7ccd055c2ff3d34f92429e37be19a89ed90a9b0db11ec6770c161c79b6e933
+    frozen_decision: leave_target_out_state_materialization_established
+    frozen_primary_case: leave_target_out_state_materialization_established
+  workbook_110:
+    config_path: configs/lto_state_covariance_semantics_v1.yaml
+    config_sha256: 39bf27d19d3e7cf466a37a12e34885af1bc3e05b8974e652b1a130773967d95b
+    decision_path: outputs/lto_state_covariance_semantics_v1/sbb14_lto_covariance_semantics_20260906T224006Z_ef4542ec/lto_state_covariance_semantics_decision.json
+    decision_sha256: eba85c1835e90f85a1ca0aec4ee896cc1b611214f9213c7602e160cbd291857b
+    frozen_decision: lto_input_covariance_shape_not_validated
+    frozen_primary_case: lto_input_covariance_shape_not_validated
+  workbook_111:
+    config_path: configs/lto_fit_covariance_provenance_v1.yaml
+    config_sha256: 4d2eeb031da5e307c470240aed5114ad3f23a14cc6e9798a4f4d271d7adf32f5
+    decision_path: outputs/lto_fit_covariance_provenance_v1/sbb14r_lto_fit_provenance_20260906T235735Z_8ae1d934/lto_fit_covariance_provenance_decision.json
+    decision_sha256: c9d35002671327dd401e1ca67bd17cb7dacfadf85efcb53e15af6d94dfc2a644
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+    frozen_active_mechanisms:
+    - B
+    - D
+  workbook_112:
+    config_path: configs/lto_supported_state_contract_v1.yaml
+    config_sha256: 665333f43df563838d4a4733892e8c8030f1c2fd8c62d6cab3070129fdabb88b
+    decision_path: outputs/lto_supported_state_contract_v1/sbb14s_lto_supported_state_20260907T073101Z_77373fd6/lto_supported_state_contract_decision.json
+    decision_sha256: 015087449a030232cfd088458b394ae82c409bae9bc26827fc2c944ec8c80dd8
+    contract_path: outputs/lto_supported_state_contract_v1/sbb14s_lto_supported_state_20260907T073101Z_77373fd6/lto_supported_state_contract.json
+    contract_sha256: c6250396c85024312c15f6162e056bb95c9b92c82832f54f2874c5f510330a0c
+    information_gain_path: outputs/lto_supported_state_contract_v1/sbb14s_lto_supported_state_20260907T073101Z_77373fd6/lto_information_gain.json
+    information_gain_sha256: d5297780a4742a47e9a4398a89e21e77244345efd6098087bb8ef69126ed1b3a
+    directional_path: outputs/lto_supported_state_contract_v1/sbb14s_lto_supported_state_20260907T073101Z_77373fd6/lto_directional_seed_sensitivity.json
+    directional_sha256: b40a944ad5b754d3deeaf899a49e6809b9b6eb6d75b8f61ac729f5de91f0136b
+    catastrophic_path: outputs/lto_supported_state_contract_v1/sbb14s_lto_supported_state_20260907T073101Z_77373fd6/lto_catastrophic_fit_provenance.json
+    catastrophic_sha256: f0187a4b354ab6dc49155cf7e5ed3ec8a5f8e9ec98b48b0686e3f2c00e738849
+    frozen_decision: reduced_measurement_supported_state_with_weak_nuisance
+    frozen_primary_case: reduced_measurement_supported_state_with_weak_nuisance
+    frozen_active_mechanisms:
+    - B
+    frozen_direction_class:
+      x: measurement_dominated
+      y: weakly_measured
+      tx: prior_dominated
+      ty: measurement_dominated
+      q_over_p: weakly_measured
+    frozen_five_d_state_physically_supported: false
+    frozen_b14p_authorized: true
+    frozen_prior_introduced: false
+  workbook_113:
+    config_path: configs/target_independent_weak_prior_contract_v1.yaml
+    config_sha256: 16f55a9249ee0a294b51ed604b055c906d31d57486bdf0051aed9deff3678f14
+    decision_path: outputs/target_independent_weak_prior_contract_v1/sbb14p_target_independent_prior_20260907T123232Z_690debf3/target_independent_prior_decision.json
+    decision_sha256: a01bb5490c346241f8282f0eb617a088b85aff535a4a72bfd2a44ff4b0931ecd
+    frozen_decision: target_independent_prior_not_available
+    frozen_primary_case: target_independent_prior_not_available
+    frozen_b14m_authorized: true
+    frozen_prior_introduced: false
+    frozen_prior_contract_established: false
+    frozen_do_not_force_5d_lto_covariance: true
+    frozen_lto_cin_contract_established: false
+    frozen_b15_authorized: false
+  workbook_114:
+    config_path: configs/profiled_weak_nuisance_likelihood_v1.yaml
+    config_sha256: de8876cd4b63c06f4e3fb7224f9eff7346cdb4e503e41b38b896c76ad3fb92b6
+    decision_path: outputs/profiled_weak_nuisance_likelihood_v1/sbb14m_profiled_likelihood_20260907T135010Z_f07d09cd/profiled_measurement_likelihood_decision.json
+    decision_sha256: 82304f5af943f97adfe069e02c8bacdd7491cca72e6ecc58ea82cc470428a18f
+    frozen_decision: profile_likelihood_numerically_unstable
+    frozen_primary_case: profile_likelihood_numerically_unstable
+    frozen_synthetic_profile_passed: true
+    frozen_acts_profile_materialized: true
+    frozen_target_exclusion_holds: true
+    frozen_profiling_executed: true
+    frozen_marginalization_executed: false
+    frozen_b15_authorized: false
+    frozen_do_not_force_5d_lto_covariance: true
+  workbook_115:
+    config_path: configs/profile_likelihood_numerics_v1.yaml
+    config_sha256: b338874546276e6fd2c4793c4ad02ccd9c8d95bed9e693b0d9659d6a04f5b57e
+    decision_path: outputs/profile_likelihood_numerics_v1/sbb14n_profile_numerics_20260907T150627Z_d77ddddc/profile_numerical_contract_decision.json
+    decision_sha256: dcf6ce865d0c1788e44d0a5a37588c7df3e4b90d31f1c31f67090155a9436c69
+    helper_sha256: 6ea29f09091454f586cebbbb44e5e4fe696aac341bf2d6c9bef6186cf7b51a8f
+    official_run_id: sbb14n_profile_numerics_20260907T150627Z_d77ddddc
+    frozen_decision: profile_transport_contract_broken
+    frozen_primary_case: profile_transport_contract_broken
+    frozen_smoke_gate_passed: false
+    frozen_full_sample_authorized: false
+    frozen_synthetic_profile_passed: true
+    frozen_target_exclusion_holds: true
+    frozen_b15_authorized: false
+    frozen_do_not_force_5d_lto_covariance: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+  workbook_116:
+    config_path: configs/profile_transport_contract_v1.yaml
+    config_sha256: 71add375d1c9f426ac557884516cffd17a09cf415953ea6f9a309a54526842eb
+    decision_path: outputs/profile_transport_contract_v1/sbb14t_profile_transport_20260907T212851Z_f00dad92/profile_transport_contract_decision.json
+    decision_sha256: 3793b0e1a6355717fba567b58fddd406d23503ba312e3d5422a90b82fba6d720
+    helper_sha256: 7d75ab858a6eab7b5c06dc6a15dcc834bd1d1d9c8b1d64aff4dc806a84f4d10f
+    official_run_id: sbb14t_profile_transport_20260907T212851Z_f00dad92
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+    frozen_smoke_gate_passed: false
+    frozen_b14m_reopen_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_jacobian_contract_established: false
+    frozen_target_exclusion_holds: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+    frozen_b15_authorized: false
+    frozen_do_not_force_5d_lto_covariance: true
+  workbook_117:
+    config_path: configs/supporting_plane_jacobian_continuity_v1.yaml
+    config_sha256: d141d7e1ab0fd0c556362cb68a35e2904a04660022766814c05b368b94f21a72
+    decision_path: outputs/supporting_plane_jacobian_continuity_v1/sbb14j_jacobian_continuity_20260908T150238Z_a30b79e2/supporting_plane_jacobian_continuity_decision.json
+    decision_sha256: 6a82482ac06e944c8af638099d693738e4c8d7712c1571cabde77e07039b8bf7
+    helper_sha256: a0266aca30bcbe4101547ebe9e2a80d0d642ca5ef4bb26a2166f478e2781c3f7
+    official_run_id: sbb14j_jacobian_continuity_20260908T150238Z_a30b79e2
+    frozen_decision: source_to_measurement_transport_not_smooth
+    frozen_primary_case: source_to_measurement_transport_not_smooth
+    frozen_smoke_gate_passed: false
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_target_exclusion_holds: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+    frozen_do_not_select_best_step: true
+    frozen_do_not_switch_to_direct: true
+    frozen_five_d_cin_not_the_objective: true
+  workbook_118:
+    config_path: configs/source_to_measurement_map_smoothness_v1.yaml
+    config_sha256: b0277401ae2a36bdeb453a72902dc7fb7908cc0d8b5c1278bf8db1253b97560e
+    decision_path: outputs/source_to_measurement_map_smoothness_v1/sbb14k_map_smoothness_20260908T163845Z_2cbd5d0e/source_to_measurement_map_smoothness_decision.json
+    decision_sha256: e22b5d9ce93106b779e968202b84e036c86dc9033639fe4bf833d8245752895d
+    helper_sha256: 078a45ac774971032fd1e4997cb04d2285b66f9fe6b80000f47f580ea0612b33
+    official_run_id: sbb14k_map_smoothness_20260908T163845Z_2cbd5d0e
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_target_exclusion_holds: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+    frozen_acts_transport_jacobian_available: true
+    frozen_analytic_vs_fd_not_yet_contracted: true
+    frozen_wb117_not_treated_as_physical_nonsmoothness: true
+  workbook_119:
+    config_path: configs/acts_fd_derivative_contract_v1.yaml
+    config_sha256: da58a62fc0378976bce0401977b3388015d62e2964daa716d47c2ff31322fc86
+    decision_path: outputs/acts_fd_derivative_contract_v1/sbb14l_derivative_contract_20260908T180541Z_33bda85a/acts_fd_derivative_contract_decision.json
+    decision_sha256: 2388e8a8655eb1dc46e2b0207d7064f5689f9c69035f1f14b3b42bdd3ca7bf19
+    helper_sha256: 8edc0d52378263b08ccefa8d87b419992e945507451d9238dc1173aa1828866c
+    official_run_id: sbb14l_derivative_contract_20260908T180541Z_33bda85a
+    frozen_decision: analytic_chain_or_chart_contract_broken
+    frozen_primary_case: analytic_chain_or_chart_contract_broken
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_control_fd_converged: true
+    frozen_control_acts_chain_agrees_fd: false
+    frozen_focus_acts_chain_stable: true
+    frozen_focus_fd_converged: false
+    frozen_acts_end_loc0_matches_official: true
+    frozen_chain_complete: false
+    frozen_target_exclusion_holds: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+    frozen_do_not_select_best_step: true
+    frozen_do_not_select_best_tolerance: true
+    frozen_do_not_switch_to_direct: true
+    frozen_do_not_replace_official_likelihood: true
+    frozen_five_d_cin_not_the_objective: true
+    frozen_wb117_not_treated_as_physical_nonsmoothness: true
+    frozen_wb118_not_a_physical_conclusion: true
+    frozen_wb119_took_wrong_jacobian: true
+  workbook_120:
+    config_path: configs/official_supporting_plane_jacobian_v1.yaml
+    config_sha256: 7aeaa12fbb09d0b2ae7b26976b0cbb3978ae748e110380ede539cafe75e42b00
+    decision_path: outputs/official_supporting_plane_jacobian_v1/sbb14u_official_jacobian_20260908T184910Z_d5148ffc/official_supporting_plane_jacobian_decision.json
+    decision_sha256: ad63a600d3b2ec4c10744f73719e58f87ba87cbf7d77852d292c4a3997421a01
+    helper_sha256: bea305738d479f335fd64b1f7a92e0d9daf66a395873d17dda18bfa2e19927c3
+    official_run_id: sbb14u_official_jacobian_20260908T184910Z_d5148ffc
+    frozen_decision: official_path_jacobian_inconsistent_with_fd
+    frozen_primary_case: official_path_jacobian_inconsistent_with_fd
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_free_state_jacobian_available: true
+    frozen_official_loc0_matches_diagnostic: true
+    frozen_control_fd_converged: true
+    frozen_control_official_path_agrees_fd: false
+    frozen_focus_fd_converged: false
+    frozen_focus_official_path_agrees_fd: false
+    frozen_target_exclusion_holds: true
+    frozen_statistical_model_unchanged: true
+    frozen_prior_introduced: false
+    frozen_do_not_select_best_step: true
+    frozen_do_not_select_best_tolerance: true
+    frozen_do_not_switch_to_direct: true
+    frozen_do_not_replace_official_likelihood: true
+    frozen_do_not_use_dummy_cov_bounded_transportJacobian: true
+    frozen_five_d_cin_not_the_objective: true
+    frozen_wb117_not_treated_as_physical_nonsmoothness: true
+    frozen_wb118_not_a_physical_conclusion: true
+    frozen_wb119_took_wrong_jacobian: true
+    frozen_wb120_same_path_jacobian_available: true
+  workbook_121:
+    config_path: configs/official_path_derivative_residual_v1.yaml
+    config_sha256: 3ac25711142694bc3e4eaede110c5653fe6abc2d2ca2ac0552ef1e2d5238a287
+    decision_path: outputs/official_path_derivative_residual_v1/sbb14v_official_residual_20260908T194821Z_c5b463f5/official_path_derivative_residual_decision.json
+    decision_sha256: 60d0ced8355b15c98f9758974299b0251b7500d8514fcffd966373bd5b780b44
+    helper_sha256: bea305738d479f335fd64b1f7a92e0d9daf66a395873d17dda18bfa2e19927c3
+    official_run_id: sbb14v_official_residual_20260908T194821Z_c5b463f5
+    frozen_decision: mixed_or_inconclusive
+    frozen_primary_case: mixed_or_inconclusive
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_five_percent_pass: false
+    frozen_focus_fd_converged: false
+    frozen_segment_composition_closed: true
+    frozen_active_residual_kinds:
+    - official_path_derivative_still_inconsistent
+    - fd_reference_not_precise_enough_for_derivative_certification
+    frozen_wb120_same_path_jacobian_available: true
+    frozen_do_not_relax_five_percent_gate: true
+    frozen_do_not_change_jacobian_implementation: true
+    frozen_do_not_change_official_fd_ladder: true
+  workbook_122:
+    config_path: configs/independent_derivative_reference_v1.yaml
+    config_sha256: b68b826e7098d51338ce42e8613d250a09600bd9cfea4c852ec322b34a33d9c7
+    decision_path: outputs/independent_derivative_reference_v1/sbb14w_independent_reference_20260908T204204Z_d305d4b7/derivative_reference_decision.json
+    decision_sha256: c6d761e95383a2404455652a1b0b1baa1003e0ca22fd61cf8d07a51fd456dce9
+    helper_sha256: bea305738d479f335fd64b1f7a92e0d9daf66a395873d17dda18bfa2e19927c3
+    official_run_id: sbb14w_independent_reference_20260908T204204Z_d305d4b7
+    frozen_decision: missing_deterministic_transport_coupling_identified
+    frozen_primary_case: missing_deterministic_transport_coupling_identified
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control1_station0_loc1_agrees: true
+    frozen_rk_magnet_hop_pos_to_dir_is_zero: true
+    frozen_material_reset_is_highest_priority_mechanism: false
+    frozen_focus_independent_reference_established: false
+    frozen_do_not_relax_five_percent_gate: true
+    frozen_do_not_add_fd_rung: true
+    frozen_do_not_shrink_fd_step: true
+    frozen_do_not_change_jacobian_implementation: true
+  workbook_123:
+    config_path: configs/field_gradient_variational_repair_v1.yaml
+    config_sha256: c290594f834233ace2c41d2d339edaa6fd9a4b6b88dc781ece67e014a012906b
+    decision_path: outputs/field_gradient_variational_repair_v1/sbb14x_field_gradient_repair_20260908T235722Z_f86bd896/field_gradient_variational_decision.json
+    decision_sha256: 4632686ec5e68f4d30470438d257c50ec7056edf430ea2460453052fd0b995aa
+    helper_sha256: ff74be09335bd6c63cd1357570d4623563cef7a3bca921909a456c0f5208bbf2
+    official_run_id: sbb14x_field_gradient_repair_20260908T235722Z_f86bd896
+    frozen_decision: field_gradient_coupling_repaired_focus_reference_unresolved
+    frozen_primary_case: field_gradient_coupling_repaired_focus_reference_unresolved
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_0_pass: true
+    frozen_control_1_pass: true
+    frozen_control_37_pass: true
+    frozen_mean_path_unchanged: true
+    frozen_missing_term_source_proven: true
+    frozen_focus_independent_reference_established: false
+    frozen_do_not_change_official_mean_path: true
+    frozen_do_not_relax_five_percent_gate: true
+    frozen_do_not_add_fd_rung: true
+    frozen_do_not_change_field_gradient_variational_implementation: true
+  workbook_124:
+    config_path: configs/focus86_segment_derivative_reference_v1.yaml
+    config_sha256: 46ab8197bdbf40b6fa77c955ca5d5696f0fbbb7692213c2fa39edbe539162119
+    decision_path: outputs/focus86_segment_derivative_reference_v1/sbb14y_focus86_segment_reference_20260909T092655Z_18ab2ab0/focus86_segment_derivative_decision.json
+    decision_sha256: f4ba49cffe187929c9eb79ae1e6e604a9852f29b8ef2ed7e8da3f7dcbbd471e7
+    helper_sha256: 3558bc6bdedb326a5dc48bba2dc4d57833574b82eb66d1a14fa8106d45d3edf1
+    official_run_id: sbb14y_focus86_segment_reference_20260909T092655Z_18ab2ab0
+    frozen_decision: focus_segment_reference_not_established
+    frozen_primary_case: focus_segment_reference_not_established
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_0_pass: true
+    frozen_control_1_pass: true
+    frozen_control_37_pass: true
+    frozen_mean_path_unchanged: true
+    frozen_focus_independent_reference_established: false
+    frozen_do_not_tune_independent_tolerance_from_jacobian: true
+    frozen_do_not_change_field_gradient_variational_implementation: true
+    frozen_do_not_self_certify_analytic: true
+    frozen_do_not_substitute_earlier_long_hop: true
+  workbook_125:
+    config_path: configs/focus86_common_grid_shadow_v1.yaml
+    config_sha256: 547d727517659b2f5e8c20a14f282982fdfb71e0d4d34483b6ce640eba952dcc
+    decision_path: outputs/focus86_common_grid_shadow_v1/sbb14z_focus86_common_grid_shadow_20260909T130344Z_2aa503bd/focus86_common_grid_shadow_decision.json
+    decision_sha256: 15fbffbd06ef6747d3adecec9cdb6e64a0be9c9986bd08703e8e9c553f49d5c2
+    helper_sha256: 3c1f1d41a79b2ff179173088d82057bcc31362822481f63c1e81610699763844
+    official_run_id: sbb14z_focus86_common_grid_shadow_20260909T130344Z_2aa503bd
+    frozen_decision: shadow_mean_contract_not_established
+    frozen_primary_case: shadow_mean_contract_not_established
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_0_pass: true
+    frozen_control_1_pass: true
+    frozen_control_37_pass: true
+    frozen_mean_path_unchanged: true
+    frozen_focus_independent_reference_established: false
+    frozen_do_not_tune_grid_from_jacobian: true
+    frozen_do_not_change_field_gradient_variational_implementation: true
+    frozen_do_not_self_certify_analytic: true
+    frozen_do_not_substitute_earlier_long_hop: true
+  workbook_126:
+    config_path: configs/shadow_mean_transport_contract_v2.yaml
+    config_sha256: 297f8b47a0664bd130747403f36f72de508a3770d7018660cbfad110a02fd276
+    decision_path: outputs/shadow_mean_transport_contract_v2/sbb14za_shadow_mean_transport_20260909T151144Z_d24ca53b/shadow_mean_transport_decision.json
+    decision_sha256: f4d65c51ab90c04d318e935d116b419f22a06dc1e6006f4f821d6b150ed2a426
+    helper_sha256: 20f40424d7154cbcaa4fa3efc0dc7b1add2ec80be1d4a6d05ea463db5fd000f8
+    official_run_id: sbb14za_shadow_mean_transport_20260909T151144Z_d24ca53b
+    frozen_decision: surface_energy_loss_semantics_mismatch
+    frozen_primary_case: surface_energy_loss_semantics_mismatch
+    frozen_smoke_gate_passed: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_0_pass: true
+    frozen_control_1_pass: true
+    frozen_control_37_pass: true
+    frozen_mean_path_unchanged: true
+    frozen_focus_independent_reference_established: false
+    frozen_do_not_evaluate_jacobian: true
+    frozen_do_not_change_field_gradient_variational_implementation: true
+    frozen_do_not_self_certify_analytic: true
+    frozen_do_not_substitute_earlier_long_hop: true
+  workbook_127:
+    config_path: configs/surface_energy_loss_mean_semantics_v1.yaml
+    config_sha256: 6b89a65070355d0143561d3017dbd451870ab74a7cbcf5fac77e9e1bd1ba27fa
+    decision_path: outputs/surface_energy_loss_mean_semantics_v1/sbb14zb_surface_eloss_semantics_20260909T161125Z_be4e054a/surface_energy_loss_mean_semantics_decision.json
+    decision_sha256: aa80751fb532cf36350a8cf78b25f9d74da5bc707b9739ba7b683ef294fe04c4
+    helper_sha256: b95e2416296feb241addd75a01284fb60e310932706781168d3f9bd11e83869d
+    official_run_id: sbb14zb_surface_eloss_semantics_20260909T161125Z_be4e054a
+    frozen_decision: surface_energy_loss_semantics_established
+    frozen_primary_case: surface_energy_loss_semantics_established
+    frozen_smoke_gate_passed: true
+    frozen_shadow_mean_contract_established: true
+    frozen_jacobian_contract_established: false
+    frozen_b14m_reopen_authorized: false
+    frozen_five_percent_gate_unchanged: true
+    frozen_control_0_pass: true
+    frozen_control_1_pass: true
+    frozen_control_37_pass: true
+    frozen_mean_path_unchanged: true
+    frozen_focus_independent_reference_established: false
+    frozen_production_eloss_quantity: computeEnergyLossBethe
+    frozen_do_not_evaluate_jacobian: true
+    frozen_do_not_change_field_gradient_variational_implementation: true
+    frozen_do_not_self_certify_analytic: true
+    frozen_do_not_substitute_earlier_long_hop: true
+  workbook_128:
+    config_path: configs/certified_mean_common_grid_fd_v1.yaml
+    config_sha256: 91bbf89658082979ef92fb1ee56b8f32ee9133cfd091dfe5c01412425d942ab8
+    decision_path: outputs/certified_mean_common_grid_fd_v1/sbb14zc_certified_mean_fd_20260909T165606Z_5bd09dfe/certified_mean_common_grid_fd_decision.json
+    decision_sha256: 7f9d411c31d3eb94d63fb13e24f1ebd57b3095f0007039a5c3048704007141b1
+    helper_sha256: 0d58d4cfca59a8de2d798771b3d454757713348955411681854b0073404d32df
+    dump_path: outputs/leave_target_out_dump_v1/b14zc_smoke/mc24_100048_00000_00049/ckf_leave_target_out_certified_mean_fd.jsonl
+    dump_sha256: 04eab2a75e84e46103c1edae75ed3cf014039a7780cf2919ebb5a3f9cc054631
+    mean_header_sha256: 8f9d162e59f590770baba1f0c393a7f10861a85495dd7bfbac676d8b59bd15da
+    official_run_id: sbb14zc_certified_mean_fd_20260909T165606Z_5bd09dfe
+    frozen_decision: certified_mean_independent_reference_established
+    frozen_primary_case: certified_mean_independent_reference_established
+    frozen_shadow_mean_contract_established: true
+    frozen_focus_independent_reference_established: true
+    frozen_jacobian_contract_established: true
+    frozen_b14m_reopen_authorized: true
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_production_eloss_quantity: computeEnergyLossBethe
+  workbook_129:
+    config_path: configs/b14m_restart_invariance_v2.yaml
+    config_sha256: 4ce8379b4cab239b5124cafea4f17ae8805a2b676eb7b506c597ae6e38d68890
+    decision_path: outputs/b14m_restart_invariance_v2/sbb14mr_restart_invariance_20260909T183700Z_f1c280a7/b14m_restart_invariance_decision.json
+    decision_sha256: 67aa191def9863d39dec6643bf117516aa95039d6a90e0e38a09ac5b161059ea
+    helper_sha256: 686d980fbf72a872af74b4cb9b4a0bdbbd608e615a787dcc55b4986027c6ec4d
+    official_run_id: sbb14mr_restart_invariance_20260909T183700Z_f1c280a7
+    dump_100043_path: outputs/leave_target_out_dump_v1/b14m_reopen_smoke/mc24_100043_00400_00499/ckf_leave_target_out_b14m_reopen.jsonl
+    dump_100043_sha256: 74aa02deae3b0042edd9b85506c5d95f51798153a663dad83e9ce58eb206276c
+    dump_100048_path: outputs/leave_target_out_dump_v1/b14m_reopen_smoke/mc24_100048_00000_00049/ckf_leave_target_out_b14m_reopen.jsonl
+    dump_100048_sha256: 9a64c70a2a2c2df1ff2c90b353584d831380304bf5e3b5729081c998e2c9586c
+    frozen_decision: profile_optimizer_restart_sensitive
+    frozen_primary_case: profile_optimizer_restart_sensitive
+    frozen_verdict: FAIL
+    frozen_b14m_smoke_passed: false
+    frozen_restart_invariance_established: false
+    frozen_restart_invariance_authorized: false
+    frozen_full_sample_authorized: false
+    frozen_b14m_reopen_authorized: true
+    frozen_jacobian_contract_established: true
+    frozen_shadow_mean_contract_established: true
+    frozen_focus_independent_reference_established: true
+
+  workbook_130:
+    config_path: configs/b14m_profile_basin_diagnosis_v1.yaml
+    config_sha256: 7678eaa12cde9942cb7314959432a6f9249e2b3890217e797411fc61dfb1b042
+    decision_path: outputs/b14m_profile_basin_diagnosis_v1/sbb14ms_profile_basin_20260909T214204Z_45f7bda5/b14m_profile_basin_decision.json
+    decision_sha256: cb8d178ea67870ddf04bf6babd2957f5be6c29cb0709d31b35696ac535904d91
+    official_run_id: sbb14ms_profile_basin_20260909T214204Z_45f7bda5
+    dump_100043_path: outputs/leave_target_out_dump_v1/b14ms_basin_smoke/mc24_100043_00400_00499/part_evt0_37.jsonl
+    dump_100043_sha256: 777907ccebf544c5829b2442fac682e04e1f6c4b43d5ed2ef5ec62a977507db1
+    dump_100048_path: outputs/leave_target_out_dump_v1/b14ms_basin_smoke/mc24_100048_00000_00049/part_evt86.jsonl
+    dump_100048_sha256: 6226afac52fa748b8252b5c68c150cba958e7a2d423fc1957ffa7398a92a14a0
+    frozen_decision: flat_direction_termination_not_stationary
+    frozen_primary_case: flat_direction_termination_not_stationary
+    frozen_verdict: DIAGNOSIS
+    frozen_nuisance_profile_multibasin: false
+    frozen_profile_objective_multimodality: false
+    frozen_profile_hysteresis: false
+    frozen_b14m_smoke_passed: false
+    frozen_restart_invariance_established: false
+    frozen_full_sample_authorized: false
+    frozen_jacobian_contract_established: true
+    frozen_shadow_mean_contract_established: true
+    frozen_focus_independent_reference_established: true
+closure_gates:
+  whitened_chi2_per_ndof_max: 4.0
+  cov_z_eigenvalue_min: 0.25
+  cov_z_eigenvalue_max: 4.0
+  generalized_eigenvalue_min: 0.25
+  generalized_eigenvalue_max: 4.0
+  pencil_variance_ratio_min: 0.25
+  pencil_variance_ratio_max: 4.0
+  min_pairs_per_pair: 20
+closure_metrics:
+  demean_per_pair: true
+  whitening: symmetric_eigendecomposition
+  coverage_chi2_quantile_df: 4
+  pencil_direction_analysis: true
+  metrics:
+  - mean_z
+  - marginal_rms
+  - cov_z_eigenvalues
+  - chi2_per_ndof
+  - coverage_probability
+  - lever_arm_dependence
+  - tx_ty_dependence
+qoverp_bins_abs_per_mev:
+  high_momentum:
+  - 0.0
+  - 1.0e-06
+  medium_momentum:
+  - 1.0e-06
+  - 5.0e-06
+  low_momentum:
+  - 5.0e-06
+  - 1.0
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+station_pairs:
+- - 0
+  - 1
+- - 0
+  - 2
+- - 0
+  - 3
+eligibility:
+  expected_n_stations: 4
+  expected_n_segments: 4
+  require_long_track_equivalent: true
+  require_station_completeness: true
+  require_segment_completeness: true
+  require_covariance_5x5: true
+  require_finite_signed_q_over_p: true
+  require_valid_state_surface: true
+wrong_momentum:
+  abs_log10_p_ratio_min: 1.0
+qoverp_pull_anomaly_abs_min: 5.0
+jacobian_frobenius_rel_tail_min: 0.05
+tail_quantiles:
+- 0.99
+- 0.999
+focus_identities:
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 37
+frozen_provenance_hashes:
+  geometry_hash: 4e965f3631dd4ff6e04b141ac36efc49603a1dfc0625de5ea7558dd929486b15
+  field_hash: 60432de5864cfba361f91f47a694dc111bbb06dcec44434e9682548680460e9c
+  material_map_hash: 0df37bd621e6caac2e223fda12fec32a6f8c49685c7b831181b956e59996433c
+  conditions_hash: d30733216d6eb392dbdbcf5a252fed01ff56a045ade59731ca8419febce7a63d
+truth_reference:
+  join_keys:
+  - run_id
+  - event_id
+  - truth_particle_id
+  enhanced_run_branch: run
+  enhanced_event_branch: eventID
+  enhanced_barcode_branch: truth_barcode
+  truth_position_template: truth_st{station}_{coord}
+  truth_momentum_template: truth_st{station}_{mom}
+  straight_line_z_correction: true
+  min_truth_match_fraction: 0.99
+acceptance:
+  dummy_qoverp_per_mev: 1.0e-05
+  dummy_variance_per_mev2: 5.0e-06
+  q_added_relative_floor: 1.0e-18
+  min_matched_per_split: 20
+mc_data:
+  source_root_template: outputs/mc24_ift_hierarchical_v1_iteration00_trainval_physical_v1/sources/{source_id}/physical_scan/points/iteration_00_reference/refit
+  enhanced_file: enhanced_tracklets.root
+  enhanced_tree: nt
+  construction_source_ids:
+  - mc24_100043_00200_00299
+  - mc24_100043_00300_00399
+  - mc24_100043_00400_00499
+  - mc24_100044_00200_00299
+  - mc24_100044_00300_00399
+  validation_source_ids:
+  - mc24_100047_00000_00049
+  - mc24_100047_00050_00099
+  - mc24_100048_00000_00049
+  - mc24_100048_00050_00099
+  construction_sources:
+  - source_id: mc24_100043_00200_00299
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root
+  - source_id: mc24_100043_00300_00399
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root
+  - source_id: mc24_100043_00400_00499
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+  - source_id: mc24_100044_00200_00299
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root
+  - source_id: mc24_100044_00300_00399
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root
+  validation_sources:
+  - source_id: mc24_100047_00000_00049
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00000-00049-s0013-r0022-xAOD.root
+  - source_id: mc24_100047_00050_00099
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00050-00099-s0013-r0022-xAOD.root
+  - source_id: mc24_100048_00000_00049
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+  - source_id: mc24_100048_00050_00099
+    input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00050-00099-s0013-r0022-xAOD.root
+dump_root: outputs/acts_transport_dump_v1/dumps
+dump_filename: ckf_acts_transport.jsonl
+wb103_output_root: outputs/ckf_contract_validation_v1
+output_root: outputs/b14m_profile_globalization_repair_v1
+wb124_output_root: outputs/focus86_segment_derivative_reference_v1
+wb123_output_root: outputs/field_gradient_variational_repair_v1
+wb121_output_root: outputs/official_path_derivative_residual_v1
+wb120_output_root: outputs/official_supporting_plane_jacobian_v1
+wb119_output_root: outputs/acts_fd_derivative_contract_v1
+wb117_output_root: outputs/supporting_plane_jacobian_continuity_v1
+wb110_output_root: outputs/lto_state_covariance_semantics_v1
+wb111_output_root: outputs/lto_fit_covariance_provenance_v1
+wb112_output_root: outputs/lto_supported_state_contract_v1
+wb113_output_root: outputs/target_independent_weak_prior_contract_v1
+wb114_output_root: outputs/profiled_weak_nuisance_likelihood_v1
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+  reco_flag: TrackingGeometry.MaterialSource
+  used_by_production_ckf_reco: true
+  used_by_production_ntuple_extrapolation_if_flag_set: true
+native_state_chart:
+  parameters:
+  - loc0
+  - loc1
+  - phi
+  - theta
+  - q_over_p
+  units:
+  - mm
+  - mm
+  - rad
+  - rad
+  - 1/MeV
+  frame: source_plane_bound_parameters
+  source_surface:
+    type: plane
+    z_mm: -1860.15
+    normal:
+    - 0.0
+    - 0.0
+    - 1.0
+  jacobian_to_derived: explicit_free_position_and_slopes
+profile_partition:
+  alpha_native:
+  - loc0
+  - theta
+  nu_native:
+  - loc1
+  - phi
+  - q_over_p
+  alpha_derived:
+  - x
+  - ty
+  nu_derived:
+  - y
+  - tx
+  - q_over_p
+  do_not_truncate_state: true
+  do_not_fix_nuisance_to_seed: true
+  coupling_must_be_profiled: true
+profile_numerical:
+  pinv_relative: 1.0e-8
+  not_alignment_rank_tolerance: true
+  alignment_rank_tolerance_forbidden: 0.01
+  max_iterations: 20
+  fd_steps:
+    loc0_mm: 0.01
+    loc1_mm: 0.01
+    phi: 1.0e-5
+    theta: 1.0e-5
+    q_over_p_per_gev: 1.0e-6
+  gn_step_damping:
+  - 1.0
+  - 0.5
+  - 0.25
+  - 0.125
+  convergence_delta_chi2: 1.0e-6
+  do_not_add_ridge: true
+  joint_profile_schur_abs_tol: 1.0e-8
+  joint_profile_schur_rel_tol: 1.0e-6
+measurement_covariance:
+  provenance: sct_strip_pitch_over_sqrt12
+  pitch_mm: 0.08
+  R_mm2: 0.0005333333333333334
+  formula: 0.08*0.08/12
+  same_as_ckf: true
+  same_as_lto_helper: true
+magnetic_field:
+  wrapper: FASERMagneticFieldWrapper
+  field_aware: true
+material:
+  multiple_scattering: true
+  energy_loss: true
+  navigator_resolve_material: true
+optimizer:
+  kind: measurement_only_gauss_newton
+  prior_term: false
+  seed_used_as: initialization_only
+profile_seed_invariance:
+  source_id: mc24_100043_00400_00499
+  event_ids:
+  - 0
+  - 1
+  - 37
+  variants:
+  - name: nominal
+  - name: loc1_plus_1mm
+    loc1_mm: 1.0
+  - name: phi_plus_1e-3
+    phi: 0.001
+  - name: qoverp_times_1p1
+    q_over_p_scale: 1.1
+  supported_abs_tolerance:
+    loc0_mm: 0.05
+    theta: 0.0001
+  prediction_abs_tolerance_mm: 0.1
+  chi2_rel_tolerance: 0.01
+  do_not_select_best_seed: true
+profile_dump_root: outputs/leave_target_out_dump_v1/b14m_profile
+profile_dump_filename: ckf_leave_target_out_profile.jsonl
+wb129_smoke_root: outputs/leave_target_out_dump_v1/b14m_reopen_smoke
+wb130_smoke_root: outputs/leave_target_out_dump_v1/b14ms_basin_smoke
+profile_smoke_root: outputs/leave_target_out_dump_v1/b14mt_repair_smoke
+wb129_smoke_filename: ckf_leave_target_out_b14m_reopen.jsonl
+wb130_smoke_filename: ckf_leave_target_out_b14ms_basin.jsonl
+profile_smoke_filename: ckf_leave_target_out_b14mt_repair.jsonl
+legacy_b14m_smoke_root: outputs/leave_target_out_dump_v1/b14m_smoke
+do_not_overwrite_legacy_b14m_smoke: true
+weak_directions:
+- y
+- tx
+- q_over_p
+measurement_supported_directions:
+- x
+- ty
+do_not_add_strong_prior_to_supported_directions: true
+prior_admissibility:
+  require_target_independent: true
+  require_real_data_applicable: true
+  require_uncertainty_semantics: true
+  require_independence_from_surviving_measurements: true
+  require_independence_from_alignment_geometry: true
+  forbid_truth: true
+  forbid_full_track_ckf: true
+  forbid_wb107_cin: true
+  forbid_closure_derived: true
+  forbid_seed_scale: true
+  forbid_arbitrary_gaussian: true
+  population_prior_is_not_event_measurement: true
+seed_sensitivity:
+  scales:
+  - 0.1
+  - 1.0
+  - 10.0
+  directions:
+  - x
+  - y
+  - tx
+  - ty
+  - q_over_p
+  source_id: mc24_100043_00400_00499
+  event_ids:
+  - 0
+  - 1
+  - 37
+  dump_root: outputs/leave_target_out_dump_v1/b14s_smoke
+  do_not_select_scale_from_truth_or_chi2: true
+  do_not_search_direction_combinations: true
+n_measurements_in_fit_definition: acts_calculateTrackQuantities_MeasurementFlag
+state_class_thresholds:
+  measurement_dominated_seed_rel_max: 0.25
+  measurement_dominated_gain_min: 4.0
+  prior_dominated_gain_max: 1.25
+  weakly_measured_gain_min: 4.0
+  unconstrained_n_fit_max: 2
+geometry:
+  spectrometer_magnet_between_stations:
+  - 0
+  - 1
+  magnet_statement: spectrometer magnet between IFT/station 0 and station 1; no field integral invented
+catastrophic_identities:
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 37
+- source_id: mc24_100048_00000_00049
+  run_id: 100048
+  event_id: 86
+provenance_thresholds:
+  seed_relative_change_independent_max: 0.25
+  n_fit_over_used_insufficient_max: 0.40
+  pull_p68_systematic_min: 2.0
+  top1_chi2_share_tail_min: 0.50
+wb105_output_root: outputs/transport_uncertainty_shape_diagnosis_v1
+wb105_cin_path: outputs/transport_uncertainty_shape_diagnosis_v1/sbb9_transport_uncertainty_shape_20260906T201529Z_793f63dd/ckf_input_covariance_shape.json
+wb105_cin_sha256: d0f8b02940e87982423e72f072b546337836fb06ca21f32f83a774aed4310b98
+wb109_output_root: outputs/leave_target_out_state_materialization_v1
+do_not_use_kalmanfittertool_fit_as_leave_target_out: true
+pinned_calypso_sources:
+  ckf2_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.cxx
+    sha256: 10ddfedf0c2ac6a26c28b144679a7db55a07da602a2090259903b61db4ce1d20
+  ckf2_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CKF2.h
+    sha256: 87e6e692d98492e2ac37efd79dd3d6351de97b95e1df3e9081e7ce674fdd7ca6
+  kalman_fitter_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.cxx
+    sha256: 167c43d949d4b3590cadd5be4b39dfc6a15e1ddd834b2b52e57ca73a3cae7c99
+  kalman_fitter_tool_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/KalmanFitterTool.h
+    sha256: c31d789fe83ea3cd58761bae7df7bc49954042f2c294d04e3c96f8a01e4f340d
+  track_fitter_function_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackFitterFunction.cxx
+    sha256: 0fe012875e92266b10fcdcc62a3883f0e5c6d75743aed6ceb2fdc1b1324a411b
+  track_fitter_function_h:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackFitterFunction.h
+    sha256: 97a30eaafe5167db3c383f5b14f4e673c9b4ff9933cdc53326efa0aa68e3c948
+  create_trk_track_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CreateTrkTrackTool.cxx
+    sha256: 6d18cc528a818a0aefaa90050acde253eb6f2b4fe1ea6cd221149311777aee51
+do_not_select_states_from_closure: true
+lto_dump_root: outputs/leave_target_out_dump_v1/dumps
+lto_dump_filename: ckf_leave_target_out.jsonl
+plugin_library: build/leave_target_out_dump/libCkfLeaveTargetOutDump.so
+nevents: 100
+helper: CkfLeaveTargetOutDumpAlg
+numerics_smoke_root: outputs/leave_target_out_dump_v1/b14n_smoke
+transport_smoke_root: outputs/leave_target_out_dump_v1/b14t_smoke
+jacobian_smoke_root: outputs/leave_target_out_dump_v1/b14j_smoke
+derivative_smoke_root: outputs/leave_target_out_dump_v1/b14l_smoke
+official_jacobian_smoke_root: outputs/leave_target_out_dump_v1/b14zc_smoke
+wb124_smoke_root: outputs/leave_target_out_dump_v1/b14y_smoke
+wb123_smoke_root: outputs/leave_target_out_dump_v1/b14x_smoke
+wb122_smoke_root: outputs/leave_target_out_dump_v1/b14u_smoke
+numerics_smoke_filename: ckf_leave_target_out_profile_numerics.jsonl
+transport_smoke_filename: ckf_leave_target_out_profile_transport.jsonl
+jacobian_smoke_filename: ckf_leave_target_out_jacobian_continuity.jsonl
+derivative_smoke_filename: ckf_leave_target_out_derivative_contract.jsonl
+official_jacobian_smoke_filename: ckf_leave_target_out_certified_mean_fd.jsonl
+numerics_dump_root: outputs/leave_target_out_dump_v1/b14n_profile
+numerics_dump_filename: ckf_leave_target_out_profile_numerics.jsonl
+wb114_smoke_root: outputs/leave_target_out_dump_v1/b14m_smoke
+wb114_smoke_filename: ckf_leave_target_out_profile.jsonl
+profile_transport:
+  hop_mode: sequential_z_order
+  match_kalman_max_step_size: true
+  wb114_max_step_size_m: 10.0
+  kalman_max_step_size: unlimited_adaptive
+  max_steps: 4000
+  do_not_set_10m_max_step: true
+  material_multiple_scattering: true
+  material_energy_loss: true
+  loop_protection: true
+profile_parameter_scaling:
+  kind: fixed_numerical_units
+  scales:
+    loc0_mm: 1.0
+    loc1_mm: 1.0
+    phi: 0.001
+    theta: 0.001
+    q_over_p_per_gev: 0.001
+  theta_ref: linearization_point
+  not_a_prior: true
+  not_from_truth: true
+  not_from_hessian: true
+  not_from_seed_campaign: true
+profile_jacobian:
+  fd_steps:
+    loc0_mm: 0.01
+    loc1_mm: 0.01
+    phi: 1.0e-5
+    theta: 1.0e-5
+    q_over_p_per_gev: 1.0e-6
+  step_halving_factor: 0.5
+  relative_error_max: 0.05
+jacobian_continuity:
+  official_mode: supporting_plane_sequential
+  direct_from_source_is_comparison_only: true
+  do_not_switch_to_direct: true
+  do_not_select_best_step: true
+  official_fd_step_unchanged: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  relative_error_max: 0.05
+  focus_parameters:
+  - loc1
+  - phi
+  - q_over_p
+  required_events:
+  - [100043, 0]
+  - [100043, 1]
+  - [100043, 37]
+  - [100048, 86]
+  require_convergence: true
+  require_sign_consistency: true
+  require_surface_path_branch_consistency: true
+  require_numerical_continuity: true
+  do_not_reopen_optimizer_if_failed: true
+profile_optimizer:
+  kind: gauss_newton_backtracking
+  max_iterations: 50
+  line_search:
+  - 1.0
+  - 0.5
+  - 0.25
+  - 0.125
+  - 0.0625
+  - 0.03125
+  - 0.015625
+  - 0.0078125
+  relative_chi2_decrease: 1.0e-8
+  gradient_norm_z: 1.0e-6
+  step_norm_z: 1.0e-8
+  do_not_add_ridge: true
+  do_not_penalize_propagation_failure: true
+  accept_only_if_chi2_decreases: true
+profile_restart_v2:
+  source_ids:
+  - mc24_100043_00400_00499
+  event_ids:
+  - 0
+  - 1
+  chi2_rel_tolerance: 0.01
+  chi2_abs_tolerance: 0.05
+  loc0_abs_tolerance_mm: 0.05
+  theta_abs_tolerance: 0.0001
+  prediction_abs_tolerance_mm: 0.1
+  nuisance_may_differ: true
+  do_not_select_best_seed: true
+smoke_gate:
+  require_events_0_1_all_restarts: true
+  require_loc1_restart_equivalent: true
+  require_jacobian_pass: true
+  require_nominal_propagation_pass: true
+  require_focus_not_step_limit_only: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  do_not_submit_full_sample_if_failed: true
+numerics_identities:
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 0
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 1
+- source_id: mc24_100043_00400_00499
+  run_id: 100043
+  event_id: 37
+- source_id: mc24_100048_00000_00049
+  run_id: 100048
+  event_id: 86
+
+wb115_output_root: outputs/profile_likelihood_numerics_v1
+wb116_output_root: outputs/profile_transport_contract_v1
+profile_transport_contract:
+  official_mode: supporting_plane
+  official_max_steps: 4000
+  diagnostic_max_steps: 20000
+  diagnostic_max_steps_is_not_official_fix: true
+  surface_reached_boundary_check: false
+  justification: acts_kalman_external_measurement_surfaces_ignore_boundary_checks
+  on_surface_tolerance_mm: 1.0e-4
+  free_to_bound_diagnostic_tolerance_factor: 10
+  supporting_plane_near_limit_mm: 50.0
+  measurement_update_in_evaluator: false
+  sequential_mean_trajectory: true
+  class_m_focus: [100043, 37]
+  class_s_focus: [100048, 86]
+wb115_consistency:
+  loc0_abs_tolerance_mm: 0.05
+  residual_abs_tolerance_mm: 0.05
+  events: [0, 1]
+transport_smoke_gate:
+  require_events_0_1_nominal: true
+  require_wb115_prediction_consistency: true
+  require_jacobian_spotcheck: true
+  require_37_all_surviving_evaluable: true
+  require_86_all_projections_defined: true
+  require_no_prior: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  require_statistical_model_unchanged: true
+  require_no_measurement_update: true
+  require_no_arbitrary_max_steps_fix: true
+  do_not_submit_full_sample: true
+jacobian_smoke_gate:
+  require_events_0_1_37_86_nominal: true
+  require_jacobian_ladder_recorded: true
+  require_no_best_step_selection: true
+  require_sequential_vs_direct_recorded: true
+  require_no_prior: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  require_statistical_model_unchanged: true
+  require_no_measurement_update: true
+  require_focus_retained: true
+  do_not_submit_full_sample: true
+  do_not_reopen_b14m_unless_contract_established: true
+
+derivative_contract:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  do_not_select_best_tolerance: true
+  do_not_select_best_step: true
+  do_not_switch_to_direct: true
+  do_not_change_production_step_tolerance: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  focus_parameters:
+  - loc1
+  - phi
+  - q_over_p
+  focus_event: [100048, 86]
+  repeats: 3
+  repeat_loc0_abs_tol: 1.0e-12
+  repeat_chi2_abs_tol: 1.0e-12
+  noise_multiplier: 10.0
+  last_pair_relative_max: 0.05
+  near_parallel_abs_n_dot_d: 1.0e-6
+  accuracy_rungs:
+  - name: nominal
+    step_tolerance: 1.0e-4
+  - name: tighter
+    step_tolerance: 1.0e-5
+  - name: tighter_again
+    step_tolerance: 1.0e-6
+  projection_position_fd_step_mm: 0.001
+  stages:
+  - source_bound
+  - bound_to_free
+  - free_near_plane
+  - plane_intersection
+  - local_chart
+  - predicted_loc0
+  allowed_decisions:
+  - finite_difference_not_reliable_for_focus_transport
+  - acts_transport_jacobian_not_numerically_converged
+  - analytic_chain_or_chart_contract_broken
+  - mixed_or_inconclusive
+official_supporting_plane_jacobian:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  do_not_select_best_tolerance: true
+  do_not_select_best_step: true
+  do_not_switch_to_direct: true
+  do_not_change_production_step_tolerance: true
+  do_not_use_dummy_cov_bounded_transportJacobian: true
+  do_not_hand_write_magnetic_field_model: true
+  dummy_cov_is_variational_switch_only: true
+  official_start_covariance: nullopt
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  relative_error_max: 0.05
+  primary_family: rk_free_chain
+  path:
+  - source_bound
+  - unbounded_navigator_stepper
+  - final_free_state
+  - supporting_plane_intersection
+  - local_loc0
+  - residual
+  allowed_decisions:
+  - official_supporting_plane_jacobian_established
+  - acts_free_state_jacobian_unavailable
+  - official_path_jacobian_inconsistent_with_fd
+  official_step_tolerance: 1.0e-4
+  compare_to_official_fd_rung: 1.0
+  relative_error_max: 0.05
+  acts_stability_relative_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  do_not_replace_official_likelihood: true
+control_events:
+  - [100043, 0]
+  - [100043, 1]
+  - [100043, 37]
+focus_event: [100048, 86]
+control_selection:
+  defined_before_jacobian: true
+  truth_not_used: true
+  jacobian_not_used: true
+  note: WB119 controls are the pre-registered FD-PASS events 100043/0,1,37; 100048/86 remains the focus
+derivative_smoke_gate:
+  require_focus_86: true
+  require_control_0_1_37: true
+  require_derivative_recorded: true
+  require_fd_ladder_recorded: true
+  require_acts_chain_recorded: true
+  require_no_best_step_selection: true
+  require_no_best_tolerance_selection: true
+  require_no_prior: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  require_statistical_model_unchanged: true
+  require_no_measurement_update: true
+  require_no_likelihood_replacement: true
+  do_not_submit_full_sample: true
+  do_not_reopen_b14m: true
+  do_not_run_restart: true
+official_jacobian_smoke_gate:
+  require_focus_86: true
+  require_control_0_1_37: true
+  require_official_path_jacobian_recorded: true
+  require_fd_ladder_recorded: true
+  require_no_dummy_cov_bounded_transportJacobian: true
+  require_no_best_step_selection: true
+  require_no_best_tolerance_selection: true
+  require_no_prior: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  require_statistical_model_unchanged: true
+  require_no_measurement_update: true
+  require_no_likelihood_replacement: true
+  do_not_submit_full_sample: true
+  do_not_reopen_b14m: true
+  do_not_run_restart: true
+
+official_path_derivative_residual:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  reuse_wb120_smoke: true
+  do_not_rerun_athena: true
+  do_not_change_jacobian_implementation: true
+  do_not_select_best_tolerance: true
+  do_not_select_best_step: true
+  do_not_switch_to_direct: true
+  do_not_change_production_step_tolerance: true
+  do_not_use_dummy_cov_bounded_transportJacobian: true
+  do_not_hand_write_magnetic_field_model: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  primary_family: rk_free_chain
+  envelope:
+    kind: last_two_fd_rungs
+    definition: "||J_h/4 - J_h/8||"
+    compare_analytic_to_finest: true
+    same_order_factor: 3.0
+    do_not_modify_five_percent_gate: true
+    do_not_select_fd_rung: true
+  measurement_sensitivity:
+    pitch_mm: 0.08
+    sigma_mm: 0.023094010767585032
+    formula: 0.08/sqrt(12)
+    far_below_fraction: 0.05
+  official_fd_steps:
+    loc0_mm: 0.01
+    loc1_mm: 0.01
+    phi: 1.0e-5
+    theta: 1.0e-5
+    q_over_p_per_gev: 1.0e-6
+  hop_self_check:
+    composition_relative_max: 1.0e-9
+    step_level_D_persisted_in_acts: false
+    higher_precision_variational_state_available: false
+    allowed_variational_readout: hop_level_rk_free_product
+  allowed_decisions:
+  - official_path_derivative_contract_established
+  - fd_reference_not_precise_enough_for_derivative_certification
+  - small_column_relative_metric_pathology
+  - official_path_derivative_still_inconsistent
+  - mixed_or_inconclusive
+wb120_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14u_smoke/mc24_100043_00400_00499/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: 1c2daf7fda4e585d62624d1705934c3d621a69d560881f3d417d8a96bb1343ab
+- path: outputs/leave_target_out_dump_v1/b14u_smoke/mc24_100048_00000_00049/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: 831a2a3fc9ff6e0aa519895d642a5de576c42a3a947700fab48df58bb798a19d
+residual_smoke_gate:
+  require_focus_86: true
+  require_control_0_1_37: true
+  require_wb120_smoke_hash_match: true
+  require_envelope_recorded: true
+  require_hop_composition_recorded: true
+  require_no_athena_rerun: true
+  require_no_jacobian_implementation_change: true
+  require_no_best_step_selection: true
+  require_no_best_tolerance_selection: true
+  require_five_percent_gate_unchanged: true
+  require_no_prior: true
+  require_no_ridge: true
+  require_target_exclusion: true
+  require_statistical_model_unchanged: true
+  require_no_likelihood_replacement: true
+  do_not_submit_full_sample: true
+  do_not_reopen_b14m: true
+  do_not_run_restart: true
+
+field_gradient_variational_repair:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  athena_externals: 24.0.41
+  mean_equation: "dT/ds = (q/p) T x B(x); dr/ds = T"
+  transport_matrix_source: Acts/Propagator/detail/GenericDefaultExtension.hpp
+  official_gradient_api: FASERMagneticFieldWrapper::getFieldGradient
+  field_gradient_fd_step_mm: 1.0
+  field_gradient_fd_step_justification: FASER 3D field cache interpolates on a magnet-region mesh of O(10 mm); 1 mm is inside a cell and is registered before any track-Jacobian comparison
+  do_not_tune_field_step_from_track_jacobian: true
+  do_not_change_official_mean_path: true
+  do_not_change_jacobian_implementation_of_official_rk_free: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_select_best_step: true
+  do_not_select_best_tolerance: true
+  do_not_change_production_step_tolerance: true
+  do_not_mix_process_noise: true
+  do_not_tune_Q: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  field_gradient_smoke_root: outputs/leave_target_out_dump_v1/b14x_smoke
+  field_gradient_smoke_filename: ckf_leave_target_out_field_gradient.jsonl
+  allowed_decisions:
+  - field_gradient_variational_coupling_repaired_and_contracted
+  - field_gradient_coupling_repaired_focus_reference_unresolved
+  - field_gradient_hypothesis_not_supported
+  - field_gradient_variational_implementation_inconsistent
+  - mixed_or_inconclusive
+wb123_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14x_smoke/mc24_100043_00400_00499/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: b3a52180bb4f211b4352ee41f71762a8c159fe66e8291087ca14791f11f56582
+- path: outputs/leave_target_out_dump_v1/b14x_smoke/mc24_100048_00000_00049/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: d241fa360246ab8afc5796a0f26973f8ee00081f764f918463ffdcbfd4dcf1f2
+wb124_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14y_smoke/mc24_100048_00000_00049/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: 1888e9019fa5e4ce43b72bc6f6a51f9680251253ac199fb17bd01c763a5fb1f1
+wb125_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14z_smoke/mc24_100048_00000_00049/ckf_leave_target_out_official_jacobian.jsonl
+  sha256: 1f641557a465c0bde63e82bafb23954a228bde05278baa0d0f5a3c61937122c2
+focus86_segment_derivative_reference:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  do_not_change_field_gradient_variational_implementation: true
+  do_not_change_official_mean_path: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_select_best_step: true
+  do_not_select_best_tolerance: true
+  do_not_change_production_step_tolerance: true
+  do_not_tune_independent_tolerance_from_jacobian: true
+  do_not_self_certify_analytic: true
+  do_not_substitute_earlier_long_hop: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  required_first_unstable:
+    1: 6
+    2: 11
+    3: 11
+  independent_integrator:
+    method: dormand_prince_5_4
+    abs_tol_pos_mm: 1.0e-6
+    abs_tol_dir: 1.0e-10
+    abs_tol_qop: 1.0e-14
+    rel_tol: 1.0e-9
+    initial_step_mm: 1.0
+    min_step_mm: 1.0e-6
+    max_step_mm: 50.0
+    max_path_mm: 20000.0
+    max_steps: 100000
+    plane_hit_abs_mm: 1.0e-6
+    justification: abs_tol_pos_mm equals the frozen loc0 invariance floor 1e-6 mm; registered before any 86 Jacobian comparison
+  allowed_decisions:
+  - production_fd_not_certifying_but_independent_reference_established
+  - independent_segment_reference_contracted
+  - focus_segment_reference_not_established
+  - repaired_variational_focus_inconsistent
+  - mixed_or_inconclusive
+focus86_common_grid_shadow:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  do_not_change_field_gradient_variational_implementation: true
+  do_not_change_official_mean_path: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_select_best_step: true
+  do_not_select_best_tolerance: true
+  do_not_change_production_step_tolerance: true
+  do_not_tune_wb124_dopri5: true
+  do_not_tune_grid_from_jacobian: true
+  do_not_self_certify_analytic: true
+  do_not_substitute_earlier_long_hop: true
+  do_not_call_vacuum_a_production_map_reference: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  loc0_match_abs_max: 1.0e-6
+  required_first_unstable:
+    1: 6
+    2: 11
+    3: 11
+  shadow_integrator:
+    method: classical_rk4_common_grid
+    coarse_max_step_mm: 20.0
+    nominal_max_step_mm: 10.0
+    fine_max_step_mm: 5.0
+    mean_loc0_abs_mm: 1.0e-3
+    mean_path_abs_mm: 1.0e-2
+    mean_pos_abs_mm: 1.0e-2
+    mean_dir_abs: 1.0e-6
+    mean_qop_rel: 1.0e-4
+    grid_deriv_rel_max: 0.05
+    grid_mean_loc0_abs_mm: 1.0e-3
+    justification: nominal_max_step_mm equals one FASER magnet-cell scale; mean loc0 1e-3 mm is 23x below SCT sigma and 44x tighter than WB124 vacuum residual; registered before any 86 Jacobian comparison
+  allowed_decisions:
+  - focus_common_grid_reference_established
+  - shadow_mean_contract_not_established
+  - field_map_interpolation_nonsmoothness
+  - material_map_discontinuity
+  - supporting_plane_terminal_event_sensitivity
+  - shadow_integrator_resolution_unresolved
+  - repaired_variational_focus_inconsistent
+  - mixed_or_inconclusive
+independent_derivative_reference:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  reuse_wb120_smoke: true
+  do_not_rerun_athena: true
+  do_not_change_jacobian_implementation: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_select_best_step: true
+  do_not_select_best_tolerance: true
+  do_not_change_production_step_tolerance: true
+  do_not_use_dummy_cov_bounded_transportJacobian: true
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  loc1_delta_abs_floor: 5.0e-5
+  pos_to_dir_abs_max: 1.0e-12
+  first_unstable_rel_floor: 0.05
+  richardson_same_sign_required: true
+  polynomial_condition_max: 1.0e8
+  allowed_decisions:
+  - missing_deterministic_transport_coupling_identified
+  - segment_variational_derivative_inconsistent
+  - derivative_composition_or_reparameterization_incomplete
+  - independent_reference_established_for_focus
+  - independent_reference_not_established
+  - mixed_or_inconclusive
+
+shadow_mean_transport_contract:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  derivative_not_evaluated: true
+  jacobian_agreement_not_read: true
+  grid_selected_from_mean_contract_only: true
+  do_not_change_field_gradient_variational_implementation: true
+  do_not_change_official_mean_path: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_select_best_step: true
+  do_not_select_best_tolerance: true
+  do_not_change_production_step_tolerance: true
+  do_not_tune_wb124_dopri5: true
+  do_not_tune_grid_from_jacobian: true
+  do_not_reuse_wb125_20_10_5: true
+  do_not_self_certify_analytic: true
+  do_not_substitute_earlier_long_hop: true
+  do_not_call_vacuum_a_production_map_reference: true
+  do_not_evaluate_fd: true
+  do_not_read_jacobian: true
+  required_first_unstable:
+    1: 6
+    2: 11
+    3: 11
+  shadow_p:
+    method: official_rkn4_nystrom_physics_semantics
+    mesh: production_accepted_step_sequence
+    normalize_after_accepted_step: true
+    material_after_surface_arrival: true
+  shadow_d:
+    method: official_rkn4_nystrom_discretization_audit
+    sequence_mm: [10.0, 5.0, 2.5, 1.25]
+    justification: Delta s then exact halvings from one FASER magnet-cell scale; RKN4 global error O(h^4); registered from method order before any 86 evaluation
+  mean_gates:
+    loc0_abs_mm: 1.0e-3
+    path_abs_mm: 1.0e-2
+    pos_abs_mm: 1.0e-2
+    dir_abs: 1.0e-6
+    qop_rel: 1.0e-4
+  allowed_decisions:
+  - surface_energy_loss_semantics_established
+  - surface_material_update_gating_mismatch
+  - energy_loss_formula_or_particle_hypothesis_mismatch
+  - qop_update_conversion_mismatch
+  - path_bookkeeping_mismatch_after_material_closure
+  - mixed_or_inconclusive
+
+wb126_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14za_smoke/mc24_100048_00000_00049/ckf_leave_target_out_shadow_mean.jsonl
+  sha256: 3930beaf31946fa493a50f14f82b62fc019dc9c2fbff2856cbe173d3922dead8
+wb127_smoke_dumps:
+- path: outputs/leave_target_out_dump_v1/b14zb_smoke/mc24_100048_00000_00049/ckf_leave_target_out_surface_eloss.jsonl
+  sha256: 7a454ee298d6e9612afb6868b19a454086f199f7171b69d504df59205aa86537
+certified_mean_common_grid_fd:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  derivative_not_evaluated: false
+  jacobian_agreement_not_read: false
+  do_not_evaluate_fd: false
+  do_not_read_jacobian: false
+  do_not_change_mean_semantics: true
+  do_not_change_field_gradient_variational_implementation: true
+  do_not_change_official_mean_path: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_shrink_fd_step: true
+  do_not_change_production_step_tolerance: true
+  do_not_tune_wb124_dopri5: true
+  do_not_tune_grid_from_jacobian: true
+  do_not_reuse_wb124_adaptive_dopri5: true
+  do_not_reuse_wb125_20_10_5: true
+  do_not_self_certify_analytic: true
+  do_not_substitute_earlier_long_hop: true
+  do_not_submit_1989: true
+  production_eloss_quantity: computeEnergyLossBethe
+  mean_function: computeEnergyLossBethe + evaluateMaterialSlab gating + updateState p/E->q/p
+  field_replay: official_rkn4_nystrom_on_frozen_production_accepted_steps
+  certification_order: perturbed_arm_mean_and_no_branch_switch -> shadow_fd_ladder_convergence -> compare_to_WB123_repaired_tangent
+  rung_factors: [1.0, 0.5, 0.25, 0.125]
+  last_pair_relative_max: 0.05
+  relative_error_max: 0.05
+  required_first_unstable:
+    1: 6
+    2: 11
+    3: 11
+  required_independent_columns:
+  - loc1
+  - phi
+  - q_over_p
+  recorded_not_substitute_columns:
+  - loc0
+  - theta
+  mean_gates:
+    loc0_abs_mm: 1.0e-3
+    path_abs_mm: 1.0e-2
+    pos_abs_mm: 1.0e-2
+    dir_abs: 1.0e-6
+    qop_rel: 1.0e-4
+  allowed_decisions:
+  - certified_mean_independent_reference_established
+  - field_map_derivative_reference_nonsmooth
+  - material_update_derivative_discontinuity
+  - supporting_plane_event_derivative_sensitivity
+  - numerical_segment_fd_not_contracted
+  - repaired_variational_focus_inconsistent
+  - mixed_or_inconclusive
+surface_energy_loss_mean_semantics:
+  official_mode: supporting_plane_sequential
+  official_step_tolerance: 1.0e-4
+  acts_api_field: PropagatorPlainOptions.stepTolerance
+  acts_version: 32.0.2
+  derivative_not_evaluated: true
+  jacobian_agreement_not_read: true
+  do_not_evaluate_fd: true
+  do_not_read_jacobian: true
+  do_not_change_field_gradient_variational_implementation: true
+  do_not_change_official_mean_path: true
+  do_not_relax_five_percent_gate: true
+  do_not_change_official_fd_ladder: true
+  do_not_add_fd_rung: true
+  do_not_change_production_step_tolerance: true
+  do_not_fit_eloss_to_endpoint: true
+  do_not_infer_eloss_from_loc0: true
+  do_not_reopen_b14m: true
+  do_not_run_restart: true
+  production_eloss_quantity: computeEnergyLossBethe
+  mean_formula: computeEnergyLossBethe + computeEnergyLossRadiative
+  mode_formula: 0.9*computeEnergyLossLandau + 0.15*computeEnergyLossRadiative
+  required_first_unstable:
+    1: 6
+    2: 11
+    3: 11
+  mean_gates:
+    loc0_abs_mm: 1.0e-3
+    path_abs_mm: 1.0e-2
+    pos_abs_mm: 1.0e-2
+    dir_abs: 1.0e-6
+    qop_rel: 1.0e-4
+  node_qop_abs: 1.0e-9
+  node_qop_rel: 1.0e-6
+  allowed_decisions:
+  - surface_energy_loss_semantics_established
+  - surface_material_update_gating_mismatch
+  - energy_loss_formula_or_particle_hypothesis_mismatch
+  - qop_update_conversion_mismatch
+  - path_bookkeeping_mismatch_after_material_closure
+  - mixed_or_inconclusive
+
+b14m_restart_invariance:
+  statistical_model: wb114_measurement_level_likelihood
+  prior: none
+  ridge: none
+  truth_q_over_p: forbidden
+  target_measurement_in_fit: forbidden
+  measurement_update_in_evaluator: forbidden
+  full_track_ckf_cin: forbidden
+  wb109_empirical_covariance: forbidden
+  q_over_p_is_explicit_nuisance: true
+  jacobian_implementation: wb123_repaired_production_tangent
+  mean_semantics: wb127_computeEnergyLossBethe
+  validated_jacobian_is_numerical_derivative: true
+  validated_jacobian_is_not_a_new_statistical_model: true
+  forbidden_jacobians:
+  - wb119_dummy_cov_bounded_transportJacobian
+  - wb120_incomplete_rk_free
+  - wb124_adaptive_dopri5
+  - wb125_classical_rk4_shadow
+  smoke_events:
+  - [100043, 0]
+  - [100043, 1]
+  - [100043, 37]
+  - [100048, 86]
+  target_stations: [1, 2, 3]
+  restarts:
+  - name: nominal
+  - name: loc1_plus_1mm
+    loc1_mm: 1.0
+  - name: phi_plus_1e-3
+    phi: 0.001
+  - name: qoverp_times_1p1
+    q_over_p_scale: 1.1
+  restart_perturbs_init_only: true
+  qoverp_times_1p1_is_not_a_prior: true
+  optimizer_recovered_from:
+    workbook_114: configs/profiled_weak_nuisance_likelihood_v1.yaml
+    workbook_115: configs/profile_likelihood_numerics_v1.yaml
+  schur_required_events:
+  - [100043, 0]
+  - [100048, 86]
+  do_not_submit_1989: true
+  do_not_enter_b15: true
+  do_not_enter_wb130: true
+  allowed_decisions:
+  - b14m_restart_invariance_established
+  - profile_optimizer_restart_sensitive
+  - profile_nuisance_nonidentifiability_prediction_stable
+  - profile_nuisance_nonidentifiability_affects_prediction
+  - restart_transport_branch_instability
+  - profile_schur_implementation_inconsistent
+  - mixed_or_inconclusive
+  - inherited_contract_mismatch
+  - optimizer_contract_not_recoverable
+
+b14m_profile_basin_diagnosis:
+  statistical_model: wb114_measurement_level_likelihood
+  do_not_change_optimizer: true
+  do_not_change_termination_rule: true
+  do_not_change_line_search: true
+  do_not_change_parameter_scaling: true
+  do_not_change_pinv_relative: true
+  do_not_add_random_restarts: true
+  do_not_take_min_of_four_restarts_as_fix: true
+  do_not_use_held_out_to_select_basin: true
+  do_not_rewrite_schur: true
+  do_not_reopen_jacobian: true
+  target_measurement_inaccessible: true
+  pinv_relative: 1.0e-8
+  gradient_norm_z: 1.0e-6
+  step_norm_z: 1.0e-8
+  relative_chi2_decrease: 1.0e-8
+  max_iterations: 50
+  line_search: [1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125]
+  continuation_lambda: [0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]
+  failure_identities:
+  - [100043, 37, 1]
+  - [100043, 37, 2]
+  - [100048, 86, 1]
+  negative_control_identities:
+  - [100043, 0, 1]
+  - [100043, 37, 3]
+  - [100048, 86, 2]
+  pass_identities_must_remain_pass:
+  - [100043, 0, 1]
+  - [100043, 0, 2]
+  - [100043, 0, 3]
+  - [100043, 1, 1]
+  - [100043, 1, 2]
+  - [100043, 1, 3]
+  - [100043, 37, 3]
+  - [100048, 86, 2]
+  - [100048, 86, 3]
+  useful_decrease_rel_floor: 1.0e-8
+  useful_decrease_abs_floor: 1.0e-6
+  chi2_match_rel: 0.01
+  do_not_submit_1989: true
+  do_not_enter_b15: true
+  allowed_decisions:
+  - flat_direction_termination_not_stationary
+  - profile_optimizer_globalization_failure
+  - profile_nuisance_multibasin_established
+  - profile_alpha_multibasin_established
+  - profile_hysteresis_established
+  - profile_nuisance_nonidentifiability_prediction_stable
+  - mixed_or_inconclusive
+
+b14m_profile_globalization_repair:
+  statistical_model: wb114_measurement_level_likelihood
+  do_not_change_statistical_model: true
+  do_not_add_smaller_line_search_lambda: true
+  do_not_take_min_of_four_restarts_as_fix: true
+  do_not_use_held_out_for_globalization: true
+  do_not_rewrite_schur_definition: true
+  do_not_reopen_jacobian: true
+  do_not_submit_1989: true
+  do_not_enter_b15: true
+  do_not_call_lm_lambda_ridge: true
+  target_measurement_inaccessible_during_fit: true
+  provenance: wb131_preregistered_nocedal_wright_style_not_alignment_0p15
+  reused_existing_project_trust_region: false
+  note: alignment 0.15 linearity gate is a different contract and is not reused
+  coordinate_system: frozen_scaled_z
+  pinv_relative: 1.0e-8
+  gradient_norm_z: 1.0e-6
+  step_norm_z: 1.0e-8
+  relative_chi2_decrease: 1.0e-8
+  max_outer_iterations: 50
+  max_inner_iterations: 50
+  max_trust_region_trials: 20
+  Delta0_rule: min(1.0, ||delta_GN,R||)
+  Delta_max: 10.0
+  Delta_min: 1.0e-8
+  rho_accept: 0.10
+  rho_expand: 0.75
+  boundary_frac: 0.80
+  shrink_factor: 0.25
+  expand_factor: 2.0
+  chi2_rel_tolerance: 0.01
+  prediction_abs_tolerance_mm: 0.1
+  supported_abs_tolerance:
+    loc0_mm: 0.05
+    theta: 0.0001
+  smoke_events:
+  - [100043, 0]
+  - [100043, 1]
+  - [100043, 37]
+  - [100048, 86]
+  target_stations: [1, 2, 3]
+  gate_identities:
+  - [100043, 37, 1]
+  - [100043, 37, 2]
+  - [100048, 86, 1]
+  regression_controls:
+  - [100043, 0, 1]
+  - [100043, 1, 1]
+  - [100048, 86, 2]
+  restarts:
+  - nominal
+  - loc1_plus_1mm
+  - phi_plus_1e-3
+  - qoverp_times_1p1
+  allowed_decisions:
+  - profile_globalization_and_restart_contract_established
+  - trust_region_globalization_still_fails
+  - inner_nuisance_profile_not_converged
+  - profile_outer_optimizer_restart_sensitive
+  - profile_nuisance_nonidentifiability_prediction_stable
+  - optimizer_repair_regression
+  - mixed_or_inconclusive
+  - inherited_contract_mismatch

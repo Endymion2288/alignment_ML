@@ -129,11 +129,22 @@ if [[ -z "$genconf_bin" ]]; then
   echo "genconf is not on PATH after Calypso setup" >&2
   exit 2
 fi
-(
+ext_lib="/cvmfs/atlas.cern.ch/repo/sw/software/24.0/AthenaExternals/24.0.41/InstallArea/x86_64-el9-gcc13-opt/lib"
+export LD_LIBRARY_PATH="$out_dir:$ext_lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if ! (
   cd "$out_dir"
   "$genconf_bin" -o "$out_dir/genConf" -p CkfLeaveTargetOutDump --no-init \
     -i libCkfLeaveTargetOutDump.so
-)
+); then
+  if [[ -f "$out_dir/libCkfLeaveTargetOutDump.so" &&
+        -f "$out_dir/libCkfLeaveTargetOutDump.components" &&
+        -f "$out_dir/CkfLeaveTargetOutDump.confdb2" ]]; then
+    echo "genconf failed; keeping the existing configurable database" >&2
+  else
+    echo "genconf failed and no existing configurable database is present" >&2
+    exit 2
+  fi
+fi
 part="$(find "$out_dir/genConf" -name '*.confdb2_part' | head -n 1)"
 if [[ -z "$part" ]]; then
   echo "genconf did not write a confdb2_part" >&2
