@@ -1,8 +1,11 @@
-# Yasu-S2K — field-integral-normalized 3ST bending response closure.
-# Reuses the frozen WB125 YZ bending_raw and the WB126 9 source-disjoint
-# dumps.  Does not enter S3, E[r_IFT|·], alignment, weak-mode, B14M/B15,
-# or MM V2.  Does not flip WB119.  Does not mark qp_bending_proxy as
-# trusted momentum.  Does not fit a free scale from the same truth batch.
+# Yasu-S2K — ISOLATED after independent-reviewer P0.
+# bending_raw is a two-chord angle difference; its physical response is
+# the triangle-weighted kernel W(z), not unweighted int(Bx dz - Bz dx).
+# Uniform-field circular orbits give ~0.5 x truth.  Do not times-two
+# patch, do not fit a free scale, do not continue S2K batch, and do not
+# use qp_bending_proxy for physics or calibration.  Existing smoke/batch
+# artifacts are in-progress implementation output, not completed WB127.
+# Yasu-S3A does not use this proxy.
 
 schema_version: three-st-qp-field-normalized-bending-v1
 task: YASU-S2K
@@ -39,7 +42,23 @@ b15_authorized: false
 three_st_qp_trusted_observable: false
 measurement_uncertainty_propagated: false
 official_qp_like_jacobian_authorized: false
-inspect_only_measurement_dump_authorized: true
+inspect_only_measurement_dump_authorized: false
+s2k_batch_authorized: false
+physical_interpretation_authorized: false
+times_two_patch_authorized: false
+qp_bending_proxy_isolated: true
+
+isolation:
+  reason: "P0: two-chord angle difference is a W(z)-weighted curvature kernel, not unweighted int(Bx dz - Bz dx); uniform-field circle ~0.5 x truth"
+  qp_bending_proxy_isolated: true
+  physical_interpretation_authorized: false
+  times_two_patch_authorized: false
+  s2k_batch_authorized: false
+  fit_free_scale_from_truth: false
+  existing_artifacts_are_not_completed_wb127: true
+  existing_smoke_run: outputs/three_st_qp_field_normalized_bending_v1/yasu_s2k_three_st_qp_field_normalized_bending_smoke_20260910T121532Z_59fd69d6
+  existing_batch_run: outputs/three_st_qp_field_normalized_bending_v1/yasu_s2k_three_st_qp_field_normalized_bending_batch_20260910T125021Z_7fd3e13f
+  next_stage: YASU-S3A
 
 access_scope: development_validation
 frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML

@@ -1,0 +1,960 @@
+发现 P0：当前 S2K/WB127 的 field-normalized bending 公式错误，应停止用它解释物
+  理结果或继续推进后续校准。 这个错误不推翻 WB125–126 的 raw bending 数值，但会
+  推翻“当前公式未闭合，因此存在物理 response/nontransferability 问题”的解释。
+
+  本次保持只读：没有修改分支、提交作业、写 geometry、覆盖研究输出或访问 held-
+  out/sealed 数据。审阅覆盖 WB117–126、相关实现/config/tests/docs，以及未完成
+  WB127 的实现和已有输出；交叉检查了 pinned Calypso 和当前安装的 ACTS 源码。运行
+  相关测试 65 passed，独立复算了小样本 bending，并用解析圆轨道检验了 S2K。没有重
+  新计算全部数百万条 batch records，因此下文明确区分源码事实、独立复算和既有
+  aggregate evidence。
+
+  ## A. Executive verdict
+
+  当前分支积累了有价值的诊断基础，但部分根因判断已经超出证据。
+  它最可靠地建立的是：特定 production chain 输出的 WithoutIFT (q/p) 存在明显符号
+  错误和相对现有 truth reference 的异常误差分布。
+  源码支持该配置在 measurement/source-link 和 seeding 路径上排除 IFT，而不仅是从
+  输出中删除 IFT。
+  WB118 也建立了可运行的 3ST→IFT 独立预测链，但其验证规模和 association 方法不足
+  以建立总体意义上的 unbiased residual。
+  Yasu 的机制目前仍停留在“存在可疑 reconstructed observable，并已具备预测工具”，
+  尚未验证到 residual dependence，更没有验证到 alignment weak mode。
+  非零总体 (E[q/p]) 本身不是 reconstruction bias 的证据，因为电荷和能谱组成可以
+  产生它。
+  WB126 的高动量 raw bending 结果支持测量中仍保留曲率符号信息。
+  因此，WB121 将 fitted sign degradation 定性为已建立的“本征曲率信息极限”，证据
+  不足。
+  最大的第一个风险是 S2K 把两段弦角之差当成整条轨迹的切向偏转角，产生约二倍的归
+  一化错误。
+  第二个风险是 measurement association、state/covariance basis 和 refit
+  provenance 尚有真实代码问题，足以改变对 fitted/raw 差异的解释。
+  第三个风险是 truth reference、reconstruction-conditioned selection 和人为
+  effect-size gates 被赋予了过强的因果含义。
+  当前路线确实在绕远路：不断增加 momentum diagnostics，却没有直接测量 IFT
+  residual 对曲率误差和几何参数的响应。
+  检验 Yasu weak-mode mechanism 不需要先得到可信的 momentum estimator。
+  应暂停 WB127，转向小样本、固定 measurement set、可控曲率扰动与几何扰动的直接闭
+  合实验。
+
+  远端与 master 比较
+
+  重新查询远端后确认：
+
+   项目                             SHA / 内容
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   当前远端、本地 yasuCheck HEAD    b617614e7746ec400072347b7cf3f056a4b9a9a7
+  ───────────────────────────────  ─────────────────────────────────────────────
+   当前远端 master HEAD             c749e45aac9157ab59ab672f9527cafa6234dc46
+  ───────────────────────────────  ─────────────────────────────────────────────
+   共同祖先                         55cf982302a3c62c57b74f368d5e3ba7723fd33a
+  ───────────────────────────────  ─────────────────────────────────────────────
+   yasuCheck 独有 commit            1 个：three_st_qp dumps/configs/datasets/
+                                    docs/workbooks
+  ───────────────────────────────  ─────────────────────────────────────────────
+   master 独有 commit               1 个：supporting-plane Jacobian、
+                                    transport、profile globalization 修复
+
+  本地原有 master/origin/master 不能代表当前远端 master；本次通过临时 bare
+  repository 读取当前历史，没有修改工作分支。yasuCheck commit
+  (https://github.com/Endymion2288/alignment_ML/commit/b617614e7746ec400072347b7cf3f056a4b9a9a7)，master
+  commit
+  (https://github.com/Endymion2288/alignment_ML/commit/c749e45aac9157ab59ab672f9527cafa6234dc46)。
+
+  同步判断：应定向同步相关 transport/derivative 契约，暂不整体 merge。
+
+  - master 的 FieldGradientDefaultExtension.hpp 补入 (\partial B/\partial x)。当
+    前安装的 ACTS GenericDefaultExtension::transportMatrix 确实将 dGdx 保持为
+    零，源码事实成立。
+
+  - common-grid FD 和 material mean/gating 工作与下一阶段 sensitivity/Jacobian
+    验证直接相关。
+
+  - profile globalization 修复对未来 nuisance profiling 有价值，但不修复已存储的
+    CKF (q/p)。
+
+  - 这些修改位于另一条诊断实现中，不能自动视为 WB118 backward-to-IFT 已验证。
+  - master 自身仍需 review：例如 gradient lookup 失败标志在
+    FieldGradientDefaultExtension.hpp:119–123 被忽略。
+
+  - 两边都有不同内容的 WB117–126，必须按 commit＋任务名区分，不能按 workbook 编
+    号继承结论。
+
+  ## B. Critical findings
+
+  ### P0 — S2K 的 response integral 不是 bending observable 的 response
+
+  位置： datasets/faser_field_table.py:295、:320、:363；S2K config (configs/
+  three_st_qp_field_normalized_bending_v1.yaml)，键 observable.formula、
+  path.integral。
+
+  代码将两个 chord 上的积分相加：
+
+  [
+  I=\int_{S1}^{S3}(B_x,dz-B_z,dx),
+  \qquad
+  \widehat{q/p}=-b/(KI).
+  ]
+
+  但 (b=\arctan t_{12}-\arctan t_{23}) 是两段平均斜率的角差，不是 S1、S3 端点切
+  向方向之差。即使零初始斜率、恒定动量、均匀场，该公式仍然错误。
+
+  我用独立解析圆轨道生成三点，再调用现有积分和 proxy 函数：
+
+   真值动量    当前 proxy / truth
+  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━
+     20 GeV            0.50003209
+  ──────────  ────────────────────
+    100 GeV            0.50000128
+  ──────────  ────────────────────
+      2 TeV           0.500000003
+  ──────────  ────────────────────
+      3 TeV           0.500000001
+
+  已有 S2K batch 的 clean regression slope 为 0.497109469，与这个错误相容；它不
+  能被解释成新的物理 response failure。
+
+  测试为什么没发现： tests/test_three_st_qp_field_normalized_bending.py:133 在第
+  156 行调用被测 qp_bending_proxy_per_mev() 生成 truth，再要求 slope 为 1。这是
+  循环验证。
+
+  影响与最小处理：
+
+  - 当前 WB127 proxy 的物理归一化无效；相关 response verdict 必须隔离。
+  - 不要用真值拟合一个自由 scale，也不要机械乘二后重跑 batch。
+  - 若保留该方向，先用独立圆轨道、非均匀场和非零斜率验证正确 response kernel，推
+    导见 D。
+
+  - 无需修好这个 momentum proxy，才能开展不依赖它的 Yasu intervention。
+
+  此外，WB127 并非“只有代码尚未运行”：已存在 smoke 和 batch artifacts，包
+  括 ...20260910T125021Z_7fd3e13f，但没有 completed WB127。它们应标为 in-
+  progress implementation 的未完成审阅输出，不能并入 WB117–126 的完成证据。
+
+  ### P1-1 — “S1 truth momentum” 不是直接记录的 S1 输运动量
+
+  位置： /eos/home-x/xcheng/FASER/calypso/Tracking/Acts/FaserActsKalmanFilter/
+  src/FiducialParticleTool.cxx:45、getTruthMomenta()；CalibrationAlg.cxx:382
+  (alignment/three_st_qp_calibration_dump/CkfThreeStQpCalibrationAlg.cxx:382)。
+
+  getMomentum(hit) 使用：
+
+  double p = hit.particleLink()->momentum().rho();
+  momentum = globalDirection / globalDirection.mag() * p;
+
+  即 HepMC 链接粒子的动量大小＋hit 段方向，随后按站平均向量。它不是 Geant 在 S1
+  的局部 momentum measurement。小样本中 p_truth_s1/p_truth_production 几乎等于
+  1，也符合这一实现。
+
+  影响：
+
+  - WB120 用 production truth 替换 S1 truth 仍不改善，不能据此排除 reference
+    mismatch；两者动量大小原本就几乎相同。
+
+  - S2-front、missing-S1 reconstructed tracks 仍统一对比 S1 reference，没有完成
+    同一 reference surface 的物理比较。
+
+  - pull 数值异常是真实输出事实，但不能全部定性为 covariance calibration
+    failure。
+
+  - 这个问题通常不改变同一粒子的 charge sign，也不能未经量化就用来解释全部巨大
+    tails。
+
+  最小验证： 明确区分 production (p)、hit-derived direction 和 transported local
+  (p)；在少量事件上获取同一 reference point 的可靠 truth state，再做误差分解。无
+  法取得时，应重命名现有字段并限制其解释。
+
+  ### P1-2 — Truth matching 是 plurality，不能直接解释为纯净 majority
+
+  位置： /eos/home-x/xcheng/FASER/calypso/Tracking/Acts/FaserActsKalmanFilter/
+  src/TrackTruthMatchingTool.cxx:38、:69、:77。
+
+  每个 cluster 中出现过的 barcode 都可获得一次 hit count；不按 deposit energy 加
+  权，不要求获胜 barcode 超过 50%，没有明确处理并列。truth_hit_count/n_mot 因而
+  不是互斥成分意义下的 purity。
+
+  影响： dirty/短径迹的 charge label、truth (p) 和 tails 可能受错配影响。未发现
+  代码显式按 charge 选择 truth，但这不排除 composition-dependent matching bias。
+
+  最小验证： 导出前两名计数、并列标志、共享 deposit 情况；报告唯一高纯度匹配与模
+  糊匹配的分层结果，保留总体分母。不要把这种分层改称总体校准完成。
+
+  ### P1-3 — 单位变换正确，不等于 covariance basis/provenance 正确
+
+  位置： /eos/home-x/xcheng/FASER/calypso/Tracking/Acts/FaserActsKalmanFilter/
+  src/CreateTrkTrackTool.cxx:104、/eos/home-x/xcheng/FASER/calypso/Tracking/
+  Acts/FaserActsKalmanFilter/src/KalmanFitterTool.cxx:563。
+
+  已确认：
+
+  [
+  q/p_{\rm Trk}=10^{-3}q/p_{\rm ACTS},\quad
+  C_{i4}\mapsto10^{-3}C_{i4},\quad
+  C_{44}\mapsto10^{-6}C_{44}.
+  ]
+
+  这一单位 Jacobian 是一致的，未发现简单漏乘 (10^3/10^6)。
+
+  但 bound covariance 被直接放入 Trk::CurvilinearParameters，没有
+  bound→curvilinear Jacobian；回到 KF 时又直接复制 covariance。KF seed plane 在
+  front.z−10 mm，位置却取原 surface center，没有相应传播。
+
+  影响：
+
+  - 同一点换 basis 时 (C_{44}) 不变，不能推出整个 conversion/refit chain 对最终
+    (q/p,C_{44}) 无影响。
+
+  - 部分 target-plane 往返的错误标签可能数值抵消；不能反过来声称它必然造成已见
+    sign flips。
+
+  - 但 WB121 的“basis/unit/provenance bug rejected”和“native ACTS dump 不会改变
+    根因裁决”均不成立。
+
+  最小验证： 同一小样本记录 ACTS bound → Trk → 实际 KF seed → post-fit 的 mean、
+  surface 和完整 covariance。先做零场斜轨、旋转平面和 10 mm plane shift 的闭合测
+  试，再谈 calibration 根因。
+
+  ### P1-4 — 原始 seeding 中存在跨事件 stale space-point 指针风险
+
+  位置： /eos/home-x/xcheng/FASER/calypso/Tracking/Acts/FaserActsKalmanFilter/
+  src/CircleFitTrackSeedTool.cxx:18、:59–67、:250–253、:206。
+
+  s_spacePointMap 是静态 map，每次事件填入当前 SP，却没有清空；结束时只清空
+  s_indexMap。若当前 cluster identifier 在本事件没有 SP，但以前事件出现过，查找
+  可能取出旧事件指针。该源码 hash 与配置 pin 一致。
+
+  影响： 可产生事件顺序依赖、错误 seed 或悬空指针；这是解释 estimator 问题前必须
+  排除的 reconstruction bug。尚未证明它在已分析 production events 中实际触发。
+
+  最小验证： 两事件复现：重复 cluster identifier，第二事件缺少对应 SP；比较单事
+  件、连续事件和交换顺序结果。修复方向是 event-local map，并检查候选唯一性。无需
+  大规模重建。
+
+  ### P1-5 — “MOT-matched、fit-independent bending” 的输入契约不成立得那么强
+
+  位置： MeasurementBendingAlg.cxx:118 (alignment/
+  three_st_qp_measurement_bending_dump/
+  CkfThreeStQpMeasurementBendingAlg.cxx:118)、:177、:295。
+
+  主要问题：
+
+  - exact identifier 找不到时，允许按 idDE() 的 wafer hash 取 SP；同 wafer 不等
+    于同 cluster。
+
+  - map 用赋值覆盖多个候选，结果依赖 container 顺序。
+  - 没有要求 stereo partner 也属于该 track 的 MOT。
+  - exact 与 wafer fallback 都标成 "space_point"，现有 dump 无法区分。
+  - 每个 MOT cluster 都贡献一次 SP 坐标，没有按唯一 stereo pair 去重。
+  - fallback 混入 PRD strip position、localToGlobal 和 ROT position，不能全部当
+    成同一种三维测量。
+
+  - config 声称 unique_space_point_mean...，实现并没有执行该唯一性约束。
+
+  影响： raw bending 可能使用额外 partner information、错误关联或不同权重；“同一
+  measurement set 下优于 fit”尚未完全建立。它不直接使用 fitted (q/p) 或 truth，
+  但 measurement selection 仍来自 CKF。
+
+  最小验证： 导出两个 partner identifiers、候选数、exact/fallback 类型；验证打乱
+  SP 顺序结果不变；只对双方 partner 均属于 MOT 的唯一 SP 做同轨配对分析。39-
+  track 小样本复算支持已记录 raw 数值，但不能替代 batch association 审计。
+
+  ### P1-6 — WB118 的 prediction 独立性与 residual association 独立性被混在一起
+
+  位置： ToIftPredictionAlg.cxx:388 (alignment/three_st_to_ift_dump/
+  CkfThreeStToIftPredictionAlg.cxx:388)、:520。
+
+  associatedIftIds() 从唯一 4ST track 的 IFT TSOS 提取 identifiers，包含有
+  measurement 的 outlier TSOS；这套 event-level association 随后用于该事件全部
+  3ST tracks，没有逐轨匹配。
+
+  影响：
+
+  - prediction mean 没有使用 4ST fitted state，这一点成立。
+  - associated residual sample 仍条件化于 4ST survival 和 4ST association，不能
+    称总体 unbiased。
+
+  - “所有 IFT clusters 的 residual”则混入背景和错误配对，也不是自动独立的 track
+    residual。
+
+  最小验证： MC mechanism study 可使用明确声明的 truth association，并固定
+  association 做干预；real data 必须用独立于 4ST survival 的原始 IFT cluster
+  association，保留歧义/未匹配类别，并验证窗口选择偏差。不能直接挑最近 residual
+  后计算均值。
+
+  ### P1-7 — backward propagation 的 mean、covariance 和 boundary 契约尚未同等闭
+  合
+
+  位置： ToIftPredictionAlg.cxx:174 (alignment/three_st_to_ift_dump/
+  CkfThreeStToIftPredictionAlg.cxx:174)、:264、:778。
+
+  - 对当前正向 tracks，从下游向 IFT 使用 backward direction 是合理的；通用实现仅
+    比较 z，没有验证 momentum direction。
+
+  - actsFromTrk() 用扰动后的 native surface 点直接做 fixed-z FreeToBound，没有先
+    传播至 fixed-z plane。倾斜 surface 的正确扰动包含 (\delta x-t_x\delta z)、
+    (\delta y-t_y\delta z) 等交点项。
+
+  - covariance 转换失败可静默退为 nullopt；原始 has_covariance 不代表转换后的
+    covariance 有效。
+
+  - no-noise 与 with-noise 同时切换 MS 和 eloss，不能单独定位 material mean 或
+    process-noise 差异。
+
+  - wafer propagation 失败只留下泛化 reason，不能区分 bounds、navigation、步数或
+    其他 failure。
+
+  影响： plane-level success 证明“到达参考平面”，不证明实际 wafer acceptance，也
+  不证明预测 covariance 正确。
+
+  最小验证： 零场斜轨到旋转/平移平面的解析交点测试；固定 surface sequence 的差分
+  收敛；记录 ACTS error 和 material/boundary 状态。master 修复须在这条 backward
+  路径重新验证。
+
+  ### P1-8 — WB124 的 artifact rejection 没有对应的有效观测
+
+  位置： datasets/three_st_qp_refit_provenance.py:377。
+
+  _front_artifact() 在没有独立 post_z_mm 比较时，仍可因 inconsistent==0 返回
+  rejected。当前 diagnostic refit 未执行，缺少原始 pre/post pair。
+
+  影响：
+
+  - 5 个 Hole-99 fallback 和 3 个 first-MOT S2-front，足以否定“front_near_s2 等
+    同 KF failure”。
+
+  - 但这不构成 serialization/state-ordering artifact 被排除的证据。
+  - “成功 refit 的 front 一定是 first MOT”也比 CreateTrkTrackTool 的一般实现更
+    强：该实现保留 hole/outlier states。
+
+  - calibration dump 的 fit_failure 实际表示缺 state/covariance，不能读成原 KF
+    failure count。
+
+  最小验证： 无有效比较则返回 unresolved；真正排除 artifact 需要持久化前后的
+  state identity/values。不要用已知状态标签代替数值闭合。
+
+  ### P2 — Engineering / reproducibility
+
+   位置        CalibrationAlg.cxx:198 (alignment/three_st_qp_calibration_dump/
+               CkfThreeStQpCalibrationAlg.cxx:198)
+   问题及影响  merged xAOD 的 event number 会重复；仅 source,event,track 不足以
+               安全 join。后续出现了 skip_index，但未统一。
+   最小处理    固定 file GUID/hash＋entry＋collection＋track index，并附
+               measurement digest；检查 join cardinality。计数相等不等于逐轨一
+               致。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        dump script:61 (scripts/dump_ckf_three_st_qp_calibration.py:61)
+   问题及影响  geometry/field/conditions hash 多为 tag 字符串＋声明 SHA 的
+               hash；不是 runtime resolved payload。
+   最小处理    记录实际 IOV、alignment transforms、field scale、loaded library/
+               build hash。已有 source-byte hash 校验应保留。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        S2K verification:996 (datasets/
+               three_st_qp_field_normalized_bending.py:996)
+   问题及影响  verify_dump_sha:false 时，仅文件存在即可保持 all_match:true。实际
+               S2K batch 明确 sha_checked:false。
+   最小处理    区分 present、verified、matched；不能把未验证称冻结输入匹配。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        CalibrationAlg.cxx:136 (alignment/three_st_qp_calibration_dump/
+               CkfThreeStQpCalibrationAlg.cxx:136)、:420
+   问题及影响  C++ 将全部 JSON 行留在内存，到 finalize 才写；部分 Python 虽逐行
+               读，仍保留全样本及重复 rank arrays。
+   最小处理    分块写入、在线统计；精确排序单独规划。11 GB JSONL 不等于内存有
+               界。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        同上 writeLines()
+   问题及影响  有常规 overwrite refusal，但存在检查后写入竞态；多文件不是一个原
+               子 artifact。
+   最小处理    唯一临时目录、独占创建、检查 flush/close、最后写 manifest/
+               COMPLETE。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        bending.py:233 (datasets/three_st_qp_measurement_bending.py:233)
+   问题及影响  双 argsort 不处理 ties；常数输入也可产生伪 rank correlation。逻辑
+               在多个模块复制。
+   最小处理    average ranks；常数和 tied-input 独立测试；统一实现。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        root_cause.py:412 (datasets/three_st_qp_root_cause_audit.py:412)
+   问题及影响  混合单位 covariance 的 condition number 非物理不变量；det != 0＋
+               显式 inverse 的 Schur 计算不稳。
+   最小处理    先无量纲化，用分解/solve；SPD、数值病态、calibration 分开报告。
+  ──────────────────────────────────────────────────────────────────────────────
+   位置        configs/dump scripts
+   问题及影响  EOS root、tags、station z、DBRelease/current、field paths 多处复
+               制；声明的 centroid 语义已与实现漂移。
+   最小处理    单一 runtime contract；station geometry 从实际 detector elements
+               验证。
+
+  现有测试对 schema、冻结 flag、继承和拒绝非法输入有价值；它们不足以验证物理响
+  应、C++ association 和 basis conversion。65 tests PASS 与上述 P0 同时存在，就
+  是直接证据。
+
+  ## C. Claims audit
+
+  “valid”均限于表内所述范围，不代表整条物理机制成立。
+
+   Claim                 Evidence              Verdict       Reason
+  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━
+   WB117：WithoutIFT     masked layers 0–5     valid         对 pinned
+   排除 IFT fit          在 source-link/                     reconstruction 配
+   information           measurement 构造前                  置成立；不是
+                         排除；Segment 按站                  collection 名称的
+                         构造，IFT seed                      普遍保证。
+                         segment 被排除；小
+                         样本无 IFT MOT/相
+                         关 TSOS
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB117：每条           seeding 可退到较少    invalid       应称“排除 IFT 的下
+   WithoutIFT 都是完     stations；batch 有                  游 tracking
+   整 S1+S2+S3 track     missing-station                     collection”，完整
+                         tracks                              三站须另定义。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB118：独立           39/39 reference-      valid         证明可运行的独立
+   3ST→IFT prediction    plane                               mean prediction，
+   chain 已建立          propagation，小样                   不等于精度/
+                         本 wafer results                    covariance/
+                                                             boundary 全面闭
+                                                             合。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB118：associated     association 来自      overstated    prediction
+   residual 可视为       4ST track                           independence 不消
+   unbiased physics                                          除 selection/
+   residual                                                  association bias。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB119：持久化 (q/     primary               valid         足以否决直接作为可
+   p) 不宜直接当可信     3,398,774；sign                     靠 momentum 的用
+   momentum              flips 243,758；高                   法。
+                         (p) 退化
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB119：native 5×5     主要检验 (q/p)        overstated    完整 5D
+   已被完整证明          marginal pull、                     calibration 未检
+   calibration           coverage、SPD                       验；truth/surface
+   failure                                                   语义也未闭合。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB120：truth-         production/S1 替换    invalid       两个 reference 的
+   reference mismatch    比较                                动量大小源于同类
+   已排除                                                    generator
+                                                             information，不能
+                                                             完成该排除。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB120：高动量         多分层 aggregate      valid         是 estimator 性能
+   fitted sign 更差                                          观察，不识别根因。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB121：已建立         clean fitted flip     invalid       劣化的 estimator
+   intrinsic             与 fitted/truth                     和自身 (\sigma) 不
+   curvature-            significance 趋势                   能证明测量信息的本
+   information limit                                         征上限。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB121：简单全局       源码单位一致；        valid         仅排除该简单全局修
+   (10^3/10^6)           rescaling 后严重                    复。
+   rescaling 不能救校    overcoverage
+   准
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB121：basis/unit/    由上述 rescaling      invalid       未检验 basis、
+   provenance bug 全     推广                                surface、seed/
+   部 rejected                                               refit 和 transport
+                                                             的完整链。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB122：非零 fit       恒等式及 source       valid         数值分解有
+   mean 可拆为           composition、tail                   效；“error”物理解
+   population＋error     contributions                       释受 truth
+   mean                                                      reference 限制。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB122：split 机制     construction/         overstated    不同 estimand 可有
+   不同意味着不稳定/     validation                          不同均值与主导成
+   不可重复              particle-gun                        分。
+                         composition 不同
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB123：validation     类别 signed sums      valid         描述性结论；重叠类
+   signed bias 集中于    和 influence                        别不能相加解释因果
+   dirty/missing-        diagnostics                         占比。
+   station 类
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB123：composition    粗 cell matching      overstated    未证明 cell 内平
+   已被排除、source-     后仍有 gap                          衡、位置/占据率/细
+   specific                                                  拓扑等充分控制。
+   reconstruction 已
+   定位
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB124：               8 个 focus 中 5       valid         反例成立；
+   front_near_s2 不等    fallback＋3 first-                  purposive sample
+   于 KF failure         MOT                                 不能估总体
+                                                             fallback 比例。
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB124：               无原始 pre/post       invalid       应 unresolved。
+   serialization/        pair；无有效比较也
+   state-selection       返回 rejected
+   artifact rejected
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB125：小样本 raw     独立复算 clean        valid         仅该窗口及当前
+   YZ bending 含         25/26 正确、fit                     association。
+   charge 信息           24/26
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB125：高 (p)         低动量仅 2 条，100    invalid       没有有力的 absence
+   degradation           GeV 分割                            test。
+   rejected
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB126：clean 高       aggregate 92.34%      valid         数值观察成立，须加
+   (p) raw sign          vs 85.33%                           association 和不同
+   fidelity 约 92%，                                         有效分母限制。
+   优于 fit
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB126：高 (p)         15 pp、5% gates       overstated    未达到大效应门槛，
+   degradation / fit                                         不代表效应不存在。
+   additional failure
+   rejected
+  ────────────────────  ────────────────────  ────────────  ────────────────────
+   WB126：mapping        很多 fit-flip         overstated    支持 estimator
+   nontransferability    tracks 的 raw sign                  mismatch；没有完成
+   established           正确                                transfer
+                                                             experiment 或因果
+                                                             定位。
+
+  ## D. Physics derivation
+
+  设 (z) 单调增加，(\mathbf u=\mathbf p/p)，并定义
+
+  [
+  t_x=\frac{p_x}{p_z},\qquad
+  t_y=\frac{p_y}{p_z},\qquad
+  w=\sqrt{1+t_x^2+t_y^2}=\frac1{u_z}.
+  ]
+
+  取 (p) 为 GeV、长度为 m、场为 T，(K=0.299792458)。无散射、无能损时，
+
+  [
+  \frac{d\mathbf u}{ds}=K\frac qp(\mathbf u\times\mathbf B).
+  ]
+
+  得到
+
+  # [
+  \frac{dt_y}{dz}
+
+  K\frac qp,w
+  \left[(1+t_y^2)B_x-t_xt_yB_y-t_xB_z\right].
+  ]
+
+  因此，对投影切向角 (\alpha=\arctan t_y)，
+
+  # [
+  \boxed{
+  \frac{d\alpha}{dz}
+
+  K\frac qp,w
+  \left[
+  B_x-\frac{t_x(B_z+t_yB_y)}{1+t_y^2}
+  \right]
+  }
+  ]
+
+  这说明即使观测量真是端点切向角差，当前 (B_x,dz-B_z,dx) 也只在小斜率等近似下对
+  应其响应。一般情况下缺少 direction-cosine 和 (p_z) 变化相关项。
+
+  实际上，
+
+  [
+  Kq\int(B_x,dz-B_z,dx)
+  ]
+
+  对应磁场导致的 (\Delta p_y)，不是一般三维情况下的 (\Delta\arctan(p_y/p_z))。
+
+  更关键的问题是 chord weighting。
+
+  令 (L_{12}=z_2-z_1)、(L_{23}=z_3-z_2)。两段 chord slope 为
+
+  [
+  t_{12}=\frac{y_2-y_1}{L_{12}},\qquad
+  t_{23}=\frac{y_3-y_2}{L_{23}}.
+  ]
+
+  由积分恒等式，
+
+  # [
+  t_{23}-t_{12}
+
+  \int_{z_1}^{z_3}W(z)y''(z),dz,
+  ]
+
+  其中
+
+  [
+  W(z)=
+  \begin{cases}
+  (z-z_1)/L_{12},&z_1\le z\le z_2,\
+  (z_3-z)/L_{23},&z_2\le z\le z_3.
+  \end{cases}
+  ]
+
+  响应是 S2 附近权重最大、两端为零的三角形 kernel。将两段无权积分相加不能得到
+  它。
+
+  定义
+
+  [
+  g=
+  \frac{\arctan t_{23}-\arctan t_{12}}{t_{23}-t_{12}},
+  ]
+
+  相等时取连续极限，则确定性轨迹满足
+
+  # [
+  b_{\rm raw}
+
+  -gK\int W(z)\frac{q}{p(z)}w
+  \left[(1+t_y^2)B_x-t_xt_yB_y-t_xB_z\right]dz.
+  ]
+
+  小斜率、恒定动量、(B_x) 主导时才简化为
+
+  [
+  \boxed{
+  b_{\rm raw}\simeq
+  -K\frac qp\int W(z)B_x(z),dz
+  }
+  ]
+
+  从而
+
+  [
+  \left(\frac qp\right){\rm MeV^{-1}}
+  \simeq
+  -\frac{b{\rm raw}}
+  {K\int W B_x,dz}\times10^{-3}.
+  ]
+
+  均匀场、等站距 (L) 时：
+
+  [
+  \int W B_x,dz=B_xL,\qquad
+  \int_{S1}^{S3}B_x,dz=2B_xL.
+  ]
+
+  这就是当前 proxy 为真值一半的来源。高动量、小角度不会消除这个错误。
+
+  其他必要条件：
+
+  - 符号： 已检查场图核心区 (B_x<0)。正电荷沿 (+z) 运动时 (y''<0)，middle-point
+    sagitta 和当前 (b_{\rm raw}) 为正。WB125 用“(B\sim+x) 因而正电荷 (+y)
+    sagitta”解释该符号是不严谨的；曲率方向与所定义 middle sagitta 的符号相反。
+
+  - 单位： 当前 kT→T、mm→m、GeV(^{-1})→MeV(^{-1}) 的标度方向正确。错误主要是
+    observable response，而非又一个 (10^3)。
+
+  - 能损： 应保留 (q/p(z))，或相对于参考点引入 (p_{\rm ref}/p(z))。不能默认所有
+    站共享一个固定 (p)。
+
+  - 散射： 会增加带相应权重的随机角踢；没有 (\sigma_b) 就不能给出 calibrated
+    momentum uncertainty。
+
+  - measurement chord 查询 field： 在平滑场中，轨迹偏离 chord 的位置误差约为
+    (O(\kappa L^2))，场梯度将其传入响应；高动量通常较小，但必须在实际 fringe/边
+    界验证。低动量更容易出现曲率、能损和边界近似失败。
+
+  - station centroid： 多 hit 的平均点不严格等于轨迹在平均 z 上的点。实际
+    response kernel 还依赖各站 hit z、权重和 stereo pairing。
+
+  结论：当前 S2K 公式错误；不是一个只需提高积分精度的近似公式。
+
+  ## E. Statistical audit
+
+  1. 把 hypothesis 改写成可检验的量，而不是把 gate 结果当机制名称。
+
+  WB126 的高低动量差为
+
+  [
+  98.3209%-92.3436%=5.9774\ {\rm pp}.
+  ]
+
+  仅按独立 Bernoulli 计算的 95% 区间约为 [5.848, 6.106] pp；正式区间应考虑同事
+  件、多 tracks 和 source clustering。无论如何，drop < 0.15 不能支持“没有
+  degradation”。
+
+  应报告：
+
+  > 观察到约 6 pp degradation；未达到预注册的 15 pp 大效应标准。
+
+  而不是：
+
+  > high-(p) information limit rejected。
+
+  2. fit_additional_sign_failure 的 gate 与字面 hypothesis 不一致。
+
+  batch.py:908 (datasets/three_st_qp_measurement_bending_batch.py:908) 要求条件
+  错误率至少 5%，或 high-(p) raw−fit 至少 15 pp。
+
+  实际：
+
+  - clean (P(\text{fit flip}\mid\text{raw correct})\approx4.04%)；
+  - high-(p) raw−fit (\approx7.01) pp。
+
+  它们是明确存在的错误和性能差异，只是没有达到人为大效应阈值。应对同一有效 track
+  集建立 (2\times2) correctness table，报告 paired difference、McNemar/配对
+  bootstrap；现在 raw/fit 的有效分母略有不同。
+
+  3. 0.95/0.90 sign fidelity 不是通用物理门槛。
+
+  门槛应由目标用途决定。例如对称、独立 charge confusion (\epsilon) 会将 charge-
+  odd response 稀释为 (1-2\epsilon)。是否可接受应由目标 residual effect、允许的
+  偏差及 confusion correction 不确定度决定，而不是统一“95% 才能研究”。
+
+  需要报告 charge-separated confusion matrix、kinematic dependence 和
+  calibration domain，而非只看总体 accuracy。
+
+  4. Clean 不是因果隔离器，跨 workbook 的 clean 还不同。
+
+  WB121 clean 含 (\chi^2)、outlier、SPD 条件；WB126 clean 主要是 n_mot==18、
+  stations complete、无 IFT leak。定义见 bending.py:386 (datasets/
+  three_st_qp_measurement_bending.py:386)。
+
+  这些变量本身受 reconstruction success、测量噪声和 topology 影响，conditioning
+  可能产生 selection/collider bias。bending_available 更是强选择变量：WB119
+  fitted flips 中 41.5% 没有 constructable 三站 bending。
+
+  因此：
+
+  - clean 条件性能可以合法报告；
+  - 不能据此推断总体失败机制；
+  - 也不能永远禁止定义一个实用的 real-data quality population，只需前瞻固定并明
+    确 estimand。
+
+  5. Source matching 是诊断，不是充分消混杂证明。
+
+  construction/validation 的 gun composition 不同，不能把均值或 OLS slope 不同直
+  接读成不可重复。粗 (p,t_x,t_y,) topology bins 不能保证 bin 内平衡；field
+  response 还依赖位置、局部方向和具体测量组合。
+
+  WB126 matched rel-range 降到约 3.8% 支持“组成差异解释了很多原始差异”，不足以证
+  明 source dependence 不存在。需要 common support、cell 内 balance、有效样本量
+  以及标准化到同一目标 population 的 CI。
+
+  6. Robust diagnostics 有价值，但机制标签过强。
+
+  - signed-sum contribution 可为负或超过 100%，它不是方差解释率或 causal
+    attribution。
+
+  - mean/median、tail influence、coverage 应并列保留，不应相互替代。
+  - primary sign/mean population 当前还要求正的 (\sigma)；因此“所有真值匹配
+    tracks 的 sign 性能”与当前 primary estimand 并不完全相同。
+
+  - |q_fit|/sigma_fit 是拟合输出的 significance，不能命名为独立的 measurement-
+    level information。
+
+  - 多个非互斥机制同时 supported，却强制输出 mixed/inconclusive，制造了不必要的
+    研究停滞。
+
+  - hash 可以证明内容一致，不能单独证明“在看结果之前冻结”。本分支多个阶段以共同
+    祖先 SHA 运行、最后集中提交，需保留可审计时间记录，不能仅凭 YAML 的
+    created_utc 宣称完成时间意义上的预注册。
+
+  ## F. Yasu hypothesis status
+
+   问题                              状态          当前可以合法说什么
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3ST (q/p) bias/asymmetry          supported     持久化 estimator 的 sign
+                                                   failures 和相对当前
+                                                   reference 的分布异常有强证
+                                                   据；同一 surface 的真实
+                                                   bias、其来源及对 Yasu 数据的
+                                                   对应仍未闭合。
+  ────────────────────────────────  ────────────  ──────────────────────────────
+   raw curvature information         supported     clean、可构造样本在高 (p) 仍
+                                                   有显著 charge-sign 信息；需
+                                                   association 审计才能给出严
+                                                   格“同一 measurements”的
+                                                   estimator 比较。
+  ────────────────────────────────  ────────────  ──────────────────────────────
+   IFT residual dependence           not tested    WB118 有预测和描述性
+                                                   residual；没有符合独立
+                                                   association 与预定 estimand
+                                                   的条件/干预检验。
+  ────────────────────────────────  ────────────  ──────────────────────────────
+   (q/p)-(R_y/d_x/t_y) weak mode     not tested    未建立实际 sensor
+                                                   coordinates 下的 Jacobian、
+                                                   profiled normal matrix 或
+                                                   geometry injection closure。
+  ────────────────────────────────  ────────────  ──────────────────────────────
+   ACTS boundary / 4ST efficiency    unresolved    存在 wafer propagation
+                                                   failures；尚未分离边界、
+                                                   navigation、seeding 和
+                                                   survival，也未测试实际 (R_y)
+                                                   的效率影响。
+
+  WB121 与 WB126 的张力应这样解释：
+
+  两者并不矛盾于“高动量更难测曲率”，但它们反对把当前 fit 的性能直接等同测量信息
+  上限。WB126 的 low-(p) raw fidelity 反而略差于 fit，而 high-(p) raw 明显更好，
+  说明 estimator 相对性能随 regime 改变。最合理的现阶段解释是：
+
+  > 有限测量信息、reconstruction/estimator inefficiency，以及 selection/centroid
+  > association 优势的混合；尚不能给各因素分配因果份额。
+
+  “raw 正确、fit 错误”在正确 association 前提下证明存在另一个更好的符号判定，但
+  不单独证明是 CKF update、KF refit、seed、material 或持久化哪一步造成的。
+
+  对 S3 冻结的裁决：不接受一个总开关无限期封锁所有实验。
+
+   研究用途                      我的判断            明确 reopen 条件
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   将 fitted (q/p) 当真实        继续冻结            同 reference truth、state/
+   momentum 研究 (E[r\mid                            basis/transport 闭合；在明
+   p])，或用 native                                  确 deployment window 校准
+   covariance 加权                                   bias、confusion 和所用
+                                                     uncertainty。
+  ────────────────────────────  ──────────────────  ────────────────────────────
+   描述 (E[r\mid q_{\rm fit}/    可以作为算法诊断    名称明确是 reconstructed-
+   p_{\rm fit}])                                     variable conditional；独立
+                                                     association；包含 (r=m-
+                                                     f(\hat q)) 自带数学相关的
+                                                     null control；不解释成因果
+                                                     或真实动量依赖。
+  ────────────────────────────  ──────────────────  ────────────────────────────
+   (E[r\mid\mathrm{sign}         可以重开            唯一 measurement
+   (b)]) / bending rank                              association、固定可用性定
+                                                     义、实际 field sign/domain
+                                                     检验；保留 ambiguous/
+                                                     missing 类；控制位置、斜
+                                                     率、topology 和 charge-
+                                                     asymmetric acceptance。
+  ────────────────────────────  ──────────────────  ────────────────────────────
+   controlled MC curvature/      应优先重开          固定 measurements/
+   geometry intervention                             association，验证
+                                                     deterministic propagation
+                                                     和有限差分，区分 fixed-
+                                                     state intervention 与沿
+                                                     3ST likelihood 的 nuisance
+                                                     profiling。无需可信
+                                                     momentum proxy。
+
+  real data 可以使用的是测量定义明确的 bending sign/rank。在 charge confusion 未
+  校准前，应称 “bending sign”，不能直接改名为 true charge。MC truth (q/p) 替换只
+  用于机制隔离，不能成为 real-data solution。
+
+  ## G. Recommended roadmap
+
+  由于 P0，当前 S2K 路线应暂停。以下是避开该错误依赖后的条件路线，不是继续执行既
+  有 S2K/S2L。最多三个阶段，也不需要再拆成大量 workbook。
+
+  ### 阶段 1：固定 measurement set 的直接响应实验
+
+  - Scientific question： 合理大小的曲率扰动究竟会在 IFT 产生什么层间 residual
+    pattern？它是否有可能模拟 (R_y,d_x,t_y)？
+
+  - 最高价值原因： 直接检验 Yasu 链条中的关键箭头，完全不需要先校准 momentum
+    magnitude。
+
+  - Input： 20–50 个 development MC events，覆盖完整三站、高 (p)、dirty 和 S2-
+    front；保存唯一 input/track/measurement identity、实际 sensor transform。
+
+  - Observable：
+    [
+    J=\left[
+    \partial r/\partial(q/p),
+    \partial r/\partial R_y,
+    \partial r/\partial d_x,
+    \partial r/\partial t_y
+    \right].
+    ]
+    使用实际 local measurement axis 和 rotation pivot，不能由 “YZ bending” 推测
+    (R_y) 响应。
+
+  - Intervention/control： 同轨 (\pm\delta,\pm\delta/2,\pm\delta/4)；先固定其余
+    state，再单独比较重新 profile 其余 track parameters；零场解析交点、均匀场圆
+    轨道、eloss on/off 控制。IFT association 固定，不要求 4ST survival。
+
+  - Required code changes： 增加轻量 sensitivity driver、实际 surface/失败状态记
+    录；隔离当前 S2K proxy；修正 identity/association 契约。需要 covariance 时先
+    修 surface conversion，否则只做 mean-response。
+
+  - 预注册标准： 数值导数最后两级相对变化低于 1%；近零列采用 (10^{-3}) mm 的
+    residual-response 绝对误差标准；正负 injection 与线性预测闭合。这里是数值容
+    差，不是物理 effect gate。
+
+  - Stop condition： source identity、association、surface sequence 或导数不闭合
+    即停止物理解读；若 curvature response 的方向/层间形状无法产生目标 residual
+    pattern，则停止该具体解释。
+
+  - HTCondor： 不需要。
+  - PASS 后合法 claim： 已测得并验证“曲率误差可以/不能产生何种 IFT residual
+    response”；仍不能称自然样本中的弱模已建立。
+
+  ### 阶段 2：带 3ST 约束的 weak-mode falsification
+
+  - Scientific question： 将 3ST measurements 的真实约束保留后，曲率 nuisance 与
+    共享 IFT geometry 是否仍近退化，而且能解释观测幅度？
+
+  - 最高价值原因： 从“导数相似”推进到“数据是否能区分”，直接决定 Yasu weak-mode
+    hypothesis。
+
+  - Input： 阶段 1 已闭合的模型和适量 development events；若要解释实际 Yasu 观
+    察，还需要相同 selection 下的层间 residual vector 及其不确定度。没有这个输
+    入，只能裁决 MC mechanism。
+
+  - # Observable： 完整 residual Jacobian 和 profile 后的 reduced normal
+    matrix：
+    [
+    N_{\rm geom}^{\rm prof}
+    N_{gg}-N_{g\eta}N_{\eta\eta}^{+}N_{\eta g}.
+    ]
+    (\eta) 包含每轨 curvature、方向、位置等 nuisance；S1–S3 geometry 作锚。报告
+    物理单位归一化后的 SVD、profile contours 和 injection recovery。
+
+  - Intervention/control： (R_y)、(d_x)、combined injections；曲率正负扰动；MC
+    中同 reference 的 truth/fit state 对照；nominal null。模拟 geometry
+    injection 时须生成与变形 sensor 一致的 measurement，不能只旋转预测面却称为完
+    整 detector injection。
+
+  - Required code changes： 使用真实 3ST measurement likelihood/profile，不能拿
+    已失准的 native covariance 当充分统计量；定向复用 master 的 transport/FD 和
+    stationarity 检验。
+
+  - 预注册标准： null 与注入 recovery 通过；对足以产生目标 Yasu residual 的候选
+    方向计算 profile (\Delta\chi^2)。若其在预先校准的 95% confidence region 内不
+    可区分，支持该尺度的 weak coupling；若整个所需幅度区域被排除，否定该机制作为
+    该 residual 的解释。非高斯情形用小规模 toys 校准阈值，不套用任意“相关系数大
+    于某值”。
+
+  - Stop condition： numerical profile 不 stationary、likelihood 不闭合，或该机
+    制所需幅度已被排除；不要转而再增加 momentum proxy stages。
+
+  - HTCondor： 首轮不需要；仅误差评估不足时再考虑小批量。
+  - PASS 后合法 claim： 在指定 selection、几何尺度和 measurement model 下，存在
+    或排除了所检验的 curvature–geometry weak mode。
+
+  ### 阶段 3：独立检验大 (R_y) 的 boundary/seeding/survival
+
+  - Scientific question： 大实际 (R_y) 是否通过几何导航、bounds 或 seeding 降低
+    4ST survival？
+
+  - 最高价值原因： 这是另一条机制，可能改变 residual population，却不等于
+    alignment weak mode。
+
+  - Input： 同一批 events/raw measurements、固定几何扰动序列和可追踪的
+    reconstruction configuration。
+
+  - Observable： 逐事件配对的 layer intersection、bounds acceptance、source-link
+    availability、seed availability、CKF/KF success、4ST survival。
+
+  - Intervention/control： (0,\pm R_y)、(d_x) 控制；分开 physical detector
+    injection 与固定数据上的 reconstruction-geometry variation；用无限
+    supporting plane 与实际 wafer bounds 作对照。
+
+  - Required code changes： 导出各步 failure code 和 trajectory/surface
+    identity；不按“成功 4ST”重新选分母。
+
+  - 预注册标准： baseline replay 一致；效率差给 paired CI；开关/修正被怀疑环节后
+    对应 loss 恢复，才允许归因该环节。
+
+  - Stop condition： 无可重复效率变化，或损失无法定位；不把 warning 数当 track-
+    loss 数。
+
+  - HTCondor： 小窗口不需要；只有确需精确效率曲线时才使用。
+  - PASS 后合法 claim： 指定 (R_y) 范围通过某个已定位的 reconstruction/
+    acceptance 环节影响 4ST survival。该结论与 weak-mode claim 分开。
+
+  ## H. One single next action
+
+  如果现在只能做一件事，我建议做：在约 20 个固定 3ST measurement sets 上，运行带
+  正负曲率扰动的 IFT prediction Jacobian 闭合实验。
+
+  它直接回答“(q/p) 误差能否产生 Yasu 所见 residual，并与 (R_y/d_x/t_y) 混淆”，不
+  依赖已经错误的 S2K 归一化，也不要求先造出可信 momentum estimator。它比继续机械
+  推进 S2K/S2L 更有可能用一次小实验明确支持或否定核心机制。

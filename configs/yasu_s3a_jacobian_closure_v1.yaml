@@ -1,0 +1,244 @@
+# Yasu-S3A — fixed-measurement curvature/geometry response Jacobian.
+# Isolated from S2K/WB127 qp_bending_proxy.  Does not times-two patch,
+# does not fit a free scale, does not submit HTCondor, does not enter
+# B14M/B15/MM V2, and does not touch held-out/sealed data.  Mean-response
+# only.  Focus list is frozen before any Jacobian number is inspected.
+
+schema_version: yasu-s3a-jacobian-closure-v1
+task: YASU-S3A
+workbook: 128
+created_utc: "2026-09-10T16:00:00Z"
+
+geometry_write_allowed: false
+do_not_rescale_covariance: true
+do_not_use_truth_q_over_p_as_real_data_solution: true
+do_not_use_truth_as_fit_seed_or_prior: true
+do_not_replace_fit_qoverp_with_truth: true
+do_not_enter_alignment: true
+do_not_enter_measurement_model_v2: true
+do_not_enter_residual_conditional: true
+do_not_flip_s2_to_pass: true
+do_not_set_trusted_observable_true: true
+do_not_change_fitter_seed_hits_geometry: true
+do_not_use_qp_bending_proxy: true
+do_not_times_two_patch: true
+do_not_fit_free_scale_from_truth: true
+do_not_weight_by_native_5x5: true
+do_not_use_four_station_association: true
+do_not_handwrite_station_response: true
+do_not_submit_htcondor: true
+do_not_enter_b14m: true
+do_not_enter_b15: true
+do_not_touch_held_out: true
+do_not_claim_natural_data_weak_mode: true
+do_not_replace_focus_after_seeing_results: true
+held_out_accessed: false
+real_data_alignment_authorized: false
+residual_conditional_authorized: false
+b14m_reopen_authorized: false
+b15_authorized: false
+three_st_qp_trusted_observable: false
+use_qp_bending_proxy: false
+use_native_5x5_jacobian_weight: false
+four_station_association_authorized: false
+s2k_batch_authorized: false
+times_two_patch_authorized: false
+fit_free_scale_from_truth: false
+htcondor_authorized: false
+weak_mode_claim_authorized: false
+mean_response_only: true
+
+access_scope: development_validation
+frozen_artifact_root: /eos/home-x/xcheng/FASER/alignment_ML
+
+source_collection: CKFTrackCollectionWithoutIFT
+independent_measurement_container: SCT_ClusterContainer
+ift_station_id: 0
+three_station_ids: [1, 2, 3]
+official_truth_station: 1
+max_focus_tracks: 20
+
+station_z_mm:
+  0: -1860.15
+  1: 47.4
+  2: 1237.4
+  3: 2427.4
+
+identity_contract:
+  keys: [file_sha256, source_id, run_id, event_id, skip_index, collection, track_index, measurement_digest]
+  file_sha256_is_content_hash_of_input_xaod: true
+  event_guid_recorded_when_available: true
+  collection: CKFTrackCollectionWithoutIFT
+
+association:
+  method: truth_sdo_barcode
+  source: SCT_SDO_Map
+  four_station_forbidden: true
+  frozen_before_jacobian: true
+  plurality_is_not_majority: true
+  report_majority_and_tie: true
+
+geometry_response:
+  pivot_mm: [0.0, 0.0, 0.0]
+  convention: stations_global_origin_TRzRyRx_active_left_multiply
+  R_y_from_runtime_sensor_transform: true
+  handwritten_station_response: false
+  payload_write: false
+
+finite_difference:
+  kind: central
+  rungs: ["+/-delta", "+/-delta/2", "+/-delta/4"]
+  rung_factors: [1.0, 0.5, 0.25]
+  relative_convergence: 0.01
+  absolute_residual_tolerance_mm: 0.001
+  linear_relative_tolerance: 0.01
+  linear_absolute_tolerance_mm: 0.001
+  deltas:
+    q_over_p: 1.0e-6
+    R_y: 1.0e-3
+    d_x: 0.10
+    t_y: 1.0e-4
+  delta_units:
+    q_over_p: per_MeV
+    R_y: rad
+    d_x: mm
+    t_y: slope
+  frozen_from:
+    detector_resolution_mm: 0.08
+    typical_alignment_dx_mm: 0.10
+    typical_alignment_ry_mrad: 1.0
+    numerical_precision: float64_central_three_rung
+
+interventions:
+  - fixed_state
+  - profiled_track
+controls:
+  - zero_field_analytic_line_plane
+  - uniform_field_analytic_circle
+  - energy_loss_on_off
+  - fixed_surface_sequence_derivative_convergence
+
+p1_blockers:
+  - {id: P1-1, contaminates_s3a_focus: false, action: record}
+  - {id: P1-2, contaminates_s3a_focus: false, action: record}
+  - {id: P1-3, contaminates_s3a_focus: false, action: record_mean_response_only}
+  - {id: P1-4, contaminates_s3a_focus: false, action: record}
+  - {id: P1-5, contaminates_s3a_focus: false, action: record}
+  - {id: P1-6, contaminates_s3a_focus: true, action: isolate_use_truth_sdo}
+
+# Frozen before looking at Jacobian numbers.  Same 20 identities as WB124.
+# file_sha256 is the content hash of the single-file xAOD.
+focus_identities:
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 8, track_index: 0, skip_index: 8, role: frozen_wb119, reason: large_pull, file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 16, track_index: 0, skip_index: 16, role: frozen_wb119, reason: large_pull, file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 6, track_index: 0, skip_index: 6, role: frozen_wb119, reason: sign_flip, file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 9, track_index: 0, skip_index: 9, role: frozen_wb119, reason: sign_flip, file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 15, track_index: 0, skip_index: 15, role: frozen_wb119, reason: large_pull, file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 16, track_index: 0, skip_index: 16, role: frozen_wb119, reason: large_pull, file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 50, track_index: 0, skip_index: 50, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 84, track_index: 0, skip_index: 84, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=6;missing_two_or_more", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 150, track_index: 0, skip_index: 150, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=8;missing_s1", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 174, track_index: 0, skip_index: 174, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=11;missing_s1", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 177, track_index: 0, skip_index: 177, role: validation_s2_front_dirty, reason: "front=near_s2;n_mot=4;missing_two_or_more", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 50, track_index: 0, skip_index: 50, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=10;missing_s1", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 58, track_index: 0, skip_index: 58, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 92, track_index: 0, skip_index: 92, role: construction_s2_front_dirty, reason: "front=near_s2;n_mot=12;missing_s1", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 1, track_index: 0, skip_index: 1, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 5, track_index: 0, skip_index: 5, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100048_00000_00049, run_id: 100048, event_id: 10, track_index: 0, skip_index: 10, role: validation_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 0, track_index: 0, skip_index: 0, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 1, track_index: 0, skip_index: 1, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+  - {source_id: mc24_100043_00400_00499, run_id: 100043, event_id: 7, track_index: 0, skip_index: 7, role: construction_s1_front_control, reason: "front=near_s1;n_mot=18;complete", file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629, input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root}
+
+tags:
+  geometry: FASERNU-04
+  conditions: OFLCOND-FASER-06
+  database_instance: OFLP200
+  field: GLOBAL-BField-Maps-03/FaserFieldTable_v2.root
+  field_scale: GLOBAL-BField-Scale-03
+  tracker_align_folder: TRACKER-ALIGN-02
+  reco: s0013-r0022
+
+material_map:
+  path: /cvmfs/faser.cern.ch/repo/sw/database/DBRelease/current/acts/material-maps-alma9.json
+
+software_provenance:
+  calypso_root: /eos/home-x/xcheng/FASER/calypso
+  calypso_git_sha: 40892527e9c65409afd2378a2abfc25ddbddac03
+  athena_release: "24.0.41"
+  acts_version: "32.0.2"
+
+pinned_calypso_sources:
+  extrapolation_tool_h:
+    path: Tracking/Acts/FaserActsGeometryInterfaces/FaserActsGeometryInterfaces/IFaserActsExtrapolationTool.h
+    sha256: 23a4a5fe778431750c6f6bcff32a584f39a9750a01c1a4ca664323bd644a1c38
+  extrapolation_tool_cxx:
+    path: Tracking/Acts/FaserActsGeometry/src/FaserActsExtrapolationTool.cxx
+    sha256: c5176ff75b27b4a035ecd82c01947bff35db27a21be7d6b5876ea1ccd9c1483a
+  faser_reco_py:
+    path: Control/CalypsoExample/Reconstruction/scripts/faser_reco.py
+    sha256: 6ec49afa4d3df784418d0ef69da78e683aad1cce7e182202e8d058c33095b034
+  si_detector_element_cxx:
+    path: Tracker/TrackerDetDescr/TrackerReadoutGeometry/src/SiDetectorElement.cxx
+    sha256: a4394f8491ad860a987abd68b71aa42cb63e595bc4e7c6ded350cc773d2c9ed8
+  track_truth_matching_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/TrackTruthMatchingTool.cxx
+    sha256: b9677886c93a5b1ef0e2ae04296d4d21fd71358839dbf0c2f16096286cdb47e4
+  fiducial_particle_tool_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/FiducialParticleTool.cxx
+    sha256: 0640711a927e1fc9e428e35c9d15c15e8f0afa9cf4fd7322a492f7d9f0e59c16
+  circle_fit_seed_cxx:
+    path: Tracking/Acts/FaserActsKalmanFilter/src/CircleFitTrackSeedTool.cxx
+    sha256: 1709335ca446d475a8fbd33d0530c8009b632c1ffbbe4049f92545b80c413bbd
+
+inheritance:
+  workbook_117:
+    config_path: configs/ckf_without_ift_definition_v1.yaml
+    config_sha256: 952646a6e8642b1cfadb880e6309706fba14bbc8a96273f91fa90495f8a8c8cd
+    decision_path: outputs/ckf_without_ift_definition_v1/yasu_s0_without_ift_definition_20260908T125042Z_8559fecc/ckf_without_ift_definition_contract.json
+    decision_sha256: 6eb3d9afaa3cbfc0cc46af8fa75ba254e71dd5da0198f8363ab69804fdc47ec1
+    frozen_decision: ckf_without_ift_definition_established
+    artifact_root: local
+  workbook_118:
+    config_path: configs/three_st_to_ift_prediction_v1.yaml
+    config_sha256: 5bb8db94bbdb040da2245ff46d2b446ee59c9bced416d38dfab5a2c529589936
+    decision_path: outputs/three_st_to_ift_prediction_v1/yasu_s1_three_st_to_ift_prediction_20260908T131812Z_b30ae4b2/three_st_to_ift_prediction_contract.json
+    decision_sha256: 437c0072cb40d3e6610f352e70872aa127bdf7d98c7ca1cd38ceebb6d4c0ef8c
+    frozen_decision: three_st_to_ift_prediction_established
+    artifact_root: local
+  workbook_119:
+    config_path: configs/three_st_qp_calibration_v1.yaml
+    config_sha256: c99629feb6fb4fd3d4be9ddd7db59ac374c4b81731df32be9376b29c31439855
+    decision_path: outputs/three_st_qp_calibration_v1/yasu_s2_three_st_qp_calibration_batch_20260908T175453Z_c6f5561a/three_st_qp_calibration_contract.json
+    decision_sha256: b326532b381d7240ba0615bf3e4825f5a20c9b0b242a3c40cc52f25e97da3a43
+    frozen_decision: three_st_qp_calibration_not_established
+    artifact_root: local
+  workbook_124:
+    config_path: configs/three_st_qp_refit_provenance_v1.yaml
+    config_sha256: bd88ed9fb34ca5a3c1777407fc95c6f29867e3c583749a5606e85882ece748b4
+    decision_path: outputs/three_st_qp_refit_provenance_v1/yasu_s2h_three_st_qp_refit_provenance_batch_20260909T150728Z_aebef4ed/three_st_qp_refit_provenance_contract.json
+    decision_sha256: 01bcf3a924ae4a0363ddbe6f53f295e9bdc6f728cf42ca83a6f2ac418657d4a4
+    frozen_decision: three_st_qp_refit_provenance_recorded
+    artifact_root: local
+  workbook_126:
+    config_path: configs/three_st_qp_measurement_bending_batch_v1.yaml
+    config_sha256: 7871a77ec5b7698ce2bb1518868d4f97f2dc3ff03db485461d36236575e8de55
+    decision_path: outputs/three_st_qp_measurement_bending_batch_v1/yasu_s2j_three_st_qp_measurement_bending_batch_batch_20260910T082512Z_f61fa2a8/three_st_qp_measurement_bending_batch_contract.json
+    decision_sha256: 9358ee1442426a0db97d069ab525bee218f39e55ec4315aaa935d60fefb12c5b
+    frozen_decision: three_st_qp_measurement_bending_batch_recorded
+    artifact_root: local
+
+mc_data:
+  construction_sources:
+    - source_id: mc24_100043_00400_00499
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00400-00499-s0013-r0022-xAOD.root
+      file_sha256: 17fa93a76ad7fc5eb71c7fd6242c566d536a9d89579a5272ab6cac1ff2f13629
+  validation_sources:
+    - source_id: mc24_100048_00000_00049
+      input_xaod: /eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00000-00049-s0013-r0022-xAOD.root
+      file_sha256: 800c7e22758be7b7507fb8308c4d52c950f0e3acfc02ee0d57f2c5cefd974533
+
+output_root: outputs/yasu_s3a_jacobian_closure_v1
+dump_root: outputs/yasu_s3a_jacobian_closure_v1/dumps
+dump_filename: yasu_s3a_jacobian.jsonl
+event_filename: yasu_s3a_jacobian_events.jsonl

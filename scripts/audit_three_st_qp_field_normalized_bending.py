@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Yasu-S2K audit.  Field-integral-normalized 3ST bending response."""
+"""Yasu-S2K isolation audit.  qp_bending_proxy is not a physical response."""
 
 from __future__ import annotations
 
@@ -32,10 +32,12 @@ from datasets.three_st_qp_field_normalized_bending import (
     conversion_chain,
     decide,
     inherit_frozen_stage,
+    isolation_record,
     inventory_campaign,
     load_config,
     load_official_field,
     official_quantities,
+    refuse_s2k_batch,
     verify_frozen_dumps,
 )
 from evaluation.artifact_store import ImmutableArtifactStore
@@ -48,6 +50,8 @@ def main() -> int:
     args = parser.parse_args()
     config_path = resolve_under_root(project_root(), args.config)
     config = load_config(config_path)
+    if args.campaign == "batch":
+        refuse_s2k_batch()
     inherited = inherit_frozen_stage(config)
     field = load_official_field(config)
     field_contract = lock_field_unit_sign_contract(field)
@@ -88,6 +92,7 @@ def main() -> int:
             "three_st_qp_trusted_observable": False,
             "residual_conditional_authorized": False,
             "official_qp_like_jacobian_authorized": False,
+            "isolation": isolation_record(config),
         },
     )
     store.write_json("field_unit_sign_contract.json", field_contract)
@@ -120,6 +125,9 @@ def main() -> int:
             "official_qp_like_jacobian_authorized": False,
             "s2_flipped_to_pass": False,
             "trusted_momentum": False,
+            "qp_bending_proxy_isolated": True,
+            "physical_interpretation_authorized": False,
+            "next_authorized_stage": "YASU-S3A",
         }
     )
     print(store.run_dir)

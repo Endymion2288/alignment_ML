@@ -14,7 +14,8 @@ from datasets.faser_field_table import (
 )
 from datasets.three_st_qp_calibration import SOURCE_COLLECTION_NAME
 from datasets.three_st_qp_field_normalized_bending import (
-    DECISION_CONTRACT,
+    DECISION_ISOLATED,
+    P0_REASON,
     STATUS_REJECTED,
     STATUS_SUPPORTED,
     ThreeStQpFieldNormalizedBendingError,
@@ -23,12 +24,16 @@ from datasets.three_st_qp_field_normalized_bending import (
     evaluate_rows,
     evaluate_verdicts,
     inherit_frozen_stage,
+    isolation_record,
     load_config,
     refuse_empirical_scale,
     refuse_fitted_qp,
     refuse_flip_s2,
+    refuse_physical_interpretation,
     refuse_residual_conditional,
+    refuse_s2k_batch,
     refuse_seed_jacobian,
+    refuse_times_two_patch,
     refuse_two_station_surrogate,
 )
 
@@ -46,6 +51,11 @@ def test_config_inherits_wb126_and_freezes_flags():
     assert config["conversion"]["fit_free_scale_from_truth"] is False
     assert config["path"]["name"] == "s1_s2_s3_measurement_chords"
     assert config["field"]["dipole_scale"] == 1.0
+    assert config["isolation"]["qp_bending_proxy_isolated"] is True
+    assert config["isolation"]["physical_interpretation_authorized"] is False
+    assert config["isolation"]["times_two_patch_authorized"] is False
+    assert config["isolation"]["s2k_batch_authorized"] is False
+    assert config["isolation"]["next_stage"] == "YASU-S3A"
     assert len(config["mc_data"]["batch_construction_sources"]) + len(
         config["mc_data"]["batch_validation_sources"]
     ) == 9
@@ -64,6 +74,12 @@ def test_forbidden_repairs():
         refuse_seed_jacobian()
     with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="two-station"):
         refuse_two_station_surrogate()
+    with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="multiply"):
+        refuse_times_two_patch()
+    with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="paused"):
+        refuse_s2k_batch()
+    with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="isolated"):
+        refuse_physical_interpretation()
 
 
 def test_proxy_formula_and_refusals():
@@ -130,6 +146,43 @@ def _inherited() -> dict:
     }
 
 
+def test_p0_uniform_circle_is_half_truth_and_must_not_be_patched():
+    """Independent analytic circle: current proxy / truth ≈ 0.5.  Do not ×2."""
+    from datasets.three_st_qp_measurement_bending import construct_bending
+
+    bx = -0.55
+    k = K_GEV_PER_TM
+    z1, z2, z3 = 47.4, 1237.4, 2427.4
+    l12 = (z2 - z1) * 0.001
+    l23 = (z3 - z2) * 0.001
+    ratios = []
+    for p_gev in (20.0, 100.0, 2000.0, 3000.0):
+        q_over_p_per_gev = 1.0 / p_gev
+        kappa = k * q_over_p_per_gev * bx  # d ty / dz ≈ kappa for small slope
+        # Circular orbit in YZ with B = Bx hat, starting at (y,ty)=(0,0) at z1.
+        # ty(z) = tan(kappa * (z-z1)); y(z) = (1-cos(kappa*(z-z1)))/kappa * 1000 mm.
+        def y_mm(z: float) -> float:
+            arg = kappa * (z - z1) * 0.001
+            return (1.0 - math.cos(arg)) / kappa * 1000.0
+
+        centroids = {
+            1: {"x": 0.0, "y": y_mm(z1), "z": z1},
+            2: {"x": 0.0, "y": y_mm(z2), "z": z2},
+            3: {"x": 0.0, "y": y_mm(z3), "z": z3},
+        }
+        config = load_config()
+        bending = construct_bending(centroids, config)
+        unweighted = bx * (l12 + l23)
+        proxy = qp_bending_proxy_per_mev(float(bending["bending_raw"]), unweighted)
+        truth = q_over_p_per_gev / 1000.0
+        ratios.append(proxy / truth)
+    assert all(abs(r - 0.5) < 1.0e-3 for r in ratios)
+    with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="multiply"):
+        refuse_times_two_patch()
+    with pytest.raises(ThreeStQpFieldNormalizedBendingError, match="free scale"):
+        refuse_empirical_scale()
+
+
 def test_uniform_field_closes_on_synthetic_sagitta():
     config = load_config()
     field = FaserFieldTable.from_uniform(-0.55)
@@ -182,12 +235,18 @@ def test_uniform_field_closes_on_synthetic_sagitta():
         campaign="smoke",
         config=config,
     )
-    assert decision["decision"] == DECISION_CONTRACT
+    assert decision["decision"] == DECISION_ISOLATED
+    assert decision["verdict"] == "ISOLATED"
+    assert decision["qp_bending_proxy_isolated"] is True
+    assert decision["physical_interpretation_authorized"] is False
+    assert decision["next_authorized_stage"] == "YASU-S3A"
     assert decision["three_st_qp_trusted_observable"] is False
     assert decision["residual_conditional_authorized"] is False
     assert decision["official_qp_like_jacobian_authorized"] is False
     assert decision["trusted_momentum"] is False
     assert decision["empirical_scale_applied"] is False
+    assert "0.5" in P0_REASON
+    assert isolation_record(config)["s2k_batch_authorized"] is False
 
 
 def test_wrong_scale_rejects_response_without_refitting():
@@ -224,6 +283,17 @@ def test_wrong_scale_rejects_response_without_refitting():
     assert verdicts["field_normalized_bending_response"] == STATUS_REJECTED
     assert verdicts["ckf_independent_physically_scaled_transferable_3st_curvature_proxy"] is False
     assert acc["empirical_scale_applied"] is False
+    decision = decide(
+        acc,
+        _inherited(),
+        {"supported": True, "status": "supported"},
+        dumps_materialized=True,
+        campaign="smoke",
+        config=config,
+    )
+    assert decision["decision"] == DECISION_ISOLATED
+    assert decision["verdicts"]["field_normalized_bending_response"] == "isolated_do_not_interpret"
+    assert decision["verdicts"]["ckf_independent_physically_scaled_transferable_3st_curvature_proxy"] is False
 
 
 def test_missingness_is_selection_not_failure():

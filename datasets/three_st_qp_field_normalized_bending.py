@@ -1,11 +1,15 @@
-"""Yasu-S2K: field-integral-normalized 3ST bending response closure.
+"""Yasu-S2K: field-integral-normalized 3ST bending — ISOLATED after P0.
 
-Promotes the frozen WB125/WB126 YZ bending_raw to a provisional
-qp_bending_proxy using a fit-independent S1→S2→S3 measurement-chord
-integral of the pinned FaserFieldTable_v2.  Fitted q/p never enters
-construction.  Truth q/p is used only after construction, and only as a
-source-disjoint MC reference.  No free scale is fitted to force slope=1.
-Does not flip WB119, open Stage 3, or mark the proxy as trusted momentum.
+Independent review showed that bending_raw is a two-chord angle
+difference whose physical response is the triangle-weighted curvature
+kernel W(z), not the unweighted path integral int(Bx dz - Bz dx).
+On a uniform-field analytic circle the current proxy is ~0.5 x truth.
+Existing smoke/batch artifacts are in-progress implementation output,
+not a completed WB127, and must not be used for physics or calibration.
+
+This module keeps the frozen formula for provenance only.  It refuses
+a times-two patch, a free truth scale, further S2K batch, and any
+physical interpretation of qp_bending_proxy.  Yasu-S3A does not use it.
 """
 
 from __future__ import annotations
@@ -58,6 +62,12 @@ WORKBOOK = 127
 DECISION_CONTRACT = "three_st_qp_field_normalized_bending_contract_established"
 DECISION_RECORDED = "three_st_qp_field_normalized_bending_recorded"
 DECISION_NOT = "three_st_qp_field_normalized_bending_not_established"
+DECISION_ISOLATED = "three_st_qp_field_normalized_bending_isolated"
+P0_REASON = (
+    "bending_raw is a two-chord angle difference; its response is the "
+    "triangle-weighted curvature kernel W(z), not unweighted "
+    "int(Bx dz - Bz dx).  Uniform-field circular orbits give ~0.5 x truth."
+)
 
 STATUS_SUPPORTED = "supported"
 STATUS_REJECTED = "rejected"
@@ -137,6 +147,24 @@ def refuse_two_station_surrogate() -> None:
     )
 
 
+def refuse_times_two_patch() -> None:
+    raise ThreeStQpFieldNormalizedBendingError(
+        "S2K must not multiply the invalid kernel by 2; that is not a repair"
+    )
+
+
+def refuse_s2k_batch() -> None:
+    raise ThreeStQpFieldNormalizedBendingError(
+        "S2K batch is paused; qp_bending_proxy is isolated after P0"
+    )
+
+
+def refuse_physical_interpretation() -> None:
+    raise ThreeStQpFieldNormalizedBendingError(
+        "qp_bending_proxy is isolated; it is not a physical curvature response"
+    )
+
+
 def conversion_chain() -> dict[str, Any]:
     return {
         "calypso_git_sha": "40892527e9c65409afd2378a2abfc25ddbddac03",
@@ -162,7 +190,10 @@ def official_quantities() -> dict[str, str]:
     return {
         "bending_raw": "frozen WB125 YZ observable; construction input",
         "I_yz_tm": "per-track path integral int(Bx dz - Bz dx) in tesla*metre",
-        "qp_bending_proxy_per_mev": "provisional field-normalized curvature; not trusted momentum",
+        "qp_bending_proxy_per_mev": (
+            "ISOLATED after P0; invalid unweighted-integral kernel; "
+            "not a physical curvature response and not trusted momentum"
+        ),
         "q_over_p_truth_s1_per_mev": "source-disjoint MC reference only; after construction",
         "q_over_p_fit_per_mev": "comparison only; never a construction input",
         "sigma_bending": "absent; stereo/space-point Jacobian not in the dump",
@@ -197,6 +228,19 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
         refuse_empirical_scale()
     if str(config.get("path", {}).get("name")) != "s1_s2_s3_measurement_chords":
         raise ThreeStQpFieldNormalizedBendingError("path must stay s1_s2_s3_measurement_chords")
+    isolation = config.get("isolation") or {}
+    if not bool(isolation.get("qp_bending_proxy_isolated", False)):
+        raise ThreeStQpFieldNormalizedBendingError(
+            "qp_bending_proxy_isolated must be true after P0"
+        )
+    if bool(isolation.get("physical_interpretation_authorized", True)):
+        refuse_physical_interpretation()
+    if bool(isolation.get("times_two_patch_authorized", True)):
+        refuse_times_two_patch()
+    if bool(isolation.get("s2k_batch_authorized", True)):
+        refuse_s2k_batch()
+    if bool(isolation.get("fit_free_scale_from_truth", True)):
+        refuse_empirical_scale()
     return dict(config)
 
 
@@ -1037,6 +1081,22 @@ def inventory_campaign(
     return acc
 
 
+def isolation_record(config: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    isolation = dict((config or {}).get("isolation") or {})
+    return {
+        "qp_bending_proxy_isolated": True,
+        "physical_interpretation_authorized": False,
+        "times_two_patch_authorized": False,
+        "s2k_batch_authorized": False,
+        "fit_free_scale_from_truth": False,
+        "existing_artifacts_are_not_completed_wb127": True,
+        "p0_reason": P0_REASON,
+        "next_stage": isolation.get("next_stage") or "YASU-S3A",
+        "existing_smoke_run": isolation.get("existing_smoke_run"),
+        "existing_batch_run": isolation.get("existing_batch_run"),
+    }
+
+
 def decide(
     report: Mapping[str, Any],
     inherited: Mapping[str, Any],
@@ -1050,7 +1110,24 @@ def decide(
         refuse_flip_s2()
     if bool(config.get("residual_conditional_authorized")):
         refuse_residual_conditional()
+    if campaign == "batch" and not bool(
+        (config.get("isolation") or {}).get("s2k_batch_authorized", False)
+    ):
+        refuse_s2k_batch()
     verdicts = evaluate_verdicts(report, field_contract, config)
+    for key in (
+        VERDICT_FIELD,
+        VERDICT_RESPONSE,
+        VERDICT_TRANSFER,
+        VERDICT_HIGH_P,
+        VERDICT_SELECT,
+    ):
+        if key in verdicts:
+            verdicts[key] = "isolated_do_not_interpret"
+    verdicts["ckf_independent_physically_scaled_transferable_3st_curvature_proxy"] = False
+    verdicts["stage_independent_pass"] = False
+    verdicts["p0_kernel_invalid"] = True
+    verdicts["uniform_field_circle_scale"] = 0.5
     n_clean = int(report.get("n_clean_18hit") or 0)
     dumps_ok = bool(dumps_materialized)
     pins_ok = bool((inherited.get("pinned_calypso_sources") or {}).get("all_match", True))
@@ -1059,14 +1136,10 @@ def decide(
         decision = DECISION_NOT
         verdict = "FAIL"
         diagnosis = "FAIL"
-    elif campaign == "batch" and n_clean >= int(config["gates"]["min_clean_recorded"]):
-        decision = DECISION_RECORDED
-        verdict = "PASS"
-        diagnosis = "RECORDED"
     else:
-        decision = DECISION_CONTRACT
-        verdict = "PASS"
-        diagnosis = "INCONCLUSIVE" if n_clean < int(config["gates"]["min_clean_contract"]) else "RECORDED"
+        decision = DECISION_ISOLATED
+        verdict = "ISOLATED"
+        diagnosis = "P0_KERNEL_INVALID"
     missing = report.get("missingness_all") or {}
     expected_missing = int(config["gates"]["wb126_n_fit_flip_no_bending_expected"])
     observed_missing = int(missing.get("n_fit_flip_no_bending") or 0)
@@ -1120,4 +1193,9 @@ def decide(
         "inherited_workbook_126": inherited.get("workbook_126", {}).get("decision"),
         "conversion_chain": conversion_chain(),
         "official_quantities": official_quantities(),
+        "isolation": isolation_record(config),
+        "p0_reason": P0_REASON,
+        "qp_bending_proxy_isolated": True,
+        "physical_interpretation_authorized": False,
+        "next_authorized_stage": "YASU-S3A",
     }
