@@ -1,0 +1,53 @@
+wp86_physical_qualification:
+  workbook: 86
+  phase: 86_physical_common_track_alignment_qualification_v1
+  experiment: wb86_physical_qualification_v1
+  parent_workbook: 85b-r1
+  frozen_source_freeze_commit: 6e065aeed01a6bdf353baea0565b59dd86966d90
+  frozen_source_snapshot_sha256: 3945d7065c11b007292bbcd3253028dc1f435f0eee8c449c6c363137ddaccbde
+  executable: true
+  qualification_authorized: true
+  alignment_oracle_qualified_for_physical_FASER: false
+  ml_alignment_eval_authorized: false
+  looked_at_physical_alignment_outcomes_before_authorization: false
+  wb86_automatically_authorized: false
+  association_default_system: frozen_W64_raw_energy_plus_exact_solver
+  description: >-
+    Execution-only physical common-track qualification on the frozen WB84
+    corpus with the frozen WB85b decision function and official
+    Calypso/ACTS runner.  Does not invent a new protocol, threshold,
+    corpus, or statistic.
+
+  frozen_inputs:
+    corpus: calypso_physical_independent_v1
+    n_qualified_exports: 2394
+    decision_function: alignment.wb85b_fwer_protocol.evaluate_wb85b_qualification
+    official_runner: alignment.wb85b_official_runner.WB85bOfficialCalypsoActsBackend.execute_refit
+    alpha_LS: 0.025
+    alpha_cov: 0.025
+    critical_LS: 23.33666415864534
+    critical_cov: 14.44937533544792
+
+  dag:
+    - SNAPSHOT_VERIFY
+    - CORPUS_VERIFY
+    - PHYSICAL_ALIGNMENT_SHARDS
+    - RESULT_INTEGRITY
+    - GLOBAL_SUMMARY
+    - FROZEN_QUALIFICATION_GATE
+    - CLOSURE
+
+  three_layer:
+    A: execution_qualification
+    B: statistical_qualification
+    C: physics_screening_research_only
+
+  forbidden:
+    - rewriting_wb83_wb84_wb85_wb85a_wb85a_r1_wb85b
+    - new_protocol_or_threshold
+    - toy_uniform_By
+    - lab_transport
+    - cached_first_step_measurement_reuse
+    - overlay_final_blind_sealed_test
+    - ml_alignment_eval
+    - retune_until_pass
