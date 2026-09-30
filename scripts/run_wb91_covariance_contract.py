@@ -11,7 +11,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from alignment.wb90_measurement_contract import ROOT as PROJECT, digest, read_public, write_new, development_slopes
 
-OUTPUT=PROJECT/'outputs/mc24_four_station_wb91_covariance_repair_v6'
+OUTPUT=PROJECT/'outputs/mc24_four_station_wb91_covariance_repair_v7'
 PROTOCOL=PROJECT/'configs/research_review/wp91_covariance_repair.json'
 SELECTION=PROJECT/'outputs/mc24_four_station_wb90_measurement_contract_v1/selection.json'
 RELEASE=Path('/cvmfs/atlas.cern.ch/repo/sw/software/24.0/Athena/24.0.41/InstallArea/x86_64-el9-gcc13-opt')
@@ -31,7 +31,8 @@ def freeze(out):
            PROJECT/'scripts/prepare_wb91_calypso_extension.py',PROJECT/'scripts/wb91_reconstruct.py',
            PROJECT/'scripts/run_wb91_physical_validation.py',PROJECT/'scripts/run_wb91_condor.sh',
            PROJECT/'scripts/submit_wb91_condor.py',PROJECT/'scripts/write_station_alignment_payload.py',
-           PROJECT/'alignment/physical_common_track_execution.py']
+           PROJECT/'alignment/physical_common_track_execution.py',
+           PROJECT/'scripts/wb91_array.py',PROJECT/'scripts/run_wb91_array_condor.sh']
     paths += [RELEASE/f'lib/{lib}.so' for lib in ('libTrkParameters','libTrkSurfaces')]
     paths += [RELEASE/f'include/{p}' for p in ('TrkParametersBase/CurvilinearParametersT.icc','TrkEventPrimitives/CurvilinearUVT.h','TrkSurfaces/Surface.h')]
     rows=[r for r in read_public(SELECTION)['events'] if r['role']=='development']
