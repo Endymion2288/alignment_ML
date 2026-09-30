@@ -1,8 +1,9 @@
 {
-  "schema": "wb91_covariance_repair_v1",
+  "schema": "wb91_covariance_repair_v2",
+  "amendment": "v1 kernel gate FAIL solely because small-angle raw-position negative control never exceeded 1%; append independent analytic (0.3,0.4), retain all thresholds and data; v1 results immutable",
   "study_role": "seen development contract repair, not qualification",
   "selection": "WB90 exact 24 development entries only; no check entries",
-  "analytic_slopes": [[0.01, 0.02], [-0.01, 0.02], [-0.01, -0.02], [0.01, -0.02], [0.00001, 0.00002], [0.02, 0.00001]],
+  "analytic_slopes": [[0.01, 0.02], [-0.01, 0.02], [-0.01, -0.02], [0.01, -0.02], [0.00001, 0.00002], [0.02, 0.00001], [0.3, 0.4]],
   "lever_arms_mm": [0.0, -100.0, 100.0],
   "covariance_cholesky": [[1.0, 0.0, 0.0, 0.0], [0.4, 2.0, 0.0, 0.0], [0.0003, -0.0002, 0.001, 0.0], [-0.0001, 0.0004, 0.0005, 0.002]],
   "normalized_fd_relative_tolerance": 0.0001,

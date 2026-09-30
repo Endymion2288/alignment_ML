@@ -31,4 +31,5 @@ def test_controls_preserve_full_rank_and_cross_covariances():
     l=np.array(config['covariance_cholesky']);c=l@l.T
     assert np.linalg.eigvalsh(c).min()>0
     assert c[0,2]!=0 and c[1,3]!=0
-    assert len(config['analytic_slopes'])==6
+    assert len(config['analytic_slopes'])==7
+    assert config['analytic_slopes'][-1]==[.3,.4]
