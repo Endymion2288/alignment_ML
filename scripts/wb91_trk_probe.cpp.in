@@ -1,0 +1,62 @@
+#include "CovarianceContract.h"
+#include <vector>
+
+namespace WB91Probe {
+template<class M> void append(std::vector<double>& out,const M& m) {
+  for(int i=0;i<m.rows();++i) for(int j=0;j<m.cols();++j) out.push_back(m(i,j));
+}
+std::vector<double> evaluate(double tx,double ty,double dz,
+                             const std::vector<double>& covariance) {
+  WB91::V4 f; f << 10.,20.,tx,ty;
+  WB91::M4 c;
+  for(int i=0;i<4;++i) for(int j=0;j<4;++j) c(i,j)=covariance[4*i+j];
+  const double phi=std::atan2(ty,tx),theta=std::atan(std::hypot(tx,ty)),qop=1.e-5;
+  const Amg::Vector3D pos(10.+dz*tx,20.+dz*ty,1000.+dz);
+  Trk::CurvilinearParameters nominal(pos,phi,theta,qop);
+  const auto a=WB91::nativeJacobian(f,dz,nominal);
+  const auto n=WB91::nativeCovariance(f,c,dz,nominal);
+  Trk::CurvilinearParameters p(pos,phi,theta,qop,n);
+  const auto b=WB91::exportJacobian(p);
+  const auto fd=WB91::exportFD(p);
+  const auto fdhalf=WB91::exportFD(p,.5);
+  WB91::J54 afd;
+  const double steps[4]={1.e-3,1.e-3,1.e-7,1.e-7};
+  const auto& surface=p.associatedSurface();
+  const auto basis=surface.transform().linear();
+  const auto center=p.position();
+  for(int k=0;k<4;++k) {
+    auto fp=f,fm=f; fp[k]+=steps[k]; fm[k]-=steps[k];
+    auto chart=[&](const WB91::V4& raw) {
+      const Amg::Vector3D position(raw[0]+dz*raw[2],raw[1]+dz*raw[3],pos.z());
+      const Amg::Vector3D dir(raw[2],raw[3],1.);
+      // Intersect the perturbed raw line with the fixed nominal native plane.
+      const auto intersection=(position-dir*(basis.col(2).dot(position-center)/basis.col(2).dot(dir))).eval();
+      Eigen::Matrix<double,5,1> v;
+      v << basis.col(0).dot(intersection-center),basis.col(1).dot(intersection-center),
+           std::atan2(raw[3],raw[2]),std::atan(std::hypot(raw[2],raw[3])),qop;
+      return v;
+    };
+    auto diff=(chart(fp)-chart(fm)).eval();
+    diff[2]=std::atan2(std::sin(diff[2]),std::cos(diff[2]));
+    afd.col(k)=diff/(2.*steps[k]);
+  }
+  // Negative controls: original map, sign-only repair, and original raw-position export.
+  WB91::J54 legacy=a;
+  legacy.topRows<2>().setZero();
+  legacy(0,0)=1.; legacy(1,1)=1.; legacy(0,2)=dz; legacy(1,3)=dz;
+  legacy(2,2)=ty/(tx*tx+ty*ty);
+  WB91::J54 signOnly=legacy; signOnly(2,2)=a(2,2);
+  WB91::J45 rawExport=b;
+  for(int k=0;k<2;++k){rawExport(0,k)=basis(0,k);rawExport(1,k)=basis(1,k);}
+  std::vector<double> result;
+  auto push=[&](const WB91::J54& j,const WB91::J45& e) {
+    WB91::M5 nc=j*c*j.transpose();nc(4,4)=n(4,4);
+    append(result,e*nc*e.transpose());
+  };
+  append(result,a);append(result,afd);append(result,b);append(result,fd);append(result,fdhalf);
+  append(result,n);append(result,b*n*b.transpose());append(result,b*a);
+  push(legacy,rawExport);push(signOnly,rawExport);push(a,rawExport);
+  append(result,WB91::fixedZState(p,pos.z()));
+  return result;
+}
+}

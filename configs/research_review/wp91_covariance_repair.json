@@ -1,0 +1,22 @@
+{
+  "schema": "wb91_covariance_repair_v1",
+  "study_role": "seen development contract repair, not qualification",
+  "selection": "WB90 exact 24 development entries only; no check entries",
+  "analytic_slopes": [[0.01, 0.02], [-0.01, 0.02], [-0.01, -0.02], [0.01, -0.02], [0.00001, 0.00002], [0.02, 0.00001]],
+  "lever_arms_mm": [0.0, -100.0, 100.0],
+  "covariance_cholesky": [[1.0, 0.0, 0.0, 0.0], [0.4, 2.0, 0.0, 0.0], [0.0003, -0.0002, 0.001, 0.0], [-0.0001, 0.0004, 0.0005, 0.002]],
+  "normalized_fd_relative_tolerance": 0.0001,
+  "roundtrip_relative_tolerance": 0.000001,
+  "normal_inverse_relative_tolerance": 0.000001,
+  "paired_state_absolute_tolerance": 0.000000001,
+  "negative_control_min_relative_error": 0.01,
+  "geometry": "FASERNU-04",
+  "global_tag": "OFLCOND-FASER-06",
+  "q_over_p_per_mev": 0.00001,
+  "q_over_p_variance_per_mev2": 0.000005,
+  "physical_max_events": 24,
+  "physical_pilot_events": 1,
+  "threads": 1,
+  "preserved": ["fit cuts", "raw fit", "cluster selection", "WB86 solver", "rank", "damping", "convergence", "priors", "existing Calypso source and build"],
+  "forbidden": ["held-out", "sealed", "blind", "ML", "qualification", "common-track solver execution", "ACTS common-state claims", "historical artifact overwrite"]
+}
