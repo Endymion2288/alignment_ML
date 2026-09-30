@@ -13,7 +13,6 @@
 #include "Acts/EventData/TrackParameters.hpp"
 #include "Acts/EventData/detail/TransformationFreeToBound.hpp"
 #include "Acts/Definitions/Units.hpp"
-#include "GaudiKernel/DeclareFactoryEntries.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <fcntl.h>
