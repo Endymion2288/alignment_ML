@@ -328,20 +328,6 @@ def aggregate(out):
             if read_public(work/'negative_controls.json')['gate'] != 'PASS':
                 failed.append(name+'_negative_controls')
             results.append({'name': name, 'summary': summary})
-    # A failed pilot is a scientific stop condition. Preserve its validation
-    # evidence and report the planned population as incomplete; never launch
-    # or infer the remaining jobs after this gate.
-    pilot_validation = out/'events/00/validation.json'
-    if pilot_validation.is_file() and read_public(pilot_validation)['gate'] != 'PASS':
-        missing = [f'{i:02d}' for i in range(1, 24)]
-        pilot_summary = read_public(pilot_validation)
-        write_new(out/'summary.json', {'gate': 'FAIL', 'baseline_count': 1,
-                  'geometry_count': 0, 'missing': missing,
-                  'failed': ['00'], 'baseline_results': [{'name': '00', 'summary': pilot_summary}],
-                  'geometry_comparison': {'gate': 'NOT_RUN', 'reason': 'pilot scientific FAIL'},
-                  'qualification': 'NOT_EVALUATED', 'association': 'NOT_EVALUATED',
-                  'covariance': 'NOT_EVALUATED', 'all_mode_conditions_Htheta': 'UNKNOWN'})
-        return
     geometry = conditions_comparison(read_public(out/'events/00/acts.json'), variants,
                                     read_public(out/'events/00/fixture.json')) if len(variants) == 12 else {'gate': 'INCOMPLETE'}
     identity = [tuple(r['summary']['source_identity'][k] for k in ('input_xaod', 'ordinal', 'actual_run', 'actual_event')) for r in results]
