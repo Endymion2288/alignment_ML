@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <set>
 #include <cmath>
+#include <sstream>
 
 namespace WB92 {
 using Json = nlohmann::json;
@@ -102,10 +103,14 @@ class CommonSeedAudit final: public AthAlgorithm {
     const double distance=(frame.translation()-start.position(g)).dot(start.direction());
     auto result=m_tool->propagate(ctx,start,*target,distance>=0?Acts::Direction::Forward:Acts::Direction::Backward);
     if(!result.has_value())throw std::runtime_error("official ACTS propagation returned no state");
-    const auto local=frame.inverse()*result->position(g);
-    const auto direction=frame.linear().transpose()*result->direction();
-    if(std::abs(local.z())>1e-6 || std::abs(direction.z())<1e-12)
-      throw std::runtime_error("target-plane intersection or local direction invalid");
+    const Acts::Vector3 local=frame.inverse()*result->position(g);
+    const Acts::Vector3 direction=frame.linear().transpose()*result->direction();
+    if(std::abs(local.z())>1e-6 || std::abs(direction.z())<1e-12) {
+      std::ostringstream msg;msg << "target-plane intersection or local direction invalid: local_z="
+        << local.z() << " local_xy=" << local.x() << "," << local.y()
+        << " direction=" << direction.transpose();
+      throw std::runtime_error(msg.str());
+    }
     V4 out;out<<local.x(),local.y(),direction.x()/direction.z(),direction.y()/direction.z();
     if(!out.allFinite())throw std::runtime_error("nonfinite prediction");
     return out;
@@ -212,7 +217,8 @@ class CommonSeedAudit final: public AthAlgorithm {
     }
     out["loaded_libraries"]=libraries;
     const int fd=::open(m_output.value().c_str(),O_WRONLY|O_CREAT|O_EXCL,0600);
-    if(fd<0)throw std::runtime_error("exclusive result creation failed");::close(fd);
+    if(fd<0)throw std::runtime_error("exclusive result creation failed");
+    ::close(fd);
     std::ofstream result(m_output.value());result<<out.dump(2)<<std::endl;
     if(!result)throw std::runtime_error("result write failed");
   }
