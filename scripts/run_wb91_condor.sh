@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 ulimit -c 0
 project_dir="$1"
 output_dir="$2"

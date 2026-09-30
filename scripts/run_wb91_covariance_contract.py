@@ -11,7 +11,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from alignment.wb90_measurement_contract import ROOT as PROJECT, digest, read_public, write_new, development_slopes
 
-OUTPUT=PROJECT/'outputs/mc24_four_station_wb91_covariance_repair_v2'
+OUTPUT=PROJECT/'outputs/mc24_four_station_wb91_covariance_repair_v3'
 PROTOCOL=PROJECT/'configs/research_review/wp91_covariance_repair.json'
 SELECTION=PROJECT/'outputs/mc24_four_station_wb90_measurement_contract_v1/selection.json'
 RELEASE=Path('/cvmfs/atlas.cern.ch/repo/sw/software/24.0/Athena/24.0.41/InstallArea/x86_64-el9-gcc13-opt')
