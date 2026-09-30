@@ -56,6 +56,26 @@ def prepare(out):
     cmake=(origin/'CMakeLists.txt').read_text().replace('TrackerSegmentFit','WB91SegmentFit')
     cmake=cmake[:cmake.index('atlas_install_python_modules')]
     cmake=cmake.replace('TrackerEventTPCnv )','TrackerEventTPCnv xAODEventInfo )')
+    # Installed Calypso exports assume a release-layout-relative AthenaExternals.
+    # Resolve that prefix in this diagnostic project's imported targets only.
+    relocation='''
+set(wb91_bad_external "${Calypso_INSTALL_DIR}/../../../../AthenaExternals/${AthenaExternals_VERSION}/InstallArea/${AthenaExternals_PLATFORM}")
+foreach(wb91_name IN LISTS Calypso_TARGET_NAMES)
+  if(TARGET Calypso::${wb91_name})
+    foreach(wb91_property INTERFACE_INCLUDE_DIRECTORIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES INTERFACE_LINK_LIBRARIES)
+      get_target_property(wb91_value Calypso::${wb91_name} ${wb91_property})
+      if(wb91_value)
+        string(REPLACE "${wb91_bad_external}" "${AthenaExternals_INSTALL_DIR}" wb91_fixed "${wb91_value}")
+        if(NOT wb91_fixed STREQUAL wb91_value)
+          message(STATUS "WB91 resolves AthenaExternals prefix for ${wb91_name}/${wb91_property}")
+          set_target_properties(Calypso::${wb91_name} PROPERTIES ${wb91_property} "${wb91_fixed}")
+        endif()
+      endif()
+    endforeach()
+  endif()
+endforeach()
+'''
+    cmake=cmake.replace('atlas_subdir( WB91SegmentFit )','atlas_subdir( WB91SegmentFit )\n'+relocation)
     generated={'CMakeLists.txt':
         'cmake_minimum_required(VERSION 3.11)\nproject(WB91 VERSION 1.0.0 LANGUAGES C CXX)\n'
         'find_package(Calypso REQUIRED)\natlas_project(USE Calypso ${Calypso_VERSION})\n',
