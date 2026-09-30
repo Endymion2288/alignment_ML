@@ -1,0 +1,22 @@
+{
+  "schema": "wb90_measurement_contract_preflight_v1",
+  "stage": "WB89 Route A, mandatory covariance/frame preflight",
+  "selection": "SHA256(source_id + ':' + input_xaod + ':' + xaod_entry_index), first two per source/family fixed_dz cell",
+  "n_events": 48,
+  "development_events": 24,
+  "check_events": 24,
+  "cases": [[0.002, 0.001], [-0.002, 0.001], [-0.002, -0.001], [0.002, -0.001]],
+  "fit_covariance_control_diagonal": [1.0, 4.0, 0.000001, 0.000004],
+  "angle_fd_step": 0.0000001,
+  "derivative_relative_tolerance": 0.01,
+  "frame_absolute_tolerance": 0.000001,
+  "frame_derivative_step_mm": 0.001,
+  "source_preinspection": "GetState sign and coordinate assignment already viewed before this preregistration; mechanism diagnostic, not independent validation",
+  "controls_frozen": ["WB86 FAIL/statistical null", "solver", "rank", "damping", "convergence", "alpha", "association", "historical artifacts"],
+  "fail_fast": "If source covariance/coordinate contract is contradicted, close preflight FAIL and do not open check measurements or launch geometry/refit/qualification campaigns",
+  "maximum_future_physical_calls": 348,
+  "physical_calls_authorized_by_this_preflight": 0,
+  "ml_alignment_eval_authorized": false,
+  "independent_qualification": false,
+  "sealed_access_authorized": false
+}

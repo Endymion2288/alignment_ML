@@ -1,0 +1,51 @@
+// Memory-only diagnostic. Source fragments are frozen/extracted by the runner.
+// Does not modify Trk, Calypso libraries, conditions or reconstruction results.
+#include "TrkParameters/TrackParameters.h"
+#include "TrkSurfaces/Surface.h"
+#include "TrkEventPrimitives/ParamDefs.h"
+#include <array>
+#include <vector>
+#include <optional>
+#include <memory>
+#include <cmath>
+#include <stdexcept>
+
+namespace WB90Probe {
+@@EXPORT_SOURCE@@
+
+std::vector<double> evaluate(double tx, double ty, double positionStep) {
+  if (!std::isfinite(tx) || !std::isfinite(ty) || tx*tx+ty*ty == 0.)
+    throw std::runtime_error("undefined/nonfinite slopes");
+  Eigen::Matrix<double,4,1> fitResult;
+  fitResult << 10.,20.,tx,ty;
+  Eigen::Matrix<double,4,4> fitCovariance = Eigen::Matrix<double,4,4>::Zero();
+  fitCovariance.diagonal() << 1.,4.,1.e-6,4.e-6;
+  const double zFit = 0.;
+  struct fitInfo { static constexpr double zCenter = 0.; };
+  @@GETSTATE_SOURCE@@
+  // The source creates covPar5. Copy it into the actual Athena constructor.
+  Trk::CurvilinearParameters parameters(Amg::Vector3D(10.,20.,0.),
+      phi,theta,qoverp,*covPar5);
+  const auto& surface = parameters.associatedSurface();
+  const auto covariance = globalTrackletCovariance(parameters);
+  if (!covariance) throw std::runtime_error("actual exporter refused covariance");
+  std::vector<double> result;
+  for (int i=0;i<4;++i) for (int j=0;j<4;++j) result.push_back(jacobian(i,j));
+  for (int i=0;i<5;++i) for (int j=0;j<5;++j) result.push_back((*parameters.covariance())(i,j));
+  for (int i=0;i<3;++i) for (int j=0;j<3;++j) result.push_back(surface.transform().linear()(i,j));
+  for (double value : *covariance) result.push_back(value);
+  for (int axis=0;axis<2;++axis) {
+    std::array<double,5> values{};
+    for (int i=0;i<5;++i) values[i]=parameters.parameters()[i];
+    values[axis] += positionStep;
+    auto plus = surface.createUniqueTrackParameters(values[0],values[1],values[2],values[3],values[4]);
+    values[axis] -= 2*positionStep;
+    auto minus = surface.createUniqueTrackParameters(values[0],values[1],values[2],values[3],values[4]);
+    if (!plus || !minus) throw std::runtime_error("actual surface factory refused state");
+    const auto derivative = ((plus->position()-minus->position())/(2*positionStep)).eval();
+    for (int i=0;i<3;++i) result.push_back(derivative[i]);
+  }
+  for (int i=0;i<5;++i) result.push_back(parameters.parameters()[i]);
+  return result;
+}
+}
