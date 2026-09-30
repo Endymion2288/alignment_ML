@@ -1,0 +1,66 @@
+{
+  "access_correction": "v1 parsed nonselected rows in released/shared WB84 JSONL; check_numeric_cases=0, unopened parser-isolation claim withdrawn; no official held-out/sealed test contents accessed",
+  "acts_propagation_evaluated": false,
+  "control_covariance_not_actual_event_fit_covariance": true,
+  "counts": {
+    "angle_contract_failures": 97,
+    "development_events_opened": 24,
+    "n_analytic_controls": 4,
+    "n_development_slope_kernels": 96,
+    "native_covariance_contract_failures": 100,
+    "physical_calls": 0,
+    "surface_factory_failures": 0
+  },
+  "files": {
+    "compiled_probe_source.cpp": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/compiled_probe_source.cpp",
+      "sha256": "e90cf374be4420a500440856d7d0f5a60c6ebc3ec2f2cdbae5f86edde144d625"
+    },
+    "kernel_results.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/kernel_results.json",
+      "sha256": "3a6ba00ae16d9f8881faaa34614a82f32b08e4c378580c2c11aa8c755c224ef4"
+    },
+    "preflight_summary.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/preflight_summary.json",
+      "sha256": "7f1db43f34481dbc6d1f18d386042141be259f7b938238958c36b718afa41e82"
+    },
+    "protocol.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/protocol.json",
+      "sha256": "b4596d1263d5ae19347af94a21ddfa6267fb8d040e135ea07ef8aee4cc5ea92e"
+    },
+    "result_integrity.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/result_integrity.json",
+      "sha256": "e4f915a0440d8ef2ac6bd14a0b66cce56d4459e33bf9ecd5e0c34302fcb71efb"
+    },
+    "selection.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/selection.json",
+      "sha256": "5b6fcb1651a5e1cc5a1cab95fdca6822743ccc6d996d6841306b1ef593078bc6"
+    },
+    "source_freeze.json": {
+      "path": "outputs/mc24_four_station_wb90_measurement_contract_v1/source_freeze.json",
+      "sha256": "16742ed21b75286ec34dcc1ca0a0e0c07c9e4010902eaab8ca3d5596c80f84c0"
+    }
+  },
+  "generating_code_commit": "0fc2576b05956096f8877968319ed1f895fc0444",
+  "integrity": "PASS with explicit v1 access/provenance limitations",
+  "libraries": {
+    "libTrkParameters": {
+      "path": "/cvmfs/atlas.cern.ch/repo/sw/software/24.0/Athena/24.0.41/InstallArea/x86_64-el9-gcc13-opt/lib/libTrkParameters.so",
+      "sha256": "b95cccb5373acc6df6272cf6d7b9e4e26b185a865e8aeb691dfe05ee127d0063"
+    },
+    "libTrkSurfaces": {
+      "path": "/cvmfs/atlas.cern.ch/repo/sw/software/24.0/Athena/24.0.41/InstallArea/x86_64-el9-gcc13-opt/lib/libTrkSurfaces.so",
+      "sha256": "058e3c2be2ae14dc72b67559724c3bee68d18ac17796d8ec0806572ae0bf95d2"
+    }
+  },
+  "ml_alignment_eval_authorized": false,
+  "next_dependency": "Independent versioned SegmentFit/native/export covariance contract repair, before common-state ACTS or convergence campaigns",
+  "output_root": "outputs/mc24_four_station_wb90_measurement_contract_v1",
+  "preserves_WB86_historical_FAIL_statistical_null": true,
+  "qualification": "NOT_EVALUATED",
+  "schema": "wb90_preflight_result_manifest_v1",
+  "scientific_preflight": "FAIL",
+  "source_fragment_probe_not_full_reconstruction": true,
+  "source_version": "0fc2576, before post-result parser/hash hardening",
+  "workbook": "workbook/2026-09-30_90_\u56db\u7ad9\u7269\u7406\u6d4b\u91cf\u5408\u540c\u524d\u7f6e\u9a8c\u8bc1.md"
+}

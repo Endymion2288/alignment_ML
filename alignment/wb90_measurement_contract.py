@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -117,6 +118,25 @@ def getstate_fragments(calypso: Path) -> dict:
             "covariance_cpp": covariance, "export_cpp": export_text[export_start:export_end]}
 
 
+def selected_records(path: Path, event_uid: str) -> list[dict]:
+    """Decode only selected records in a released, shared WB84 JSONL shard.
+
+    v1 decoded every JSON row before selecting; its scientific cases did not
+    include check rows, but its 'unopened' flag overstated parser isolation.
+    """
+    header = re.compile(r'"event_uid"\s*:\s*' + re.escape(json.dumps(event_uid)) + r'\s*[,}]')
+    found = []
+    with path.open() as stream:
+        for line in stream:
+            if header.search(line) is None:
+                continue
+            record = json.loads(line)
+            if record["event_uid"] != event_uid:
+                raise ValueError("event UID header disagrees with decoded record")
+            found.append(record)
+    return found
+
+
 def development_slopes(rows: list[dict]) -> list[dict]:
     out = []
     for row in rows:
@@ -125,12 +145,7 @@ def development_slopes(rows: list[dict]) -> list[dict]:
         path = ROOT / row["replica_path"]
         if any(x in str(path).lower() for x in FORBIDDEN):
             raise ValueError("forbidden replica path")
-        found = []
-        with path.open() as stream:
-            for line in stream:
-                record = json.loads(line)
-                if record["event_uid"] == row["event_uid"]:
-                    found.append(record)
+        found = selected_records(path, row["event_uid"])
         if len(found) != 1:
             raise ValueError("missing/duplicate event identity")
         record = found[0]

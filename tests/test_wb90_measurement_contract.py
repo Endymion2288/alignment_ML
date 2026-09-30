@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from alignment.wb90_measurement_contract import (
-    selection, correct_angle_jacobian, numerical_angle_jacobian, write_new, read_public,
+    selection, correct_angle_jacobian, numerical_angle_jacobian, write_new, read_public, selected_records,
 )
 
 
@@ -68,3 +68,12 @@ def test_write_never_overwrites_and_forbidden_read_fails_before_access(tmp_path)
     assert json.loads(target.read_text()) == {"value": 1}
     with pytest.raises(ValueError):
         read_public(tmp_path / "00800_00849" / "missing.json")
+
+
+def test_nonselected_measurements_are_not_decoded(tmp_path):
+    # An invalid nonselected JSON payload would fail if json.loads saw it.
+    # This verifies isolation before decoding, not just result filtering.
+    shard = tmp_path / "released.jsonl"
+    shard.write_text('{"event_uid":"other", "measurement": invalid}\n' +
+                     '{"event_uid":"wanted", "measurement":42}\n')
+    assert selected_records(shard, "wanted") == [{"event_uid": "wanted", "measurement": 42}]

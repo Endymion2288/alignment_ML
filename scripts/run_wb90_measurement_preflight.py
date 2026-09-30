@@ -10,6 +10,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Calypso setup does not add this repository to PYTHONPATH; direct CLI use
+# must resolve our own package before loading any physics/environment module.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import numpy as np
 
 from alignment.wb90_measurement_contract import (
@@ -35,7 +39,8 @@ def freeze(output: Path) -> None:
     release = Path("/cvmfs/atlas.cern.ch/repo/sw/software/24.0/Athena/24.0.41/InstallArea/x86_64-el9-gcc13-opt")
     source_paths += [release / "include/TrkParametersBase/CurvilinearParametersT.h",
                      release / "include/TrkParametersBase/CurvilinearParametersT.icc",
-                     release / "include/TrkEventPrimitives/CurvilinearUVT.h"]
+                     release / "include/TrkEventPrimitives/CurvilinearUVT.h",
+                     release / "lib/libTrkParameters.so", release / "lib/libTrkSurfaces.so"]
     source_hashes = {str(p.resolve()): digest(p) for p in source_paths}
     write_new(output / "protocol.json", protocol)
     write_new(output / "selection.json", {"schema": "wb90_selection_v1", "events": rows,
@@ -43,6 +48,10 @@ def freeze(output: Path) -> None:
               "data_role": "historically seen development; not independent qualification"})
     write_new(output / "source_freeze.json", {
         "utc": datetime.now(timezone.utc).isoformat(), "source_hashes": source_hashes,
+        "selection_sha256": digest(output / "selection.json"),
+        "protocol_sha256": digest(output / "protocol.json"),
+        "development_shard_hashes": {str((PROJECT / row["replica_path"]).resolve()):
+            digest(PROJECT / row["replica_path"]) for row in rows if row["role"] == "development"},
         "fragments": fragments,
         "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT, text=True).strip(),
         "git_status": subprocess.check_output(["git", "status", "--short"], cwd=PROJECT, text=True),
@@ -55,6 +64,12 @@ def probe(output: Path) -> None:
     protocol = read_public(output / "protocol.json")
     if (output / "preflight_summary.json").exists():
         raise FileExistsError("no overwriting a completed preflight")
+    for name in ("protocol", "selection"):
+        if digest(output / f"{name}.json") != frozen[f"{name}_sha256"]:
+            raise ValueError(f"frozen {name} artifact changed")
+    for name, expected in frozen["development_shard_hashes"].items():
+        if digest(Path(name)) != expected:
+            raise ValueError("released development shard changed after freeze")
     for name, expected in frozen["source_hashes"].items():
         if digest(Path(name)) != expected:
             raise ValueError(f"frozen source changed: {name}")
@@ -69,6 +84,8 @@ def probe(output: Path) -> None:
             raise RuntimeError(f"cannot load actual Athena library: {name}")
         path = Path(str(ROOT.gSystem.DynamicPathName(name + ".so", True))).resolve()
         libraries[name] = {"path": str(path), "sha256": digest(path)}
+        if frozen["source_hashes"].get(str(path)) != digest(path):
+            raise ValueError("actual loaded Trk library is not the frozen binary")
     for prefix in os.environ.get("CMAKE_PREFIX_PATH", "").split(":"):
         for suffix in ("include", "include/eigen3"):
             p = Path(prefix) / suffix
@@ -81,9 +98,8 @@ def probe(output: Path) -> None:
     code = code.replace("namespace WB90Probe {", "namespace WB90Probe {\nstruct fitInfo { static constexpr double zCenter = 0.; };")
     code = code.replace("  struct fitInfo { static constexpr double zCenter = 0.; };\n", "")
     cpp_path = output / "compiled_probe_source.cpp"
-    if cpp_path.exists():
-        raise FileExistsError(cpp_path)
-    cpp_path.write_text(code)
+    with cpp_path.open("x") as stream:
+        stream.write(code)
     if not ROOT.gInterpreter.Declare(code):
         raise RuntimeError("actual Trk diagnostic source failed to compile")
     controls = [{"kind": "analytic_control", "tx": tx, "ty": ty} for tx, ty in protocol["cases"]]
