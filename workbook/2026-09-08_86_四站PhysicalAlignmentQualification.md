@@ -231,3 +231,278 @@ PASS 后冻结 `wb86_final_qualification.json` 与 `physical_alignment_oracle_cl
 - 没有新 replica 或新几何
 
 单问句：在冻结 WB84 语料 + WB85b 统计 + 冻结 common-track solver + 真实 Calypso/ACTS 迭代下，truth-associated common-track alignment 是否通过预注册 physical oracle？答案要等 DAG 跑完。
+
+---
+
+## 7. 闭合（2026-09-29，只读，协议未改）
+
+记录时的仓库状态：
+
+```text
+branch                  = 4station
+HEAD                    = eea34212265e95060f1facf9bb744e104e5e2958
+origin/4station         = eea34212265e95060f1facf9bb744e104e5e2958
+working tree            = clean relative to that commit
+uncommitted WB86 repair = none
+```
+
+未跟踪的 `core.*` 是崩溃转储，不是 WB86 修补。DAG 各 stage 的 stdout 记录的执行代码是授权时的 `3bd3073e3ffe66a74aed5dc55a6b551853d7dc98`。`eea3421` 只提交了当时已经跑完的 execution 代码与本 workbook 的前半部分，没有改阈值、统计量、solver、association 或 corpus。
+
+### 7.1 DAG / Condor
+
+2026-09-29 在 `bigbird24.cern.ch` 上查询：该用户队列为 0（无 RUNNING / IDLE / HELD）。历史作业已不在队列里。本地 DAG 记录：
+
+| 角色 | cluster | 结局 | 分类 |
+|---|---|---|---|
+| 首轮 DAGMan | 1112463 | `PHYSICAL_ALIGNMENT_SHARDS` 1112466.0 rc=1 后 abort | infrastructure：只读 WB84 ingest 被误判为 rewrite |
+| 卡住的 rescue DAGMan | 1112604 | 被后续提交取代 | infrastructure |
+| 卡住的 shard cluster | 1112606 | 新 DAG 启动时 abort，DAGMan 记为 unknown-node | infrastructure |
+| 完成的 DAGMan | 1113234 | 7/7 nodes done，exit 0，2026-09-13 13:43:17 | execution complete |
+| 完成的 shards | 1113379 | 2394 procs，user log 2407 次正常终止且 return value 0，0 hold，0 abort | execution complete |
+| RESULT_INTEGRITY | 1116536 | completed successfully | structural |
+| GLOBAL_SUMMARY | 1116537 | completed successfully | first scientific aggregate |
+| FROZEN_QUALIFICATION_GATE | 1116538 | completed successfully；stdout `overall=FAIL` | frozen decision |
+| CLOSURE | 1116539 | completed successfully；stdout `oracle=False` | frozen decision |
+
+`1113379` 的终止次数多于 2394，是 DAGMan 已记录的 “total end count != 1 (2)” 重复终止事件，不是缺 shard，也不是科学失败。首轮 1112466 的 stderr 只属于那次 infrastructure abort，不得拿来改协议。
+
+完成链：
+
+```text
+SNAPSHOT_VERIFY 1113235 / 早先 1112464
+→ CORPUS_VERIFY 1113378
+→ PHYSICAL_ALIGNMENT_SHARDS 1113379
+→ RESULT_INTEGRITY 1116536
+→ GLOBAL_SUMMARY 1116537
+→ FROZEN_QUALIFICATION_GATE 1116538
+→ CLOSURE 1116539
+```
+
+### 7.2 Shard completion
+
+目录 `events/0000`–`events/2393` 与 `sealed/0000.json`–`sealed/2393.json` 无缺口。全部 2394 个 technical 记录的 `cluster_id` 都是 `1113379`。
+
+```text
+n_expected           = 2394
+n_technical          = 2394
+n_technical_success  = 2392
+n_technical_fail     = 2
+n_sealed             = 2394
+n_missing            = 0
+n_corrupt            = 0
+n_hash_mismatch      = 0   # RESULT_INTEGRITY
+n_duplicate          = 0
+```
+
+官方链身份：`engine = calypso_segmentfit_acts_mode0`，`executor = WB85bOfficialCalypsoActsBackend.execute_refit`。SUCCESS runtime 中位数约 4195 s。
+
+两个 technical FAIL 都是官方 rerefit 之后、冻结代码主动拒绝，不是调度器崩溃：
+
+```text
+index 0489  identity_finite_survey_prior
+  mc24_100043_00300_00399:100043:2100
+  missing truth-associated hit after official rerefit
+  particle 10001 station 3
+  host b9p06p4369.cern.ch  runtime 881 s  iterations 0
+
+index 1745  identifiable_translation_fixed_dz
+  mc24_100047_00100_00149:100047:2149
+  missing truth-associated hit after official rerefit
+  particle 10001 station 1
+  host b9p20p6104.cern.ch  runtime 223 s  iterations 0
+```
+
+其余 sealed reason：
+
+```text
+max_iterations = 2352
+converged      = 40
+WB86Error      = 2
+```
+
+`automatically_passed_at_max_iterations` 保持 false。没有用 toy transport。
+
+### 7.3 RESULT_INTEGRITY
+
+`wb86_result_integrity.json`，utc `2026-09-13T11:27:53Z`：
+
+```text
+result_integrity_pass = true
+scientific_aggregates_not_computed_here = true
+n_expected = 2394
+n_technical_success = 2392
+n_technical_fail = 2
+n_missing = 0
+n_hash_mismatch = 0
+```
+
+### 7.4 GLOBAL_SUMMARY
+
+`wb86_global_summary.json`，utc `2026-09-13T11:31:07Z`。可分析定义是 converged、solver_ok、`n_dropped = 0` 且 projected 存在。`diagnostics_only = null`，因为不是每个 identifiable stratum 都有至少 2 个 z。
+
+| stratum | attempted | converged / analyzable | nonconvergence | dropped-parameter events | engineering bias | empirical coverage | sign/frame |
+|---|---:|---:|---:|---:|---:|---:|---|
+| identity_fixed_dz | 299 | 0 | 1.000 | 0 | 0 | 0/0 | false |
+| identity_finite_survey_prior | 303 | 0 | 1.000 | 3 | 0 | 0/0 | false |
+| identifiable_translation_fixed_dz | 311 | 10 | 0.968 | 1 | +4.92e-14 mm | 10/10 | false |
+| identifiable_translation_finite_survey_prior | 298 | 7 | 0.977 | 4 | −8.29e-15 mm | 7/7 | false |
+| identifiable_rotation_fixed_dz | 300 | 1 | 0.997 | 0 | −44.625 mrad | 0/1 | true |
+| identifiable_rotation_finite_survey_prior | 283 | 0 | 1.000 | 2 | 0 | 0/0 | false |
+| weak_jg_diagnostic_fixed_dz | 302 | 13 | 0.957 | 1 | z_dx −2.05e-12, z_ry +2.05e-12 | — | — |
+| weak_jg_diagnostic_finite_survey_prior | 298 | 8 | 0.973 | 4 | z_dx +2.75e-12, z_ry −2.75e-12 | — | — |
+
+Finite / SPD：`n_nan = 0`，`n_inf = 0`，`n_non_spd = 0`。记录到的 `fd_rel_max_observed = 0`。
+
+旋转 finite stratum 另有 1 个 event（index 1104）solver 收敛但 `n_dropped = 2`，projected 为空，因此 analyzable = false，不进入上表的 converged 计数。旋转 fixed 的唯一 analyzable event（index 657）`a_hat = −43.918 mrad`，`a_true = 0.707 mrad`，`z = −496.3`，coverage false。另一个未收敛 event（index 239）`sign_frame_failure = true`，`a_hat = 73.63 mrad`。
+
+弱 JG 的 |mean z| 远小于 5。翻译 stratum 里少数收敛事件的 bias 在 1e-13 mm 量级，但 n 远小于 200。
+
+### 7.5 Execution qualification
+
+```text
+execution_qualification = FAIL
+analyzable               = false
+```
+
+FAIL 原因，全部来自冻结 `execution_layer`：
+
+```text
+nonconvergence identity_fixed_dz
+nonconvergence identity_finite_survey_prior
+dropped identifiable mode identity_finite_survey_prior
+nonconvergence identifiable_translation_fixed_dz
+dropped identifiable mode identifiable_translation_fixed_dz
+nonconvergence identifiable_translation_finite_survey_prior
+dropped identifiable mode identifiable_translation_finite_survey_prior
+nonconvergence identifiable_rotation_fixed_dz
+nonconvergence identifiable_rotation_finite_survey_prior
+dropped identifiable mode identifiable_rotation_finite_survey_prior
+```
+
+同时记录、但不把结论改成 UNKNOWN 的 `n < 200`：
+
+```text
+identity_fixed_dz n=0
+identity_finite_survey_prior n=0
+identifiable_translation_fixed_dz n=10
+identifiable_translation_finite_survey_prior n=7
+identifiable_rotation_fixed_dz n=1
+identifiable_rotation_finite_survey_prior n=0
+```
+
+冻结规则是：有 nonconvergence / dropped-mode 等 failure 时 status = FAIL；只有在没有 failure、仅有 `n < 200` 时才是 UNKNOWN。这里不是 UNKNOWN。
+
+### 7.6 Statistical qualification
+
+```text
+statistical_qualification = null
+T_LS                       = not computed
+T_cov                      = not computed
+critical_LS                = 23.33666415864534
+critical_cov               = 14.44937533544792
+```
+
+`frozen_qualification_gate` 只在 `execution.analyzable` 或 `execution.status == UNKNOWN` 时调用 `alignment.wb85b_fwer_protocol.evaluate_wb85b_qualification`。本次 execution 是 FAIL，因此该函数没有被调用，也没有被复制。
+
+WB85b-r1 措辞保持：
+
+```text
+nominal_statistical_protocol_qualified = true
+exact_finite_sample_FWER_proven        = false
+```
+
+本次没有 primary statistical PASS/FAIL，因为样本不可分析。不得把 null 说成统计通过。
+
+### 7.7 Physics screening
+
+研究筛选，不是 collaboration-approved detector requirement。阈值未改：
+
+```text
+translation / identity |bias| <= 0.1 mm
+rotation rz |bias|             <= 1 mrad
+weak-JG |mean z|               <= 5
+```
+
+```text
+physics_screening = FAIL
+```
+
+失败项：
+
+```text
+gross coverage identifiable_rotation_finite_survey_prior
+rotation rz screening identifiable_rotation_fixed_dz
+sign/frame identifiable_rotation_fixed_dz
+gross coverage identifiable_rotation_fixed_dz
+gross coverage identity_finite_survey_prior
+gross coverage identity_fixed_dz
+```
+
+弱 JG 没有越过 |mean z| = 5。两个翻译 stratum 的工程 bias 没有越过 0.1 mm，但它们已经在 execution 层因 nonconvergence 失败。空样本的 empirical coverage 被既有实现记为 0，从而触发 gross coverage；这是冻结 screening 对不可分析 stratum 的结果，不是事后加的门槛。
+
+### 7.8 Final oracle
+
+```text
+execution_qualification = FAIL
+statistical_qualification = null
+physics_screening = FAIL
+
+overall_qualification = FAIL
+alignment_oracle_qualified_for_physical_FASER = false
+ml_alignment_eval_authorized = false
+```
+
+UNKNOWN 没有出现。oracle 不是近似成功。
+
+### 7.9 Failure attribution（只读，未 retune）
+
+主因是 **nonconvergence**。2392 个官方链成功事件里，2352 个在 `MAX_ITERATIONS = 10` 处停止，solver status 仍是 `ok`，连续两步未同时满足冻结的 scaled-update 与 validation-relative 容差。六个 identifiable stratum 的 nonconvergence 都大于 0.05，四个 stratum 还有 dropped identifiable parameter。
+
+其次：
+
+```text
+physics bias / sign-frame / coverage:
+  identifiable_rotation_fixed_dz
+  唯一 analyzable event bias = -44.625 mrad，|z| = 496
+  另有未进入 analyzable 集合的 sign/frame event
+
+coverage:
+  四个 n=0 或经验覆盖为 0 的 stratum 触发 gross coverage
+
+execution refusal, 2/2394, 不主导 FAIL:
+  官方 rerefit 后缺少 truth-associated hit
+  index 0489 station 3, index 1745 station 1
+
+not observed as the failing gate:
+  statistical calibration (T_LS / T_cov not evaluated)
+  weak-JG |mean z| > 5
+  NaN / Inf / non-SPD
+  infrastructure on the completing cluster 1113379
+```
+
+没有因此改 corpus、阈值、association、solver、几何、收敛准则，也没有加 IRLS 或删难例。
+
+### 7.10 Artifact hashes
+
+以下是 2026-09-29 对落盘文件的 SHA256。closure 内嵌的 `final_qualification_sha256` 与文件一致。本轮没有重写这些 JSON。
+
+```text
+db60a8ab3f95e72034a5127bf0466e8cd2a66eaee43374bcecd37568f9c29423  wb86_snapshot_verify.json
+c82cb0bee3a25a687e6d0d7931db24bd3b785ae0efd07b3dc17a5304e892e546  wb86_corpus_verify.json
+a929928af016236c8f77cbe2c4b9fc0c1a6663a60ce43bc5474a7863c8dbdd4b  wb86_result_integrity.json
+c750b409a2540c291f8126c7add03e5e2df67bc551a5eed9f77e01359bc5aff4  wb86_global_summary.json
+f43e385bb5060d5d0f780ca8be44d9da73bfa378a48103deb15057f3da65a910  wb86_execution_qualification.json
+7d290eefeb3b48ce5c209aab8f9cbbdb86638ebd803bd6c5376fcf9009ed4e5c  wb86_final_qualification.json
+4030b576ddefe5560efcf42514063b1edb4619b4648a4cc596329440bb454981  physical_alignment_oracle_closure.json
+```
+
+### 7.11 下一步唯一允许的动作
+
+WB86 physical oracle 已闭合为 false。不要重跑 DAG 来求 PASS，不要改 α、critical value、收敛准则或 WB84 membership，不要启动 ML-vs-truth。
+
+```text
+ml_alignment_eval_authorized = false
+next_stage_requires_separate_authorization = true
+```
+
+若要继续，只能新开一份 prospective workbook，单独授权，并且不得把这次 FAIL 当成调参依据。
