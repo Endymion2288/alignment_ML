@@ -76,25 +76,42 @@ def validate(work,protocol):
         'legacy_sha256':digest(work/'legacy.jsonl'),'repair_sha256':digest(work/'repair.jsonl')})
     return read_public(work/'validation.json')
 
-def main(out):
+def main(out,reuse=None):
     verify(out);protocol=read_public(out/'protocol.json')
     if read_public(out/'kernel_summary.json')['gate']!='PASS':raise ValueError('kernel failed')
-    from prepare_wb91_calypso_extension import prepare
-    prepare(out)
+    if reuse is None:
+        from prepare_wb91_calypso_extension import prepare
+        prepare(out)
+    else:
+        prior=read_public(reuse/'freeze.json')
+        current=read_public(out/'freeze.json')
+        for path in (PROJECT/'scripts/prepare_wb91_calypso_extension.py',PROJECT/'research/wb91/CovarianceContract.h',PROJECT/'research/wb91/Audit.h'):
+            name=str(path.resolve())
+            if prior['source_hashes'][name]!=current['source_hashes'][name]:raise ValueError('reuse build science source mismatch')
+        sources=read_public(reuse/'extension_manifest.json')
+        for name,h in sources['generated_source_hashes'].items():
+            if digest(reuse/'isolated_source'/name)!=h:raise ValueError('generated build source changed')
+        previous=read_public(reuse/'binary_manifest.json')
+        if digest(Path(previous['binary']))!=previous['sha256']:raise ValueError('reused binary changed')
+        write_new(out/'extension_manifest.json',{'reused_from':str(reuse),'previous_manifest_sha256':digest(reuse/'extension_manifest.json'),
+            'generated_source_hashes':sources['generated_source_hashes'],'source_directory':str(reuse/'isolated_source')})
     write_new(out/'physical_environment.json',{'host':platform.node(),'platform':platform.platform(),
         'environment':{k:os.environ.get(k) for k in ('CMAKE_PREFIX_PATH','LD_LIBRARY_PATH','Athena_DIR','Calypso_DIR','AtlasVersion','AtlasProject','CMTCONFIG')},
         'git_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=PROJECT,text=True).strip()})
-    build=out/'isolated_build'
-    run(['cmake','-S',str(out/'isolated_source'),'-B',str(build),'-DCalypso_DIR='+str(PROJECT.parent/'calypso/run/cmake')],out,out/'configure.log')
-    run(['cmake','--build',str(build),'-j','1'],out,out/'build.log')
+    build=(out if reuse is None else reuse)/'isolated_build'
+    if reuse is None:
+        run(['cmake','-S',str(out/'isolated_source'),'-B',str(build),'-DCalypso_DIR='+str(PROJECT.parent/'calypso/run/cmake')],out,out/'configure.log')
+        run(['cmake','--build',str(build),'-j','1'],out,out/'build.log')
     platform_dir=build/'x86_64-el9-gcc13-opt'
     if not (platform_dir/'setup.sh').is_file():raise ValueError('missing isolated runtime setup')
     binaries=list(platform_dir.rglob('*WB91SegmentFit*.so'))
     if len(binaries)!=1:raise ValueError('ambiguous isolated library')
     write_new(out/'binary_manifest.json',{'binary':str(binaries[0]),'sha256':digest(binaries[0]),
-        'source_manifest_sha256':digest(out/'extension_manifest.json')})
+        'source_manifest_sha256':digest(out/'extension_manifest.json'),'reused_from':str(reuse) if reuse else None})
     payload=out/'identity_payload'
-    run(['bash','-c',calypso_payload_command(output_dir=payload,payload=identity_payload())],out,out/'payload.log')
+    payload_command='unset Calypso_SET_UP Calypso_EXTONLY_SET_UP Calypso_RELONLY_SET_UP WB91_SET_UP\n'+calypso_payload_command(output_dir=payload,payload=identity_payload())
+    write_new(out/'payload_command.json',{'bash_script':payload_command})
+    run(['bash','-c',payload_command],out,out/'payload.log')
     summaries=[]
     for index,row in enumerate(read_public(out/'selection.json')['events']):
         work=out/'physical'/f'{index:02d}';work.mkdir(parents=True,exist_ok=False)
@@ -113,10 +130,13 @@ def main(out):
         'qualification':'NOT_EVALUATED','acts':'NOT_EVALUATED','coverage':'UNKNOWN'})
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--output-root',required=True,type=Path);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output-root',required=True,type=Path)
+    p.add_argument('--reuse-build-root',type=Path);args=p.parse_args()
     out=args.output_root.resolve()
     if not out.is_relative_to(PROJECT/'outputs') or not out.name.startswith('mc24_four_station_wb91_'):p.error('new WB91 output required')
-    try:main(out)
+    reuse=args.reuse_build_root.resolve() if args.reuse_build_root else None
+    if reuse and (not reuse.is_relative_to(PROJECT/'outputs') or not reuse.name.startswith('mc24_four_station_wb91_')):p.error('WB91 reused build only')
+    try:main(out,reuse)
     except Exception as e:
         write_new(out/'physical_error.json',{'status':'EXECUTION_OR_VALIDATION_ERROR','error':repr(e),'qualification':'NOT_EVALUATED'})
         raise

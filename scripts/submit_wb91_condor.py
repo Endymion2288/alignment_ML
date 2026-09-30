@@ -10,12 +10,14 @@ from alignment.wb90_measurement_contract import ROOT as PROJECT,write_new,read_p
 from run_wb91_covariance_contract import verify,OUTPUT
 
 p=argparse.ArgumentParser();p.add_argument('--output-root',type=Path,default=OUTPUT)
+p.add_argument('--reuse-build-root',type=Path)
 args=p.parse_args();out=args.output_root.resolve();verify(out)
 if not out.is_relative_to(PROJECT/'outputs') or not out.name.startswith('mc24_four_station_wb91_'):p.error('WB91 output required')
 if read_public(out/'kernel_summary.json')['gate']!='PASS':raise ValueError('kernel prerequisite failed')
 if (out/'wb91.sub').exists():raise FileExistsError('no duplicate submission')
 worker=PROJECT/'scripts/run_wb91_condor.sh'
-text='\n'.join(['universe = vanilla',f'executable = {worker}',f'arguments = {PROJECT} {out}',
+reuse=' '+str(args.reuse_build_root.resolve()) if args.reuse_build_root else ''
+text='\n'.join(['universe = vanilla',f'executable = {worker}',f'arguments = {PROJECT} {out}{reuse}',
     f'output = {out}/condor.$(ClusterId).out',f'error = {out}/condor.$(ClusterId).err',f'log = {out}/condor.$(ClusterId).log',
     'request_cpus = 1','request_memory = 8000','request_disk = 8000000','requirements = (Arch == "X86_64")',
     '+JobFlavour = "workday"','getenv = False','should_transfer_files = NO','queue 1',''])
