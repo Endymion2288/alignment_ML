@@ -50,7 +50,7 @@ def prepare(out):
         '      {ATH_MSG_ERROR("WB91 input header/context mismatch");return StatusCode::FAILURE;}\n'
         '    const int station=m_idHelper->station(theFit->clusters[theFit->candidates.front()]->cluster.detectorElement()->identify());\n'
         '    int stateIndex=0;\n'
-        '    for(const auto* state:*s) WB91::dumpState(m_audit,eid.run_number(),eid.event_number(),station,ids.str(),stateIndex++,\n'
+        '    for(const Trk::TrackStateOnSurface* state:*s) WB91::dumpState(m_audit,eid.run_number(),eid.event_number(),station,ids.str(),stateIndex++,\n'
         '       theFit->fitParams,theFit->fitCovariance,normal,fitInfo::zCenter,*state->trackParameters());\n'
         '    m_audit.flush();\n\n    // Create and store track')
     cmake=(origin/'CMakeLists.txt').read_text().replace('TrackerSegmentFit','WB91SegmentFit')
