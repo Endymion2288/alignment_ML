@@ -1,0 +1,22 @@
+{
+  "schema": "wb93_single_pilot_transport_error_budget_v1",
+  "input": "WB92_v3_pilot_only",
+  "max_step_sizes_m": [10.0, 0.1, 0.01, 0.001],
+  "max_steps": 10000,
+  "step_multipliers": [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0],
+  "directions": ["x", "y", "tx", "ty", "q_over_p", "alternating_mixed"],
+  "seed_steps": [0.01, 0.01, 0.00001, 0.00001, 0.00000001],
+  "output_scales": [1.0, 1.0, 0.001, 0.001],
+  "taylor_fraction": 0.25,
+  "contraction_ceiling": 0.7,
+  "scaling_window_adjacent_pairs": 2,
+  "roundoff_scaled_floor": 0.00000000001,
+  "refinement_reduction_required": 0.5,
+  "analytic_control_scaled_tolerance": 0.00000001,
+  "baseline_reproduction_scaled_tolerance": 0.000000001,
+  "trace_variants": ["nominal", "mixed_full_at_multiplier_1", "mixed_half_at_multiplier_1"],
+  "field_default_signature_T": [0.00001, 0.00001, 0.00001],
+  "qualification": "NOT_EVALUATED",
+  "alignment_solver": false,
+  "held_out_access": false
+}
