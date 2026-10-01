@@ -114,7 +114,7 @@ def submit(out):
     with sub.open('x') as stream:stream.write('\n'.join(['universe = vanilla',f'executable = {ROOT}/scripts/run_wb96_condor.sh',
       f'arguments = {ROOT} {out}',f'output = {out}/condor.$(ClusterId).out',f'error = {out}/condor.$(ClusterId).err',f'log = {out}/condor.$(ClusterId).log',
       'request_cpus = 1','request_memory = 8000','request_disk = 8000000','requirements = (Arch == "X86_64")','+JobFlavour = "workday"',
-      'getenv = False','should_transfer_files = NO','stream_output = True','stream_error = True','on_exit_remove = True','periodic_remove = (NumJobStarts > 1)','queue 1','']))
+      'getenv = False','should_transfer_files = NO','on_exit_remove = True','periodic_remove = (NumJobStarts > 1)','queue 1','']))
     command='source /usr/share/Modules/init/bash && module load lxbatch/eossubmit && myschedd out && condor_submit '+shlex.quote(str(sub))
     r=subprocess.run(['bash','-c',command],capture_output=True,text=True)
     write_new(out/'submission.json',{'command':command,'stdout':r.stdout,'stderr':r.stderr,'returncode':r.returncode})
