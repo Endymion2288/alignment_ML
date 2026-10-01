@@ -1,0 +1,51 @@
+{
+  "WB92_gate": "FAIL",
+  "WB94_mechanism": "UNKNOWN",
+  "attempts": [
+    {
+      "hashes": {
+        "outputs/mc24_four_station_wb95_field_precision_v1/binary_manifest.json": "72730d13cfcffc3e37579b24b0178417f922b568fd3739913059105753744fb9",
+        "outputs/mc24_four_station_wb95_field_precision_v1/build.log": "f983225683c31057578ac705eb0b8412a21dc7ff1f0777688c738d13fc339e53",
+        "outputs/mc24_four_station_wb95_field_precision_v1/condor.1168670.log": "760bd321046aa7c571a3f2da4e68d8b3c4b0cd802ae7de8173aa636f48f15868",
+        "outputs/mc24_four_station_wb95_field_precision_v1/configure.log": "563907e2b22c8a932341e736abb351ce783a5ca5e12c205f40bafc6105ce33f4",
+        "outputs/mc24_four_station_wb95_field_precision_v1/environment.json": "6d584d4433c1308feb7aeb505ea3473b2eb2b92b1ecccdba18cf0565a2e6ae6c",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/PoolFileCatalog.xml": "404b55769febb0f29d6e33a9e6cfe8b37c503a901eb1d51fb3b584bb90cdde76",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/acts.json": "592b91883e440edff1ff77e70e70e68bed8af489c266598601d0d69077943d89",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/acts.json.nodes_le_i16.bin": "53342f59a989655a5c857d767f2f47adadf4386488c9ff67249b68e43939a65f",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/athena.log": "8449fcae654626c2c611ada741d5aefbcb590f2211c36e9824af1742aa8cae90",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/athena_manifest.json": "866786e440393e2e09936a69e8b2a8cfa1124ef7d30d6a16b9346eb3f90d8ab4",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/command.json": "a727f2f32e6d73deed6425f69ca838e7a17600825410d5e8a401019bea0b7328",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/eventLoopHeartBeat.txt": "f396cd998ace4f14a41c17d1f8fb523b33d96282f7bf9053e9cc60c7b8527475",
+        "outputs/mc24_four_station_wb95_field_precision_v1/event/fixture.json": "3ea37d3f4d429501c2aa60afbe266dc12c285783c55e6a0514201413db199a02",
+        "outputs/mc24_four_station_wb95_field_precision_v1/figures/field_precision_contract.pdf": "bcd303d284c4be43f5d418be0c23f3e6ba7ba407dc4574e7a9cec084da6c82d5",
+        "outputs/mc24_four_station_wb95_field_precision_v1/figures/field_precision_contract.png": "ad3c55a6b87a85399a9a849a2ead794180072b12b001d2bc35171fef3626bea1",
+        "outputs/mc24_four_station_wb95_field_precision_v1/figures/manifest.json": "e823a3a66511e02cc8dfa3645024ba1910754663ff859f73256198f3440e35f1",
+        "outputs/mc24_four_station_wb95_field_precision_v1/fixture.json": "3ea37d3f4d429501c2aa60afbe266dc12c285783c55e6a0514201413db199a02",
+        "outputs/mc24_four_station_wb95_field_precision_v1/freeze.json": "4d320ece9a283cfde22f1b788943b67ae4645f3827008b739f8c276d4c095966",
+        "outputs/mc24_four_station_wb95_field_precision_v1/generated_source_manifest.json": "afa9329365d8c95ca36084247e82a66883177d2b6c7954d5a6f8641ee9a9c2ad",
+        "outputs/mc24_four_station_wb95_field_precision_v1/protocol.json": "7b5b603b577892c1bd2244a1d7ab2b8abe5ce269efab87bc52a393944749a009",
+        "outputs/mc24_four_station_wb95_field_precision_v1/scheduler_terminal_audit.json": "23db84149b000eb1ad6c32fd3ccc30e2d5b8e352e9163c710b411042fd06eab4",
+        "outputs/mc24_four_station_wb95_field_precision_v1/submission.json": "20d71167b3cd904b5b6eb39f87b39a8eaa1c16bfb5531bd10be15ccd2cbaf117",
+        "outputs/mc24_four_station_wb95_field_precision_v1/summary.json": "49b0efafba426ecac0ce7b440e1f5775f444c8616e23c4e141acacfc7246f169",
+        "outputs/mc24_four_station_wb95_field_precision_v1/wb95.sub": "36944d26bf7c3b3b750fe7c0901ef000feea572d171a2f86e27f3e69157c0f16"
+      },
+      "path": "outputs/mc24_four_station_wb95_field_precision_v1"
+    }
+  ],
+  "execution_contract": "PASS",
+  "held_out_access": false,
+  "mechanism_hypothesis": "SUPPORTED_BUT_LIMITED",
+  "nodes_sha256": "53342f59a989655a5c857d767f2f47adadf4386488c9ff67249b68e43939a65f",
+  "output_root": "outputs/mc24_four_station_wb95_field_precision_v1",
+  "population": 1,
+  "qualification": "NOT_EVALUATED",
+  "reference_by_mode": {
+    "mesh_z_double": "NUMERICAL_REFERENCE_SUPPORTED",
+    "mesh_z_float": "UNKNOWN",
+    "original_float": "UNKNOWN"
+  },
+  "reporting_script_sha256": "5d5d0ab0005f88f59c95ebf10f1a0e8ece8264a1e91caf79b0816d0f789ef53a",
+  "result_integrity_sha256": "d31d107bb53e3509f40b2ed5a0fa1bf3abf858935c0fe2f419920a223c19e89a",
+  "scheduler_exit_code": "UNKNOWN",
+  "scheduler_terminal_state": "REMOVED_AFTER_RESULTS_AND_WORKER_FINISHED_WITH_DISCONNECTED_SCHEDULER"
+}
