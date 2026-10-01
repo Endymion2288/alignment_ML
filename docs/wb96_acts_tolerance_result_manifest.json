@@ -1,0 +1,62 @@
+{
+  "WB86_gate": "FAIL",
+  "WB92_gate": "FAIL",
+  "WB94_mechanism": "UNKNOWN",
+  "attempts": [
+    {
+      "hashes": {
+        "outputs/mc24_four_station_wb96_acts_tolerance_v1/fixture.json": "fa44c2812efe4cc5347b550279010fbd9e9b2768cb605e82f46aa43b4ca0cd55",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v1/freeze.json": "baf0184557457f9737275658fe91a2ee55185e073383b5859ee14362a8f011de",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v1/protocol.json": "099d9009a6fbe80f99e99b17704c451f8bb6c1e8bfbacf4abc17685f1d22c384",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v1/submission.json": "ed3b217967037be3f9af9807bbd73926cf571129fbf0f5ead2af19bb42d39808",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v1/wb96.sub": "3d7f15a8393e3a09ae56b1ee4e96492d08ad9fafb6db3d213e915f628433cab5"
+      },
+      "path": "outputs/mc24_four_station_wb96_acts_tolerance_v1"
+    },
+    {
+      "hashes": {
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/binary_manifest.json": "4e2e02805398f6257469bb0a005cd8ad69ac4533ee50ed2f16af9d377cf02b8e",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/build.log": "b3ffa3cf7dd54bc5e2df975c39b41235d946f44e072c99aa3fb4df1c654b0ef6",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/condor.1169280.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/condor.1169280.log": "c6032c06ee675cc3ec036aecd1f4b81a09afe162652f780e74fae0f81f798d6a",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/condor.1169280.out": "a747f47b961c187959e0bd6c01db871ebf720166fa6679d80673202343937253",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/configure.log": "277bb18cf6f9abfa7bf09bdcc9a0796de7fad0c5def052bb32d2be2b1c4b1ef9",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/environment.json": "4f84207aa6d700f7a21940180f5173e99bc16403e8526b3720cba87b2e3db508",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/PoolFileCatalog.xml": "404b55769febb0f29d6e33a9e6cfe8b37c503a901eb1d51fb3b584bb90cdde76",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/acts.json": "f6bac4d2c1107bd5b5a2f2fa2de24f54ed7ea7df26f3f3894b6399836f664f0c",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/athena.log": "fd63b2c7c0aab1880ecb0021a77c658676a6d69e6c38e74a61dbe15247990ebd",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/athena_manifest.json": "0d9a28ba1f5c4289dac74b1a6cc19b7aa5ae996015defae3c4cda36ecaa15a54",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/command.json": "544e2b27dba84082fd051a6f0d8a4935568b12223ec5ef1a02617541c62ec65d",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/eventLoopHeartBeat.txt": "f396cd998ace4f14a41c17d1f8fb523b33d96282f7bf9053e9cc60c7b8527475",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/event/fixture.json": "fa44c2812efe4cc5347b550279010fbd9e9b2768cb605e82f46aa43b4ca0cd55",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/figures/acts_tolerance_contract.pdf": "de111ba987d1d2a71dacdba32ecb9062cfb8bd82f2be80f3005aa1573cec570c",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/figures/acts_tolerance_contract.png": "5bb6f69452484ae914c01593ca3aa61d3277770d79a4238746b2f4b33806b07d",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/figures/manifest.json": "80800234b47990bacc15ed7bb06a83c7d2bbb4bd14ab7b7346908f6ac5890959",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/fixture.json": "fa44c2812efe4cc5347b550279010fbd9e9b2768cb605e82f46aa43b4ca0cd55",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/freeze.json": "4f03d380de9eb174a45f9515b7521708646ad0b67d9407b647dc8b8d928fc5df",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/generated_source_manifest.json": "680fa189b5ab5b03b03249f0c1884ae2069f5e5c5b980a46f426993ec3070778",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/protocol.json": "099d9009a6fbe80f99e99b17704c451f8bb6c1e8bfbacf4abc17685f1d22c384",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/reporting_source_trace_audit_v1.py": "c023d942587b3a45615a75df512a2aba27e22dddf8a42fadeb64d858533f7dc0",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/saved_trace_audit.json": "8231ffffd49bf5d989acc56a28a8b19064aa1e36043768baa781be174ccd6712",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/saved_trace_audit_v2.json": "47f91a21280ea6a91183aa7a4771a6a08276175e74e6841c2b8b35227573f568",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/scheduler_terminal_audit.json": "0d899b8dbfafc50a477718bbf30538aeca725541acf9b1f8d24fd3053aa25fc4",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/submission.json": "cf0d50f2c66587f61bea004357e9def92c459cafcb2c8a9771761b8707438ba8",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/summary.json": "02b9cceb2c3ff9abfa8e83c70a8560642e0550e004f0c1e1be14e2811109bedb",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/wb96.sub": "eb80c807f4fc51ec8059efb7c533e4ffb72aa09ce1373ad584dcf3923c633fd5",
+        "outputs/mc24_four_station_wb96_acts_tolerance_v2/worker_exit.json": "31d83118f1aa82c9bc94812c6f364e7f123d5f8e533cbbf3ef2fce5473c6db5a"
+      },
+      "path": "outputs/mc24_four_station_wb96_acts_tolerance_v2"
+    }
+  ],
+  "execution_contract": "PASS",
+  "held_out_access": false,
+  "mechanism_hypothesis": "NOT_SUPPORTED",
+  "output_root": "outputs/mc24_four_station_wb96_acts_tolerance_v2",
+  "population": 1,
+  "qualification": "NOT_EVALUATED",
+  "reporting_script_sha256": "307e00fc9f298d1b4cc9b5ace1b39ba82cd9c1c15c13298e4f10803c7f8232f3",
+  "result_integrity_sha256": "42517b403f6024b0fe7cca46722c482b570a77312c99236c8d2bd0621fbfdd8f",
+  "scheduler_exit_code": 0,
+  "scheduler_terminal_state": "NORMAL_TERMINATION",
+  "worker_exit_code": 0
+}
