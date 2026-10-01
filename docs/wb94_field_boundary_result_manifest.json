@@ -1,0 +1,43 @@
+{
+  "WB92_gate": "FAIL",
+  "attempts": [
+    {
+      "hashes": {
+        "outputs/mc24_four_station_wb94_field_boundary_v1/binary_manifest.json": "ae27bf7c69cbca16e2ac935604db933061ccadeeb431af028da62581d8a897d6",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/build.log": "d7358058b8b38f430aff9230bc9d1ef0006e84ebac8a8a0f504a50a192efd9f0",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/condor.1163360.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/condor.1163360.log": "9b6ec3066cfb756b4dad0565615dd6154224378082abda952eecb320b45f01a1",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/condor.1163360.out": "a747f47b961c187959e0bd6c01db871ebf720166fa6679d80673202343937253",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/configure.log": "12f8ff474877fce037e75bcd4b865b42b37b48c48cd52fe0df8d67ec8e673803",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/environment.json": "20ac12a72680d3382920a9d44b3b82d350cf3483c7a9121186d3a8bef36676ad",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/PoolFileCatalog.xml": "404b55769febb0f29d6e33a9e6cfe8b37c503a901eb1d51fb3b584bb90cdde76",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/acts.json": "f718eac398d24f96594c2b5d5611612339371564b9c539730be2269e03f00585",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/athena.log": "f24c5720e73692be50710c387d042ba83530508a0b6ade05bca6a7c00bf21d67",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/athena_manifest.json": "34fdaa22650dc1b3032151cf19248553e9a836d0644a529cab97810fd31e6123",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/command.json": "4867f820fb13b13455b55005ccce8099e1012a928cc9ae96b157e240d4079859",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/eventLoopHeartBeat.txt": "f396cd998ace4f14a41c17d1f8fb523b33d96282f7bf9053e9cc60c7b8527475",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/event/fixture.json": "0331b80d6534020bca568a2de39e77fa733e3e30d2e887eacd325908cef99c0e",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/figures/field_boundary_contract.pdf": "0de006b95114735e61f1867aafc378cde46aacbd2da0d54ddccfb33835a08ce5",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/figures/field_boundary_contract.png": "9fd13f22c56ee2ab46313635cbc612ef42d3dd3bfa913ead321a5bcfe6f04bbc",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/figures/manifest.json": "c26ed955e6c88c5297e6e1a297cff701b0ae56833c3ab12d23f2b50b97b2ffe6",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/fixture.json": "0331b80d6534020bca568a2de39e77fa733e3e30d2e887eacd325908cef99c0e",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/freeze.json": "ecdab0af3e349a7be9f85809f24f4a263f9afe990000b8d7e45aaf687b07f11e",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/generated_source_manifest.json": "ea42507f2f57b67f6d4b1d50190445b913baa477193546fd57d8344d8b94ab14",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/protocol.json": "1d7c3dccdc3c25ec694be66b1616a5d5be4f09f7c6458ee3873684ad88d0f5c0",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/submission.json": "c8d4f8737e26600e00b324ed316d017a9b88fc6cfe443e6a5f0dd84f5027a23e",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/summary.json": "d736cbc167c0b272d689debe2272509cbaecbecea02e4c4e6c9d21d3c8c1e489",
+        "outputs/mc24_four_station_wb94_field_boundary_v1/wb94.sub": "72358a613d1d66c0b9b84620f76e19780298d8f8cd3b1b2c2ab82c45bf5c4307"
+      },
+      "path": "outputs/mc24_four_station_wb94_field_boundary_v1"
+    }
+  ],
+  "execution_contract": "PASS",
+  "held_out_access": false,
+  "mechanism_hypothesis": "UNKNOWN",
+  "output_root": "outputs/mc24_four_station_wb94_field_boundary_v1",
+  "population": 1,
+  "qualification": "NOT_EVALUATED",
+  "reference": "UNKNOWN",
+  "reporting_script_sha256": "1f753a2ad7e631888ab85d274f58a7cc24d3c4d3bb4a5b1d6b4229df778218b8",
+  "result_integrity_sha256": "ffe3e98c296c51313ba638d5093673e03385ce08c5cc50fb2b43f286c06ee94e"
+}
