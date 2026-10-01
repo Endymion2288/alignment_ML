@@ -1,0 +1,42 @@
+{
+  "WB92_gate": "FAIL",
+  "attempts": [
+    {
+      "hashes": {
+        "outputs/mc24_four_station_wb93_transport_error_v1/analytic_control.json": "ae35f64299efde637b5d0e49c80fae0668b28493d5136812b666c469d73cd1d0",
+        "outputs/mc24_four_station_wb93_transport_error_v1/binary_manifest.json": "037553e903d066f989e065022445612c1ff61ae1cf08c756318abb868de11e08",
+        "outputs/mc24_four_station_wb93_transport_error_v1/build.log": "70dd6264ea2a1a36f65490aaed2514bb701b367b899fa52ae3a3700eb81bd0a4",
+        "outputs/mc24_four_station_wb93_transport_error_v1/condor.1163074.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "outputs/mc24_four_station_wb93_transport_error_v1/condor.1163074.log": "ef9e6d9de87b4cc4b02d34ba02551f5e6f8e9f277d03228d206e23b949bc273d",
+        "outputs/mc24_four_station_wb93_transport_error_v1/condor.1163074.out": "a747f47b961c187959e0bd6c01db871ebf720166fa6679d80673202343937253",
+        "outputs/mc24_four_station_wb93_transport_error_v1/configure.log": "762af5bae04c346416f677ca1ebd714143d71330fc32cb4a19df54184868930f",
+        "outputs/mc24_four_station_wb93_transport_error_v1/environment.json": "0d93d63357b088d3c7a8b4dc2d4df9cb4e1be802fbb94c766019ad5b72fa2cd7",
+        "outputs/mc24_four_station_wb93_transport_error_v1/event/acts.json": "411273705bba73d2622355497c021a5d93db6c8897038055d4977794ba18abb0",
+        "outputs/mc24_four_station_wb93_transport_error_v1/event/athena.log": "d36691136b6120987bb73f40f24a3bdbe0dff15621391273b492c8cb8c2732cb",
+        "outputs/mc24_four_station_wb93_transport_error_v1/event/athena_manifest.json": "cda4f43e650452c287b54ca48790a6211ed40557105ded77f451ae4f852773d4",
+        "outputs/mc24_four_station_wb93_transport_error_v1/event/command.json": "b06603ec0790789364f7fca9d4c8f015c4e6502875c0f956d679554dc09bf862",
+        "outputs/mc24_four_station_wb93_transport_error_v1/event/fixture.json": "e2bc6494996d84b8ce84a4105407cb291ed518fc7cb71df7943027d6f6fa264d",
+        "outputs/mc24_four_station_wb93_transport_error_v1/figures/manifest.json": "19dc696a7b0872115680c5fb7ac4dbaac967c190d253f4e0f87d7077618a8183",
+        "outputs/mc24_four_station_wb93_transport_error_v1/figures/transport_error_budget.pdf": "76ee7c48b2281e35891517135fdb75bd6afa095b0c69787813a4e722c3f7012f",
+        "outputs/mc24_four_station_wb93_transport_error_v1/figures/transport_error_budget.png": "f6998fdd2f56d425fb1a1d3264ce38fd09186c0d7db0866adc340aaab2d83b01",
+        "outputs/mc24_four_station_wb93_transport_error_v1/fixture.json": "e2bc6494996d84b8ce84a4105407cb291ed518fc7cb71df7943027d6f6fa264d",
+        "outputs/mc24_four_station_wb93_transport_error_v1/freeze.json": "3c350a221f899173e31f88fadff77171035e704f8dd009de334715f64c4d3abb",
+        "outputs/mc24_four_station_wb93_transport_error_v1/generated_source_manifest.json": "ee481192a27a58b58949bf6fdd05bdc1e4ab3832087b44ad1507f51a433ec150",
+        "outputs/mc24_four_station_wb93_transport_error_v1/postrun_map_metadata.json": "89be19057499366510ccc664aa9d533d2761a771d8030dc4a6be5d51bf6cb9c7",
+        "outputs/mc24_four_station_wb93_transport_error_v1/protocol.json": "b42ffa7db1e663dcdb1f0ff88f6c0d6399139ec61703657f1749739cc267d3d0",
+        "outputs/mc24_four_station_wb93_transport_error_v1/submission.json": "1843af7e41b7b678f4a466eb448b2aff5d9468acb67e1301c0ce475b89f09a13",
+        "outputs/mc24_four_station_wb93_transport_error_v1/summary.json": "2a90923a59ef36ec99fa10adcfbccf20f4340104913f0555266e4e5e1f5a7f74",
+        "outputs/mc24_four_station_wb93_transport_error_v1/wb93.sub": "fd5b0b7a1749a51c5cac54f5ae02f604c4517a9ac6ba2ce0ef062783f52e9da5"
+      },
+      "path": "outputs/mc24_four_station_wb93_transport_error_v1"
+    }
+  ],
+  "execution_contract": "PASS",
+  "held_out_access": false,
+  "mechanism_hypothesis": "SUPPORTED_BUT_LIMITED",
+  "output_root": "outputs/mc24_four_station_wb93_transport_error_v1",
+  "population": 1,
+  "qualification": "NOT_EVALUATED",
+  "reporting_script_sha256": "a6c5d034f4fa9a85851b402b9565ff4f5f6a4f5e11bad104fcf2c136a98af085",
+  "result_integrity_sha256": "c368c29375abc4043172c381edc6e084054ceb836dbaa221a91f182ee3c9a1ff"
+}
