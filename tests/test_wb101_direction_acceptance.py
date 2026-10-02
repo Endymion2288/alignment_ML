@@ -55,13 +55,13 @@ def test_scalar_metric_audit_and_json_serialization(tmp_path,monkeypatch):
     from alignment.wb90_measurement_contract import write_new
     arrays=np.arange(25*4,dtype=float).reshape(25,4)/100
     scale=np.array([1,1,.001,.001]);p={'arms':[0,1e-8,1e-9,1e-10],'output_scales':scale.tolist(),'uncertainty_factor':10,'reduction_required':.5}
-    ref=[{'targets':[{'h':r.tolist()} for _ in range(3)]} for r in arrays]
+    ref=[{'targets':[{'h':[[x] for x in r.tolist()]} for _ in range(3)]} for r in arrays]
     reference={'modes':[{'name':mode,'ladders':[{'samples':ref},{'samples':ref}]} for mode in ('mesh_z_double','mesh_z_float')]}
     source=tmp_path/'reference.json';write_new(source,reference);write_new(tmp_path/'fixture.json',{'wb101_field_source':str(source)});write_new(tmp_path/'protocol.json',p)
     settings=[];cells=[];checks=[]
     for tau in p['arms']:
         for cap in (10,.1,.01,.001):
-            settings.append({'direction_threshold':tau,'targets':[{'samples':[{'state':{'h':r.tolist()}} for r in arrays]} for _ in range(3)]})
+            settings.append({'direction_threshold':tau,'targets':[{'samples':[{'state':{'h':[[x] for x in r.tolist()]}} for r in arrays]} for _ in range(3)]})
         for station in (1,2,3):
             for mode in ('mesh_z_double','mesh_z_float'):
                 metric=complete_metrics([arrays]*4,arrays,scale);U={k:0. for k in ('endpoint','cap_spread','effect','taylor_excess','full_minus_two_half_excess')}

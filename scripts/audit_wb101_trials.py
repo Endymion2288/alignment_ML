@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 from alignment.wb90_measurement_contract import read_public
 from alignment.wb99_direction_step_doubling import node_field,ACTS_T
+from alignment.wb93_transport_error import v
 
 def require(ok,message):
     if not ok:raise ValueError(message)
@@ -97,7 +98,7 @@ def audit(out,raw,old,p):
             require(row['trial']==st['trials'] and row['query_begin']==st['query_end'],'trial sequence/query gap')
             retry(previous,row)
             if previous is None:
-                require(np.max(np.abs(np.array(row['start_position_mm'])-call['start_state']['position_mm']))<1e-9 and np.max(np.abs(np.array(row['start_direction'])-call['start_state']['direction']))<1e-12,'initial state')
+                require(np.max(np.abs(np.array(row['start_position_mm'])-v(call['start_state']['position_mm'],3)))<1e-9 and np.max(np.abs(np.array(row['start_direction'])-v(call['start_state']['direction'],3)))<1e-12,'initial state')
                 require(row['start_time_Acts']==call['start_state']['time_Acts'] and row['start_path_mm']==0,'initial time/path')
             elif previous['accepted']:
                 pp,uu=endpoint(previous)

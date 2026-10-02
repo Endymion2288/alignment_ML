@@ -12,6 +12,8 @@ from wb101_sources import files,step_source,WB96
 WB95=ROOT/'outputs/mc24_four_station_wb95_field_precision_v1'
 WB100=ROOT/'outputs/mc24_four_station_wb100_aggregation_recovery_v1'
 PROTOCOL=ROOT/'configs/research_review/wp101_direction_acceptance_contract.json'
+PRIMARY=ROOT/'outputs/mc24_four_station_wb101_direction_acceptance_v1'
+PREPARATION=ROOT/'outputs/mc24_four_station_wb101_recovery_preparation_v1'
 SOURCES=[PROTOCOL,ROOT/'scripts/wb101_contract.py',ROOT/'scripts/wb101_sources.py',ROOT/'scripts/wb101_athena.py',ROOT/'scripts/run_wb101_condor.sh',
          ROOT/'scripts/finalize_wb101_results.py',ROOT/'scripts/audit_wb101_trials.py',ROOT/'alignment/wb101_direction_acceptance.py',ROOT/'tests/test_wb101_direction_acceptance.py']
 SOURCES += list((ROOT/'research/wb101').glob('*'))
@@ -28,6 +30,17 @@ def artifact_hashes(index):
         return result
     raise ValueError('unknown prior result index')
 
+def preserved_parent():
+    snapshot=read_public(PREPARATION/'snapshot_manifest.json');parent=read_public(PRIMARY/'freeze.json')
+    if snapshot['parent']!=str(PRIMARY) or read_public(PRIMARY/'worker_exit.json')['exit_code']!=1:raise ValueError('recovery parent identity')
+    if (PRIMARY/'event/acts.json').exists() or (PRIMARY/'event/acts.json.trials.ndjson').exists() or (PRIMARY/'event/acts.json.traces.ndjson').exists():raise ValueError('parent physical matrix already began')
+    for path,h in parent['hashes'].items():
+        saved=snapshot['sources'].get(path)
+        candidate=saved['snapshot'] if saved else path
+        if saved and saved['sha256']!=h:raise ValueError('parent snapshot manifest')
+        if digest(candidate)!=h:raise ValueError('preserved parent dependency '+path)
+    return snapshot
+
 def verify(out):
     freeze=read_public(out/'freeze.json')
     for path,h in freeze['hashes'].items():
@@ -37,6 +50,8 @@ def verify(out):
 def freeze(out):
     if subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip()!='4station':raise ValueError('wrong branch')
     hashes={}
+    recovery=out.name=='mc24_four_station_wb101_direction_acceptance_v2'
+    if recovery:preserved_parent()
     for name,prior in (('wb100_cell_direction_envelope',WB100),('wb96_acts_tolerance',WB96)):
         index=read_public(ROOT/f'docs/{name}_result_manifest.json')
         if digest(prior/'result_integrity.json')!=index['result_integrity_sha256']:raise ValueError('prior result index changed')
@@ -61,9 +76,11 @@ def freeze(out):
         ROOT/'docs/wb100_cell_direction_envelope_result_manifest.json',ROOT/'docs/wb96_acts_tolerance_result_manifest.json',out/'fixture.json',out/'protocol.json']
     paths+=list((WB95/'identity_payload').glob('*'))+[WB96/'isolated_source/WB96Diagnostic/ToleranceNavigationAudit.cxx',
          WB96/'isolated_source/CMakeLists.txt',WB96/'isolated_source/WB96Diagnostic/CMakeLists.txt',ROOT/'research/wb100/Envelope.h',ROOT/'research/wb99/DirectionDoubling.h']
+    if recovery:paths.extend(x for folder in (PRIMARY,PREPARATION) for x in folder.rglob('*') if x.is_file())
     if any(not x.is_file() for x in paths):raise ValueError('missing frozen source')
     hashes.update({str(x):digest(x) for x in paths})
     write_new(out/'freeze.json',{'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,cwd=ROOT).strip(),'branch':'4station','hashes':hashes,
+              'parent':str(PRIMARY) if recovery else None,'parent_physical_matrix_calls':0 if recovery else None,
               'population':1,'held_out_access':False,'qualification':'NOT_EVALUATED','production_backend_change':False})
 
 def build_controls(out):
@@ -135,5 +152,6 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('action',choices=('freeze','run','submit','aggregate','verify','build_smoke'));parser.add_argument('--output-root',type=Path,required=True)
     args=parser.parse_args();out=args.output_root.resolve()
     if out.parent!=ROOT/'outputs' or not out.name.startswith('mc24_four_station_wb101_'):raise ValueError('exclusive WB101 output')
+    if args.action!='build_smoke' and out.name not in ('mc24_four_station_wb101_direction_acceptance_v1','mc24_four_station_wb101_direction_acceptance_v2'):raise ValueError('authorized WB101 output')
     if args.action=='build_smoke':out.mkdir(exist_ok=False);build_controls(out);build(out)
     else:globals()[args.action](out)

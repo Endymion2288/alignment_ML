@@ -4,6 +4,13 @@
 #include <functional>
 namespace WB101 {
 using V=Acts::Vector3;using J=nlohmann::json;
+inline V jsonVector(const J& row){
+  if(!row.is_array()||row.size()!=3)throw std::runtime_error("WB101 vector shape");
+  V out;for(int k=0;k<3;++k){const J& x=row.at(k);
+    if(x.is_array()){if(x.size()!=1)throw std::runtime_error("WB101 column vector shape");out[k]=x.at(0).get<double>();}
+    else out[k]=x.get<double>();}
+  if(!out.allFinite())throw std::runtime_error("WB101 nonfinite vector");return out;
+}
 struct Control {
   double threshold=0,allowance=1e-11;
   bool record=false;

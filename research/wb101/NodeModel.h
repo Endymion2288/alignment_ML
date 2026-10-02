@@ -32,7 +32,7 @@ struct NodeModel {
     bounds={M,V::Constant(1e-5*Acts::UnitConstants::T).norm(),L.norm(),V(mesh[0].front(),mesh[1].front(),mesh[2].front()),V(mesh[0].back(),mesh[1].back(),mesh[2].back()),false};
     if(std::abs(M-savedBounds.at("M_inside_native").get<double>())>1e-16||std::abs(L.norm()-savedBounds.at("L_native_per_mm").get<double>())>1e-16)throw std::runtime_error("global bounds changed");
     double probe=0;size_t probes=0;for(const std::string key:{"probes","domain_controls"})for(const auto& row:old.at(key)){
-      V p,b;for(int k=0;k<3;++k){p[k]=row.at("position_mm").at(k);b[k]=row.at("double_T").at(k);}
+      const V p=WB101::jsonVector(row.at("position_mm")),b=WB101::jsonVector(row.at("double_T"));
       probe=std::max(probe,(get(p)/Acts::UnitConstants::T-b).cwiseAbs().maxCoeff());++probes;}
     if(probe>1e-12)throw std::runtime_error("node probes mismatch");
     evidence=J({{"nodes_compared",zone->nfield()},{"M_inside_native",M},{"L_native_per_mm",L.norm()},{"L_axes_native_per_mm",WB100::array(L)},

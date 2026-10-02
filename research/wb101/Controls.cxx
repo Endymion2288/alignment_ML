@@ -9,6 +9,9 @@
 using V=Acts::Vector3;using J=nlohmann::json;
 int main(){try{
   auto check=[](bool ok,const char* msg){if(!ok)throw std::runtime_error(msg);};
+  check(WB101::jsonVector(J::parse("[[1],[2],[3]]"))==WB101::jsonVector(J::parse("[1,2,3]")),"historical column vector");
+  bool badshape=false;try{WB101::jsonVector(J::parse("[[1,2],[2],[3]]"));}catch(...){badshape=true;}
+  check(badshape,"wrong vector shape accepted");
   Acts::GeometryContext g;Acts::MagneticFieldContext m;
   auto surface=Acts::Surface::makeShared<Acts::PlaneSurface>(V::Zero(),V(0,0,1));
   const auto pars=Acts::detail::transformFreeToBoundParameters(V::Zero(),0.,V(0,0,1),.01,*surface,g);
