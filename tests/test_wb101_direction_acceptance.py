@@ -40,6 +40,14 @@ def test_rejection_immutability_and_half_retry(monkeypatch):
     for key,value in (('h_mm',1),('start_time_Acts',4),('start_path_mm',3),('q_over_p_Acts',.02)):
         with pytest.raises(ValueError):retry(a,b|{key:value})
 
+def test_both_historical_manifest_schemas_fail_closed(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]/'scripts'))
+    from wb101_contract import artifact_hashes
+    assert artifact_hashes({'artifacts':{'a':'h'}})=={'a':'h'}
+    assert artifact_hashes({'attempts':[{'hashes':{'a':'h'}},{'hashes':{'b':'j'}}]})=={'a':'h','b':'j'}
+    with pytest.raises(ValueError):artifact_hashes({'attempts':[{'hashes':{'a':'h'}},{'hashes':{'a':'j'}}]})
+    with pytest.raises(ValueError):artifact_hashes({})
+
 def test_scalar_metric_audit_and_json_serialization(tmp_path,monkeypatch):
     import json
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]/'scripts'))

@@ -17,6 +17,17 @@ SOURCES=[PROTOCOL,ROOT/'scripts/wb101_contract.py',ROOT/'scripts/wb101_sources.p
 SOURCES += list((ROOT/'research/wb101').glob('*'))
 SOURCES += [ROOT/'scripts/setup_environment.sh']
 
+def artifact_hashes(index):
+    if 'artifacts' in index:return index['artifacts']
+    if 'attempts' in index:
+        result={}
+        for attempt in index['attempts']:
+            for path,h in attempt['hashes'].items():
+                if path in result and result[path]!=h:raise ValueError('conflicting artifact identity')
+                result[path]=h
+        return result
+    raise ValueError('unknown prior result index')
+
 def verify(out):
     freeze=read_public(out/'freeze.json')
     for path,h in freeze['hashes'].items():
@@ -28,7 +39,8 @@ def freeze(out):
     hashes={}
     for name,prior in (('wb100_cell_direction_envelope',WB100),('wb96_acts_tolerance',WB96)):
         index=read_public(ROOT/f'docs/{name}_result_manifest.json')
-        for path,h in index['artifacts'].items():
+        if digest(prior/'result_integrity.json')!=index['result_integrity_sha256']:raise ValueError('prior result index changed')
+        for path,h in artifact_hashes(index).items():
             if digest(ROOT/path)!=h:raise ValueError('prior artifact changed '+path)
         for path,h in read_public(prior/'freeze.json')['hashes'].items():
             if digest(path)!=h:raise ValueError('prior dependency '+path)
