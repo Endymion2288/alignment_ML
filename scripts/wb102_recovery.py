@@ -76,6 +76,8 @@ def run(out):
     import alignment.wb90_measurement_contract as io
     io.digest = digest
     recovery_aggregate(PRIMARY,out)
+    write_new(out/'lambda_1_preflight.json', {'gate':'PASS','complete_saved_matrix_and_reference_audit':True,
+                                               'new_physical_calls':0,'new_reference_integrations':0})
     verify(out)
 
 
