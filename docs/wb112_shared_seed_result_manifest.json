@@ -1,0 +1,31 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/contract_workbook.md": "988f2764be1dbc89683a8defd8befca732228452a99f80b4229cfe08aa089d8c",
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/execution_receipt.json": "c30abc73cf81bb680439b3dd78bda69d52fe5926b58acf3db1fc8e23e9b8b3d1",
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/freeze.json": "8014ac9b04304c1c1e963db13ba8ebe5bb0a293925f07a74b6e06836d559cd36",
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/independent_saved_value_audit.json": "6c0c00b9e0542390fb0466fd37cab30a7a59637e183f8ddd4aa1caba68a0f5fd",
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/result_integrity.json": "2a53e0fbc0e4451a37a9ea15645cc95e81a6c392de0438b8f276292bab1c73dc",
+    "outputs/mc24_four_station_wb112_shared_seed_audit_v1/summary.json": "7bc4c556b3c5b7a50c3dc452457498532f7e4c40a3d0db98c870585533fb673f",
+    "workbook/2026-10-03_112_\u56db\u7ad9\u5171\u4eab\u79cd\u5b50\u4e0d\u786e\u5b9a\u5ea6\u4e0e\u5206\u6bb5\u6765\u6e90\u53ea\u8bfb\u5ba1\u8ba1.md": "9a0954f08961a98ed47cf5a8842a2275baff5d722a19806c6e50bee2ac39eb88"
+  },
+  "classification": "DESCRIPTIVE_ONLY_ASSUMPTIONS_UNVERIFIED",
+  "cross_station_association": "UNKNOWN",
+  "execution_contract": "PASS",
+  "final_oracle": "NOT_EVALUATED",
+  "held_out_access": false,
+  "implementation_commit": "e7a9c7a564603d69c7f165942f2ee547a407d7f3",
+  "integrity_gate": "PASS",
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 0,
+  "physical_qop_or_prior": "UNKNOWN",
+  "physics_screening": "NOT_EVALUATED",
+  "population": 1,
+  "preregistration_commit": "ec41075",
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "result_integrity_sha256": "2a53e0fbc0e4451a37a9ea15645cc95e81a6c392de0438b8f276292bab1c73dc",
+  "root_or_truth_access": false,
+  "schema": "wb112_shared_seed_result_v1",
+  "source_reader_deviation": "Initial implementation/tests decoded existing 24-event seen development fixture catalog; no other event numerical cases or ROOT/truth access; corrected to single WB104 event12 fixture before freeze/analysis",
+  "station3_uncertainty_and_profile": "UNKNOWN_MISSING_JACOBIAN"
+}
