@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/contract_workbook.md": "224385da5fdb700a6513d0d1fed458b3ab19277f25094578def7a13791ab3f4e",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/freeze.json": "759f16c27a9f3186bee770857d06a74c738e48003238ef9d39431084c6736b80",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/generation_expectation.json": "7369d8e300119cc9ecbf4d71b9f33129b8d5465b39b44e75232d32a1a4c9785f",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/scheduler_initial_ad.json": "c3322b7c76dbb439b3d2e3194f27bacad49f03b1b397fd65063fa6e84d467d9f",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/scheduler_preflight.json": "02ca524e12ba9c9117aae2e74e9de367af7d7a845ce948e738c7f6564452c1dc",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/submission.json": "cc4c130ccf4b088341968fd6fff247f5af64ee1d244d9fa50ef5ab5b0c2bad12",
+    "outputs/mc24_four_station_wb107_bound_attribution_v1/wb107.sub": "7d0e09f0fff063585533b048671822d52cbd4247e26093c4ac79f5d08043ca62",
+    "workbook/2026-10-03_107_\u56db\u7ad9ACTS\u7ec8\u6001\u7ed1\u5b9a\u9519\u8bef\u5f52\u56e0\u524d\u77bb\u8bca\u65ad.md": "916da48e827beff84590dbd2ddc74dbf029be3cd6f6b83bf324ec3370a786815"
+  },
+  "cluster": 1202507,
+  "held_out_access": false,
+  "implementation_commit": "256e28ca89275928d9356c3f7316447088f3455e",
+  "max_diagnostic_calls": 101,
+  "max_official_calls": 101,
+  "population": 1,
+  "preregistration_commit": "c30c86e",
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "schedd": "bigbird24",
+  "schema": "wb107_submission_manifest_v1",
+  "scientific_classification": "UNKNOWN",
+  "state": "RUNNING_AT_RECEIPT"
+}
