@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Seven bounded same-field reachability controls on one seen event."""
+import argparse,hashlib,json,os,shlex,shutil,subprocess,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from alignment.wb90_measurement_contract import ROOT,read_public,write_new
+from wb100_contract import digest
+from wb92_contract import ACTS,EXTERNAL,run as command_run
+from wb110_contract import OUT as BASE
+from wb109_contract import OUT as HISTORICAL
+from wb107_contract import verify
+from wb111_sources import files,athena_source
+
+OUT=ROOT/'outputs/mc24_four_station_wb111_navigation_reachability_v1'
+PREFLIGHT=ROOT/'outputs/mc24_four_station_wb111_tool_compile_preflight_v2'
+WORKBOOK=ROOT/'workbook/2026-10-03_111_四站同场无几何导航目标面可达性前瞻控制.md'
+
+def control():
+    rows=[json.loads(x) for x in (HISTORICAL/'event/acts.json.calls.ndjson').read_text().splitlines()]
+    targets=[]
+    for station in (1,2,3):
+        inputs=[r for r in rows if r['record']=='input' and r['station']==station and r['label']=='nominal']
+        if len(inputs)!=1:raise ValueError('unique nominal input')
+        inp=inputs[0];cid=inp['call_id']
+        before=next(r for r in rows if r.get('call_id')==cid and r['record']=='before_official')
+        after=next(r for r in rows if r.get('call_id')==cid and r['record']=='after_official')
+        output=next((r for r in rows if r.get('call_id')==cid and r['record']=='output'),None)
+        targets.append({'station':station,'call_id':cid,'frame':inp['frame'],'before_official':before,
+          'official_has_value':after['has_value'],'official_h':output['h'] if output else None})
+    inp=next(r for r in rows if r['record']=='input' and r['call_id']==124)
+    terminal=next(r for r in rows if r['record']=='bound_before' and r['call_id']==124)
+    if [t['call_id'] for t in targets]!=[24,74,124]:raise ValueError('historical IDs')
+    return {'seed':inp['seed'],'seed_z_mm':inp['seed_z_mm'],'targets':targets,'terminal':terminal,
+      'pt_loopers_MeV':300.,'baseline_options':read_public(BASE/'probe.json')['options'],
+      'topology':read_public(BASE/'event/topology.json')}
+
+def compile_check():
+    PREFLIGHT.mkdir(exist_ok=False);generated=files()
+    for name,content in generated.items():
+        p=PREFLIGHT/name;p.parent.mkdir(parents=True,exist_ok=True)
+        with p.open('x') as f:f.write(content)
+    flags=BASE/'isolated_build/WB110Diagnostic/CMakeFiles/WB110Diagnostic.dir/flags.make'
+    lines=flags.read_text().splitlines()
+    parse=lambda key:shlex.split(next(x.split('=',1)[1] for x in lines if x.startswith(key+' =')))
+    includes=[('-I'+str(PREFLIGHT/'WB111Diagnostic')) if x=='-I'+str(BASE/'isolated_source/WB110Diagnostic') else x for x in parse('CXX_INCLUDES')]
+    defines=[x.replace('WB110Diagnostic','WB111Diagnostic') for x in parse('CXX_DEFINES')]
+    cmd=['g++','-std=c++20','-fsyntax-only',*defines,*includes,str(PREFLIGHT/'WB111Diagnostic/NavigationReachability.cxx')]
+    with (PREFLIGHT/'compile.log').open('x') as log:r=subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT)
+    write_new(PREFLIGHT/'receipt.json',{'command':cmd,'returncode':r.returncode,'scope':'whole isolated reachability algorithm; no link/event/propagation',
+      'source_hashes':{k:digest(PREFLIGHT/k) for k in generated},'flags_sha256':digest(flags),
+      'compiler':subprocess.check_output(['which','g++'],text=True).strip()})
+    if r.returncode:raise RuntimeError('compile-only check failed')
+
+def freeze(out):
+    if subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip()!='4station':raise ValueError('branch')
+    if subprocess.check_output(['git','diff','HEAD','--name-only'],cwd=ROOT,text=True).strip():raise ValueError('uncommitted tracked changes')
+    hashes=verify(BASE)['hashes'].copy()
+    result=read_public(ROOT/'docs/wb110_boundary_topology_result_manifest.json')
+    if (result['execution_contract'],result['classification'])!=('PASS','INTERNAL_CHILD_BOUNDARY_NULL_ATTACHMENT'):raise ValueError('historical status')
+    for name,h in result['artifacts'].items():
+        if digest(ROOT/name)!=h:raise ValueError('historical artifact '+name)
+        hashes[str(ROOT/name)]=h
+    generated=files();receipt=read_public(PREFLIGHT/'receipt.json')
+    if receipt['returncode']!=0:raise ValueError('compile gate')
+    for name,text in generated.items():
+        if hashlib.sha256(text.encode()).hexdigest()!=receipt['source_hashes'][name]:raise ValueError('compile source differs')
+    paths=[ROOT/'scripts/wb111_contract.py',ROOT/'scripts/wb111_sources.py',ROOT/'scripts/audit_wb111_reachability.py',
+      ROOT/'scripts/run_wb111_condor.sh',ROOT/'research/wb111/NavigationReachability.cxx',ROOT/'tests/test_wb111_reachability.py',
+      ROOT/'docs/wb110_boundary_topology_result_manifest.json',BASE/'result_integrity.json',
+      BASE/'isolated_build/WB110Diagnostic/CMakeFiles/WB110Diagnostic.dir/flags.make',Path(receipt['compiler'])]
+    paths+=list(PREFLIGHT.rglob('*'))
+    paths+=list((ROOT/'outputs/mc24_four_station_wb111_tool_compile_preflight_v1').rglob('*'))
+    paths+=[ROOT/'scripts/wb110_sources.py',ROOT/'scripts/wb110_contract.py']
+    paths+=[ACTS/'include'/p for p in ('Acts/Geometry/TrackingVolume.hpp','Acts/Geometry/TrackingGeometry.hpp',
+      'Acts/Geometry/BoundarySurfaceT.hpp','Acts/Geometry/Volume.hpp','Acts/Geometry/VolumeBounds.hpp','Acts/Surfaces/RectangleBounds.hpp','Acts/Propagator/VoidNavigator.hpp','Acts/Propagator/StandardAborters.hpp','Acts/Propagator/Propagator.hpp','Acts/Propagator/Propagator.ipp','Acts/Propagator/MaterialInteractor.hpp')]
+    paths+=[EXTERNAL/'Tracking/Acts/FaserActsGeometryInterfaces/FaserActsGeometryInterfaces/IFaserActsTrackingGeometryTool.h',
+      EXTERNAL/'Tracking/Acts/FaserActsGeometry/FaserActsGeometry/FaserActsGeometryContext.h']
+    for p in paths:
+        if p.is_dir():continue
+        hashes[str(p)]=digest(p)
+    f=read_public(BASE/'fixture.json')
+    if (f['index'],f['ordinal'],f['actual_run'],f['actual_event'])!=(12,2268,100044,2268):raise ValueError('allowlist')
+    out.mkdir(exist_ok=False);shutil.copyfile(WORKBOOK,out/'contract_workbook.md')
+    write_new(out/'fixture.json',f);write_new(out/'control.json',control())
+    write_new(out/'generation_expectation.json',{'files':{k:hashlib.sha256(v.encode()).hexdigest() for k,v in generated.items()},
+      'athena_sha256':hashlib.sha256(athena_source().encode()).hexdigest()})
+    for n in ('fixture.json','control.json','contract_workbook.md','generation_expectation.json'):hashes[str(out/n)]=digest(out/n)
+    write_new(out/'freeze.json',{'schema':'wb111_navigation_reachability_freeze_v1','hashes':hashes,'branch':'4station',
+      'commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+      'population':1,'max_official_calls':3,'max_diagnostic_calls':4,'held_out_access':False,'qualification':'NOT_EVALUATED'})
+
+def build(out):
+    source=out/'isolated_source';source.mkdir(exist_ok=False);generated=files()
+    expected=read_public(out/'generation_expectation.json')
+    for name,text in generated.items():
+        path=source/name;path.parent.mkdir(parents=True,exist_ok=True)
+        with path.open('x') as f:f.write(text)
+        if digest(path)!=expected['files'][name]:raise ValueError('generation identity')
+    write_new(out/'generated_source_manifest.json',{k:digest(source/k) for k in generated})
+    command_run(['cmake','-S',str(source),'-B',str(out/'isolated_build'),'-DCalypso_DIR='+str(EXTERNAL/'run/cmake')],out,out/'configure.log')
+    command_run(['cmake','--build',str(out/'isolated_build'),'-j','1'],out,out/'build.log')
+    binary=out/'isolated_build/x86_64-el9-gcc13-opt/lib/libWB111Diagnostic.so'
+    write_new(out/'binary_manifest.json',{'binary':str(binary),'sha256':digest(binary)})
+    return binary
+
+def run(out):
+    verify(out);(out/'execution_lock').mkdir(exist_ok=False)
+    fixture=read_public(out/'fixture.json');raw=Path(fixture['input_xaod']);before=raw.stat()
+    h=digest(raw);after=raw.stat();previous=read_public(BASE/'raw_identity.json')
+    if (before.st_size,before.st_mtime_ns)!=(after.st_size,after.st_mtime_ns):raise ValueError('raw changed while hashing')
+    if h!=previous['sha256'] or fixture['source_stat']!={'bytes':after.st_size,'mtime_ns':after.st_mtime_ns}:raise ValueError('raw identity')
+    write_new(out/'raw_identity.json',{'path':str(raw),'sha256':h,'bytes':after.st_size,'mtime_ns':after.st_mtime_ns,'timing':'before build and single seen event context access'})
+    binary=build(out);shutil.copytree(BASE/'identity_payload',out/'identity_payload')
+    event=out/'event';event.mkdir(exist_ok=False)
+    for n in ('fixture.json','control.json'):shutil.copyfile(out/n,event/n)
+    with (event/'athena.py').open('x') as f:f.write(athena_source())
+    if digest(event/'athena.py')!=read_public(out/'generation_expectation.json')['athena_sha256']:raise ValueError('runner identity')
+    platform=binary.parent.parent
+    cmd='\n'.join(['export PYTHONPATH='+shlex.quote(str(ROOT))+':"${PYTHONPATH:-}"',
+      'source '+shlex.quote(str(ROOT/'scripts/setup_environment.sh'))+' calypso',
+      'source '+shlex.quote(str(platform/'setup.sh')),
+      'export LD_LIBRARY_PATH='+shlex.quote(str(platform/'lib'))+':"$LD_LIBRARY_PATH"',
+      'python '+shlex.quote(str(event/'athena.py'))+' --work-dir '+shlex.quote(str(event))+' --sqlite '+shlex.quote(str(out/'identity_payload/tracker_alignment.sqlite'))])
+    write_new(event/'command.json',{'script':cmd,'athena_sha256':digest(event/'athena.py')})
+    with (event/'athena.log').open('x') as log:r=subprocess.run(['bash','-c',cmd],cwd=event,stdout=log,stderr=subprocess.STDOUT)
+    write_new(out/'athena_exit.json',{'exit_code':r.returncode,'host':os.uname().nodename})
+    verify(out)
+    from audit_wb111_reachability import audit
+    write_new(out/'summary.json',audit(out))
+
+def submit(out):
+    verify(out)
+    setup='source /usr/share/Modules/init/bash && module load lxbatch/eossubmit && myschedd out >/dev/null'
+    q=subprocess.check_output(['bash','-c',setup+' && condor_q -json'],text=True,timeout=55)
+    totals=subprocess.check_output(['bash','-c',setup+' && condor_q -totals'],text=True,timeout=55)
+    slots=subprocess.check_output(['bash','-c',setup+' && condor_status -constraint \'State=="Unclaimed" && Activity=="Idle"\' -af Name'],text=True,timeout=55)
+    write_new(out/'scheduler_preflight.json',{'queue':json.loads(q) if q.strip() else [],'raw_queue_json':q,'queue_totals':totals,
+      'idle_slots':len(slots.splitlines()),'schedd':'bigbird24'})
+    if not slots.strip():raise RuntimeError('no idle slots; no submission')
+    sub=out/'wb111.sub'
+    content=(BASE/'wb110.sub').read_text().replace(str(BASE),str(out)).replace('run_wb110_condor.sh','run_wb111_condor.sh')
+    with sub.open('x') as f:f.write(content)
+    r=subprocess.run(['bash','-c',setup+' && condor_submit '+shlex.quote(str(sub))],capture_output=True,text=True,timeout=55)
+    write_new(out/'submission.json',{'returncode':r.returncode,'stdout':r.stdout,'stderr':r.stderr,'submit_sha256':digest(sub)})
+    print(r.stdout,r.stderr)
+    if r.returncode:raise RuntimeError('submission failed')
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser();p.add_argument('action',choices=('compile','freeze','verify','run','submit'));p.add_argument('--output-root',type=Path)
+    a=p.parse_args()
+    if a.action=='compile':
+        if a.output_root:p.error('compile uses exclusive directory')
+        compile_check()
+    else:
+        if a.output_root is None or a.output_root.resolve()!=OUT:p.error('exclusive WB111 output root required')
+        if a.action=='verify':verify(OUT)
+        else:globals()[a.action](OUT)
