@@ -83,3 +83,17 @@ LCG_110_cuda下`tests/test_wb106_trace.py`九项PASS，包含partial failure无�
 实现commit `ce3a7b5`；v1 freeze绑定108 identities及合同快照，fixture仍只index12。提交前用户queue0、idle slots4513，继续bigbird24，cluster `1202338`。首次submit helper未提交：空queue时`condor_q -json`输出空串，JSON解析失败；后用`condor_q -totals`核对0 jobs、同一冻结worker/参数手动等效提交，`submission.json`明确记录该接口偏差。不改冻结源码或input。
 
 实际scheduler ad请求被EOS包装为3CPU/9000MB/ShouldTransferFilesYES，区别于sub的1CPU/8000MB/NO。初始JobStatus1、NumJobStarts0；不是terminal PASS。目前execution/scientific classification均UNKNOWN，未开始WB103或读新population。
+
+## 10. 完成结果与独立终态审计
+
+FACT FROM REPOSITORY：`outputs/mc24_four_station_wb106_surface_trace_v1/scheduler_history.json`记录bigbird24/1202338.0：JobStatus4、ExitCode0、ExitBySignalfalse、NumJobStarts1、RemoteWallClockTime603秒，worker为b9g34p3570。`worker_exit.json`为0，完成UTC2026-10-03T09:25:04；`athena_exit.json`为1，这是预期的原official传播fail-closed，不是worker基础设施失败。stderr为空，build/source/binary receipts齐全。
+
+`summary.json`及独立`postrun_audit.json`：108冻结身份重验、离线summary重建一致；实际复制sqlite/catalog字节与冻结payload相同，catalog指向的历史POOL PFN哈希一致；末记录FAIL_CLOSED和原错误一致。execution/integrity gate PASS仅覆盖这些显式检查。sensor geometry ID没有独立从另一重建输出重建，field query/status和内部navigator状态未记录，不能宣称全部physical conditions正确或完整因果审计PASS。
+
+逐调用trace457行，125inputs、24boundary、101official calls、100成功output、1失败、1terminal。首个失败为call124、station3、axis−1、nominal：seed `[81.40511863538732,-1.3131074015600313,0.040472236225215015,0.006055748391783332,1e-5]`，seed z=`-1860.1500000000005 mm`，target identity rotation、z=`2427.4 mm`、synthetic geometry ID0。actual header仍100044:2268，raw source/ordinal见fixture与`raw_identity.json`。不是rotation perturbation失败，也不是未开始的WB103 Jacobian。
+
+**描述性结论 `LOCALIZED_OFFICIAL_SURFACE_FAILURE`；科学机制分类 `UNKNOWN`。** 官方tool日志SurfaceError:1且返回nullopt；没有证据定位到requested target的最终bound conversion或中间surface。历史WB104/WB105失败、WB86 FAIL、WB103停止均保持；statistical qualification / physics screening / final oracle均NOT_EVALUATED。
+
+## 11. 唯一下一阶段建议
+
+RECOMMENDATION：WB107只检验“失败是否来自ACTS最终target bound-state conversion”，增加隔离EigenStepper的被动boundState输入/返回观测，逐调用与未改official tool对照。允许仍只index12的原调用前缀；100个成功返回必须数值完全一致、同一nominal失败必须复现，否则机制UNKNOWN。不调整target、容差、field、q/p、step policy或geometry；不能由最终转换失败推断导航的更深根因。先提交本结果，再冻结WB107前瞻合同/实现，单Condor。不得扩展WB103、删掉index12、做formal qualification或ML。
