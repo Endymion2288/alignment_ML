@@ -1,0 +1,27 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/contract_workbook.md": "c284ca8adb20ae6a6f53800af15089c8a7c92451014045623570ec48b269f562",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/freeze.json": "90f17cae220097934c5e4289b97a1b0052ede51277d17d1203e05413b7a98a64",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/generation_expectation.json": "09114037f33db5b3b8d5458a1762571eb33599dd6a8d0a964bf7dce12c1fbc3c",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/scheduler_initial_ad.json": "79c179aef2434b8ce3985afb1ce2bb62874af2f3e9465d5cbcb04444e1e35318",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/scheduler_preflight.json": "23b53b53a70cbce4f980a8dc36ef6320f0fe557cf895ceb5242722bbbcffefea",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/submission.json": "bd0c2e5ef9697e3adb159ddf0f20a751aa40ae24407be9d9a00d31f371997c07",
+    "outputs/mc24_four_station_wb108_bound_build_recovery_v1/wb108.sub": "06ec4ba4b17281fce79031f166a4be36e0de273361464f28670525d123c0e651",
+    "workbook/2026-10-03_108_\u56db\u7ad9\u7ec8\u6001\u7ed1\u5b9a\u8bca\u65ad\u7f16\u8bd1\u6062\u590d\u524d\u77bb\u5408\u540c.md": "92a696a569b5452d39d043a81b17958ba2fd9cdf085c2bdac8ca632c687cc8e2"
+  },
+  "held_out_access": false,
+  "historical_execution": "FAIL",
+  "implementation_commit": "38634beb24cd62cf1646c493c82e0779f672c41c",
+  "max_diagnostic_calls": 101,
+  "max_official_calls": 101,
+  "original_cluster": 1202507,
+  "population": 1,
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "recovery_cluster": 1202515,
+  "schedd": "bigbird24",
+  "schema": "wb108_recovery_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "state": "QUEUED_AT_RECEIPT"
+}
