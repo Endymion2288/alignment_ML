@@ -12,6 +12,7 @@ from wb107_contract import verify
 OUT=ROOT/'outputs/mc24_four_station_wb112_shared_seed_audit_v1'
 WORKBOOK=ROOT/'workbook/2026-10-03_112_四站共享种子不确定度与分段来源只读审计.md'
 WB92=ROOT/'outputs/mc24_four_station_wb92_common_seed_acts_v3'
+SOURCE_FIXTURE=ROOT/'outputs/mc24_four_station_wb92_wb104_event_fixture_preflight_v2/events/12/fixture.json'
 
 def matrix(a,shape):
     a=np.asarray(a,dtype=float);check(a.shape==shape and np.isfinite(a).all(),'matrix shape/finite');return a
@@ -118,7 +119,7 @@ def analyze(f,repair,trace,control):
       'qualification':'NOT_EVALUATED','physics_screening':'NOT_EVALUATED','final_oracle':'NOT_EVALUATED'}
 
 def inputs():
-    original=read_public(WB92/'fixtures.json')[12];f=read_public(BASE/'fixture.json')
+    original=read_public(SOURCE_FIXTURE);f=read_public(BASE/'fixture.json')
     return original,f,Path(original['wb91_repair_path'])
 
 def freeze():
@@ -129,7 +130,7 @@ def freeze():
     for p,h in m['artifacts'].items():check(digest(ROOT/p)==h,'historical artifact');hashes[str(ROOT/p)]=h
     original,f,repair=inputs();check(digest(repair)==original['wb91_repair_sha256'],'WB91 source')
     paths=[Path(__file__),ROOT/'tests/test_wb112_shared_seed.py',ROOT/'docs/wb111_navigation_reachability_result_manifest.json',
-      WB92/'fixtures.json',repair,repair.parent/'validation.json',repair.parent/'input_manifest.json',ROOT/'scripts/setup_environment.sh',ROOT/'research/wb91/Audit.h',
+      SOURCE_FIXTURE,repair,repair.parent/'validation.json',repair.parent/'input_manifest.json',ROOT/'scripts/setup_environment.sh',ROOT/'research/wb91/Audit.h',
       ROOT/'research/wb91/CovarianceContract.h',ROOT/'scripts/prepare_wb91_calypso_extension.py',ROOT/'scripts/wb91_reconstruct.py',
       ROOT.parent/'calypso/Tracker/TrackerRecAlgs/TrackerSegmentFit/src/SegmentFitAlg.cxx',
       ROOT.parent/'calypso/MagneticField/MagFieldElements/MagFieldElements/FaserFieldCache.h']
