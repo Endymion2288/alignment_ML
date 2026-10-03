@@ -1,0 +1,61 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/contract_workbook.md": "a8fb6eb5a07d26dff214e45b5521abe16445aa648e58232fca3a27a15e08cd50",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/control.json": "971f4297c6ea71750a403eb37222e707a1c25e0435987d0c355a5af0e7820851",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/freeze.json": "2f7a4d2c028e51896562c6740be5b34b3b4a3342cad483fea91f007b8fd564ec",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/scheduler_initial_ad.json": "c84f035e2534dae4cb1f40342ae5778a68600254eb373cfe6e0141f44c115154",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/scheduler_preflight.json": "1cb07a2e77085094332b7bb07359e25722403cd58284300b290972ee2d0dac74",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/submission.json": "6e04bdb86e71a6c524454eb2d32d03143f7eb4c9b5133f3340a128210f7c7c35",
+    "outputs/mc24_four_station_wb115_field_conditions_provenance_v2/wb115.sub": "e35f9c2e815337471a9637bbc37117983365cfd1071b7811639b43085e80a67a"
+  },
+  "batch_implementation_commit": "10d81c471b83b9d0b60026988f94a4dc81b7a9e4",
+  "cluster": 1204484,
+  "conditions_folders": 2,
+  "conditions_snapshot_content_changed": false,
+  "database_sha256": "00dcc51c2d99f96f1400e9b4624c380485cac5969def914fee27726ca236d95a",
+  "effective_resources": {
+    "RequestCpus": 3,
+    "RequestMemory": 9000,
+    "ShouldTransferFiles": "YES"
+  },
+  "event_population": 0,
+  "event_root_access": false,
+  "execution_contract": "UNKNOWN",
+  "final_oracle": "NOT_EVALUATED",
+  "frozen_identities": 726,
+  "global_job_id": "bigbird24.cern.ch#1204484.0#1791052696",
+  "global_tags": 2,
+  "held_out_access": false,
+  "historical_replica_identity": "UNKNOWN",
+  "initial_implementation_commit": "aef28e7",
+  "job_status_at_receipt": 1,
+  "local_attempt": {
+    "cause_of_wait": "UNKNOWN",
+    "exit_code": 143,
+    "interruption_receipt_sha256": "1e3c5cd9673d1fd86333d081a851de5141c2d6b88c13789eaab0009408105975",
+    "original_freeze_sha256": "590e5715299961f8b0b0f0652ba61930e0706924e2a06d1a784ada93c24659f4",
+    "path": "outputs/mc24_four_station_wb115_field_conditions_provenance_v1",
+    "saved_folder_results": 0
+  },
+  "new_field_queries": 0,
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 0,
+  "physics_screening": "NOT_EVALUATED",
+  "planned_folder_tag_reads": 4,
+  "preregistration_commit": "5579c9d",
+  "proc": 0,
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "requested_resources": {
+    "cpus": 1,
+    "memory_mb": 8000,
+    "should_transfer_files": "NO"
+  },
+  "schedd": "bigbird24.cern.ch",
+  "schema": "wb115_field_conditions_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "scientific_comparison_rule_changed": false,
+  "starts_at_receipt": 0,
+  "state": "QUEUED_AT_RECEIPT",
+  "truth_access": false
+}
