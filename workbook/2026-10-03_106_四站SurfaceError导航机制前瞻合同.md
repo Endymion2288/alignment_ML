@@ -77,3 +77,9 @@ FACT FROM REPOSITORY：ACTS32.0.2 `include/Acts/Surfaces/SurfaceError.hpp` 明�
 LCG_110_cuda下`tests/test_wb106_trace.py`九项PASS，包含partial failure无未来sensor receipt的合法性及source/header/frame/qop/missingcall/geometryID/station mutations拒绝；源码检查确认官方propagate调用不改、无stepTolerance修改。Python编译、shell语法检查通过。测试是diagnostic gate证据，不是物理执行证据。
 
 合同快照单独保存/hash，最终workbook追加不会冒称原freeze未变。worker优先一键Calypso环境；初始计划单job 1CPU/8000MB、workday，EOS包装的实际资源/transfer另记，不把请求视为实际。尚未产生任何新的物理结果。
+
+## 9. 冻结与单任务提交
+
+实现commit `ce3a7b5`；v1 freeze绑定108 identities及合同快照，fixture仍只index12。提交前用户queue0、idle slots4513，继续bigbird24，cluster `1202338`。首次submit helper未提交：空queue时`condor_q -json`输出空串，JSON解析失败；后用`condor_q -totals`核对0 jobs、同一冻结worker/参数手动等效提交，`submission.json`明确记录该接口偏差。不改冻结源码或input。
+
+实际scheduler ad请求被EOS包装为3CPU/9000MB/ShouldTransferFilesYES，区别于sub的1CPU/8000MB/NO。初始JobStatus1、NumJobStarts0；不是terminal PASS。目前execution/scientific classification均UNKNOWN，未开始WB103或读新population。
