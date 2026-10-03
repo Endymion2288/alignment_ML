@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/contract_workbook.md": "5639e47f125fb6773eb523a910a446a1ec6272cdc02e1266730669bef934180b",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/freeze.json": "0e3cd050cd2cc2460f6300c7c9fb85f3e27b61b37e0d4ed1a4248632d44a1b32",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/generation_expectation.json": "11a70ee98cf31d466ba5008ee4313244f79972af7aa7c9cd71e12bef3382d3c8",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/scheduler_initial_ad.json": "d785dc2e4d6064902f49e2aec845211eb524cdda40e972ea910e21545189c930",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/scheduler_preflight.json": "f405d17a6135888eb85cf565375b64f1a849a3dfac76128cc5a2aafe464845e0",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/submission.json": "9918460ec712764b169fcbac73b05b1060e566e00c94ad2477932772449ac9db",
+    "outputs/mc24_four_station_wb109_world_abort_trace_v1/wb109.sub": "7f7f9e04ebcc13f3d07f4b7189c6d32af968f264bc2f58aea0c684ba45e8f428",
+    "workbook/2026-10-03_109_\u56db\u7ad9ACTS\u4e16\u754c\u8fb9\u754c\u63d0\u524d\u7ec8\u6b62\u524d\u77bb\u8bca\u65ad.md": "0f2aa40ad14001474700193f90149626339b7fbaf117de5dbee80cfe73a7eb07"
+  },
+  "cluster": 1203044,
+  "held_out_access": false,
+  "implementation_commit": "b17595556fe4c29cfadc79ea02cf49444220f057",
+  "max_diagnostic_calls": 101,
+  "max_official_calls": 101,
+  "population": 1,
+  "preregistration_commit": "ea0eebd",
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "schedd": "bigbird24",
+  "schema": "wb109_world_abort_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "state": "QUEUED_AT_RECEIPT"
+}
