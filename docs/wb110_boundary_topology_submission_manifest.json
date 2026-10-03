@@ -1,0 +1,32 @@
+{
+  "algorithm_field_queries": 0,
+  "artifacts": {
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/contract_workbook.md": "0fe6613fdcb81f9b2e76cb499534a99cbdbd9a2fd06778c5bdbcc81bd56e8d7f",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/freeze.json": "fc7a33ad9b14ca60d26db295a0f1e154d31f7535238855765ffda8e641f1a2c4",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/generation_expectation.json": "ac6f1f9f78e2705c38366754bda22a43fae778a2dfd04a0ec4b282b53febe687",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/probe.json": "bc38018489710b612141c0f43e5f082bcf9b1a2c72dec4b1f16f8ca16b846213",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/scheduler_initial_ad.json": "fb7efe5f75508416feb98b0dc0cf4031cdb42a11b01011c97b33b5d24e371df6",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/scheduler_preflight.json": "1d5658b3dc28247703fbd8d6e89407e0ca36164e39b5bed61746289faff85f0e",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/submission.json": "1300197fd3b5eb6748aa7598adaa035c7821854face216bfef67f3f256d1c1eb",
+    "outputs/mc24_four_station_wb110_boundary_topology_v1/wb110.sub": "dde7b32057bbe362527ded46dd0c60edf3bef6df15226dbf3e9c657b0d28e3e6",
+    "workbook/2026-10-03_110_\u56db\u7ad9\u5185\u90e8volume\u8fb9\u754c\u8fde\u63a5\u524d\u77bb\u5ba1\u8ba1.md": "badd654517fec4ff489944122ed29d7c1eb6c8370c21a9067c15c8d126c90519"
+  },
+  "cluster": 1203782,
+  "execution_contract": "UNKNOWN",
+  "final_oracle": "NOT_EVALUATED",
+  "frozen_identities": 351,
+  "held_out_access": false,
+  "implementation_commit": "80ffeb6758890961a233d601b8d6544c7f0eee41",
+  "new_propagation_calls": 0,
+  "physics_screening": "NOT_EVALUATED",
+  "population": 1,
+  "preregistration_commit": "1372aca",
+  "proc": 0,
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "schedd": "bigbird24",
+  "schema": "wb110_boundary_topology_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "state": "QUEUED_AT_RECEIPT"
+}
