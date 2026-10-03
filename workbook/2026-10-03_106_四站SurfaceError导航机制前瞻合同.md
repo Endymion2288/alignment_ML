@@ -69,3 +69,11 @@ FACT FROM REPOSITORY：ACTS32.0.2 `include/Acts/Surfaces/SurfaceError.hpp` 明�
 预注册证据等级：完整trace/source/library/payload/event身份且同一失败重现，可报告 `LOCALIZED_OFFICIAL_SURFACE_FAILURE`（描述性事实）；target/中间surface因果归属、field-query异常和navigation机制仍按第3节 UNKNOWN，除非实际记录直接支持。不以重放成功复现替代根因分类PASS。若未复现或instrumentation失败，保留全部产物，不改参数、不retry。
 
 独占输出 `outputs/mc24_four_station_wb106_surface_trace_v1`；worker先计算唯一允许raw xAOD全文件SHA/size并绑定原fixture stat，再build/run；这不是声称WB104事前做过raw hash。WB104未计算full raw hash的协议偏差保留，WB105缺乏独立negative controls/逐step证据的限制也保留。worker单start，新的terminal receipt不得覆盖WB104 receipt。
+
+## 8. 实现与执行前检查
+
+`scripts/wb106_contract.py`从冻结WB92 v3源进行唯一marker转换：新WB106命名空间、逐call seed/frame/label、官方调用前后、成功target-local返回、sensor lookup及终止receipt。`m_tool->propagate`原调用和数学/step参数不变；official接口nullopt继续fail-closed。新的`scripts/audit_wb106_trace.py`独立重建WB92调用前缀、扰动/left-SE(3)目标面、源header、start方向/distance和成功local返回；核验生成源/诊断二进制、官方库/实际fieldmap哈希。synthetic plane geometry ID为0，不作真实detector sensor的替代。
+
+LCG_110_cuda下`tests/test_wb106_trace.py`九项PASS，包含partial failure无未来sensor receipt的合法性及source/header/frame/qop/missingcall/geometryID/station mutations拒绝；源码检查确认官方propagate调用不改、无stepTolerance修改。Python编译、shell语法检查通过。测试是diagnostic gate证据，不是物理执行证据。
+
+合同快照单独保存/hash，最终workbook追加不会冒称原freeze未变。worker优先一键Calypso环境；初始计划单job 1CPU/8000MB、workday，EOS包装的实际资源/transfer另记，不把请求视为实际。尚未产生任何新的物理结果。
