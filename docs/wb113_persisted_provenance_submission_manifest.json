@@ -1,0 +1,45 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/contract_workbook.md": "c88383e0a54dfc1ad4461b5496b7426203205f548292e0c9411c8c6740e6cb92",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/freeze.json": "9155c5ee40bf1649a73a53c3f87b086632ac57372d138a9a77b0e0277edcf5f9",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/generation_expectation.json": "26d13cd7dc097a5642e66711dbadbd5cdae6c83b1768892ca9ee115bad4b0fcd",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/scheduler_initial_ad.json": "48691eed557917ec9324ec2944e97da479269fd29b0aa72b37f90c717fcc96a2",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/scheduler_preflight.json": "1acc6de0a0e0a496c6ce53d858d7929c577cc354741ffe92a080fd80dcd6b071",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/submission.json": "136fe7f024ea334978bf164856c6b125704f58d53c1f9c6cbd973544499fd05b",
+    "outputs/mc24_four_station_wb113_persisted_provenance_v1/wb113.sub": "3206dc01dd9f8b0f5126693c35d75207d917af26996c0af6559092aaaace7798"
+  },
+  "cluster": 1204332,
+  "compile_preflight_receipt_sha256": "160df11b6d7de1c2b88348d4d4d6b5cf77629d34ac374ec80c639254ebef2cd5",
+  "effective_resources": {
+    "RequestCpus": 3,
+    "RequestMemory": 9000,
+    "ShouldTransferFiles": "YES"
+  },
+  "execution_contract": "UNKNOWN",
+  "final_oracle": "NOT_EVALUATED",
+  "frozen_identities": 620,
+  "held_out_access": false,
+  "implementation_commit": "6a8782a02bbcb2eebec2bce2157a7a7872e5b569",
+  "job_status_at_receipt": 1,
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 0,
+  "ordinal": 2268,
+  "physics_screening": "NOT_EVALUATED",
+  "population": 1,
+  "preregistration_commit": "b45f33e",
+  "proc": 0,
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "requested_resources": {
+    "cpus": 1,
+    "memory_mb": 8000,
+    "should_transfer_files": "NO"
+  },
+  "root_access": "metadata and one seen event",
+  "schedd": "bigbird24.cern.ch",
+  "schema": "wb113_persisted_provenance_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "state": "QUEUED_AT_RECEIPT",
+  "truth_access": "seen-development provenance only"
+}
