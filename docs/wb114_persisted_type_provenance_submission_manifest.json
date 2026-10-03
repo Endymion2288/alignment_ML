@@ -1,0 +1,52 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/contract_workbook.md": "c1d04021e0aaa9425366e4d6a3e78de29a69ea0d60d946033fecd94c64ef1bdb",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/freeze.json": "6dc978918524b69c72bba3d40b5c5e3e1e2ab219730f749afb268636cbe42142",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/generation_expectation.json": "26d13cd7dc097a5642e66711dbadbd5cdae6c83b1768892ca9ee115bad4b0fcd",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/saved_metadata_preflight.json": "775e516ea8465161b65c7b9f7be79beaa2e70a58011d86417d4d8198409db5e6",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/scheduler_initial_ad.json": "4f8cd818a567ee08b8c35311d5033babac90c4055d1034707d19df0d0a35e903",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/scheduler_preflight.json": "64183042a3e3d2722167edd37b1dacff13388b97aaa3b1ec4f6b9574cc4855be",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/submission.json": "1953293902c6bc88021230eb83aaaa2b1b63db54d34e9cc111424a8df9329fa2",
+    "outputs/mc24_four_station_wb114_persisted_type_provenance_v1/wb114.sub": "3f8176404350694c3417b508683c6362715b8f5a937ec991ac4259c3c7505854"
+  },
+  "cluster": 1204434,
+  "diagnostic_algorithm_changed": false,
+  "effective_resources": {
+    "RequestCpus": 3,
+    "RequestMemory": 9000,
+    "ShouldTransferFiles": "YES"
+  },
+  "event_level_reader_workbook": 113,
+  "execution_contract": "UNKNOWN",
+  "executor_tag": "OFLCOND-FASER-06",
+  "final_oracle": "NOT_EVALUATED",
+  "frozen_identities": 666,
+  "global_job_id": "bigbird24.cern.ch#1204434.0#1791048221",
+  "held_out_access": false,
+  "implementation_commit": "2ce6ca175e1fe3bfdefae9430ad5aafb1df11efd",
+  "job_status_at_receipt": 1,
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 0,
+  "ordinal": 2268,
+  "physical_conditions_compatibility": "UNKNOWN",
+  "physics_screening": "NOT_EVALUATED",
+  "population": 1,
+  "preregistration_commit": "7e87ca4",
+  "proc": 0,
+  "production_backend_changed": false,
+  "qualification": "NOT_EVALUATED",
+  "requested_resources": {
+    "cpus": 1,
+    "memory_mb": 8000,
+    "should_transfer_files": "NO"
+  },
+  "root_access": "file metadata and one seen event only",
+  "schedd": "bigbird24.cern.ch",
+  "schema": "wb114_persisted_type_provenance_submission_v1",
+  "scientific_classification": "UNKNOWN",
+  "source_tag": "OFLCOND-FASER-05",
+  "starts_at_receipt": 0,
+  "state": "QUEUED_AT_RECEIPT",
+  "truth_access": "seen-development provenance only"
+}
