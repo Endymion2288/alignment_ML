@@ -57,3 +57,15 @@ WB106 不授权：重跑失败 event、改变 WB92 数值阈值、删掉失败 e
 ## 6. 合同结论
 
 **`FROZEN_FOR_REVIEW; RESULT UNKNOWN`。** 本合同将唯一剩余物理执行阻塞点限定为 index 12 的 SurfaceError 机制分类，保留全部 WB104/WB105 失败证据和事件身份。
+
+## 7. 本轮授权与可观测性补充（执行前）
+
+用户再次授权“git commit，并继续推进下一阶段”。当前 HEAD `9d46a2f`，只有七个既有未跟踪 core。本轮授权覆盖隔离的 index12 instrumentation replay，supersede 第5节旧“不授权重跑失败event”；不覆盖其它event、修复、阈值、WB103、qualification或ML。先提交补充合同，再实现/测试/提交/冻结，最后单Condor。
+
+FACT FROM REPOSITORY：ACTS32.0.2 `include/Acts/Surfaces/SurfaceError.hpp` 明确定义 `GlobalPositionNotOnSurface=1`。Calypso `FaserActsExtrapolationTool.cxx` target overload 返回 `optional<BoundTrackParameters>`，打印 `result.error()` 后返回nullopt；该接口不暴露失败终态、navigator boundary或逐step field count。因此这些量保持UNKNOWN，不能从nullopt证明失配发生在target还是某个中间surface，也不能把lookup成功等同geometry有效。
+
+本次仅重放原WB92调用顺序直到原fail-closed停止；其原有Hxi/Htheta perturbations不是新的WB103四lambda矩阵。隔离source只添加flush的逐调用input/output/exception记录和sensor lookup记录，记录station、axis、label、seed/frame/start/direction以及成功时target-local residual；不添加新的传播、field query、step observer或数学控制参数。synthetic target plane没有detector geometry ID，sensor lookup和target plane必须分开表述。
+
+预注册证据等级：完整trace/source/library/payload/event身份且同一失败重现，可报告 `LOCALIZED_OFFICIAL_SURFACE_FAILURE`（描述性事实）；target/中间surface因果归属、field-query异常和navigation机制仍按第3节 UNKNOWN，除非实际记录直接支持。不以重放成功复现替代根因分类PASS。若未复现或instrumentation失败，保留全部产物，不改参数、不retry。
+
+独占输出 `outputs/mc24_four_station_wb106_surface_trace_v1`；worker先计算唯一允许raw xAOD全文件SHA/size并绑定原fixture stat，再build/run；这不是声称WB104事前做过raw hash。WB104未计算full raw hash的协议偏差保留，WB105缺乏独立negative controls/逐step证据的限制也保留。worker单start，新的terminal receipt不得覆盖WB104 receipt。
