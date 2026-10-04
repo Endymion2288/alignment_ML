@@ -7,7 +7,7 @@ from alignment.wb90_measurement_contract import read_public, write_new, digest
 from wb127_contract import OUT, PROTOCOL
 p=argparse.ArgumentParser();p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--sqlite',type=Path,required=True);a=p.parse_args()
 work=a.work_dir.resolve(); sqlite=a.sqlite.resolve(); f=read_public(work/'fixture.json'); selected_indices=read_public(PROTOCOL)['indices']
-if not ((work==OUT/'events'/f'{f["index"]:02d}') or (work.parent.parent==OUT and work.parent.name.startswith('recovery_'))) or f['index'] not in selected_indices:raise ValueError('allowlist')
+if not ((work==OUT/'events'/f'{f["index"]:02d}') or (work.parent.parent.parent==OUT and work.parent.parent.name.startswith('recovery_'))) or f['index'] not in selected_indices:raise ValueError('allowlist')
 if sqlite not in (OUT/'identity_payload/tracker_alignment.sqlite', OUT.parent/'mc24_four_station_wb125_physical_seed_v1/identity_payload/tracker_alignment.sqlite'):raise ValueError('payload')
 from AthenaCommon.Configurable import Configurable
 from CalypsoConfiguration.AllConfigFlags import initConfigFlags

@@ -6,7 +6,7 @@ from wb127_contract import OUT, PARENT, PROTOCOL, digest, read, write, req, veri
 ROOT=Path(__file__).resolve().parents[1]
 BIN=OUT/'build_preflight_v4/build/x86_64-el9-gcc13-opt'
 def main():
- recovery=OUT/'recovery_v3';recovery.mkdir(exist_ok=False);(recovery/'events').mkdir()
+ recovery=OUT/'recovery_v4';recovery.mkdir(exist_ok=False);(recovery/'events').mkdir()
  old=read(OUT/'freeze.json');hashes={}
  for p,h in old['hashes'].items():
   if p in (str(ROOT/'scripts/wb127_athena.py'),str(ROOT/'scripts/wb127_contract.py')):continue
