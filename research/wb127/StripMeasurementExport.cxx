@@ -36,7 +36,11 @@ class StripMeasurementExport final:public AthAlgorithm {
     const double z=gp.z()-zc,u=gp.y()*ca+gp.x()*sa;Json rdo=Json::array();for(const auto& rid:c->rdoList())rdo.push_back(rid.get_compact());
     rows.push_back(Json{{"cluster_id",id},{"station",station},{"wafer_id",wafer.get_compact()},{"local_position",vec(lp)},{"global_position",vec(gp)},{"local_covariance",Json{{"xx",finite(cov(0,0))}}},{"sensor_transform",mat(tr)},{"rdo_ids",rdo},{"sin_alpha",sa},{"cos_alpha",ca},{"z_relative_center",z},{"u",u},{"sigma_sq",finite(cov(0,0))}});ids.push_back(id);}
    refs.push_back(Json{{"station",station},{"z_center_mm",zc},{"cluster_ids",ids}});}
-  const auto seed=m_seedJson.at("P");Json out{{"schema","wb127_strip_measurement_export_v1"},{"identity",Json{{"actual_run",m_f.at("actual_run")},{"actual_event",m_f.at("actual_event")},{"ordinal",m_f.at("ordinal")},{"input_xaod",m_f.at("input_xaod")}}},{"rows",rows},{"references",refs},{"p_seed",seed},{"new_reconstruction_calls",1},{"new_propagation_calls",0}};
+  // WB125 response artifacts store the P seed as a bare JSON array.  Accept
+  // the object-wrapped form as well so the exporter validates the frozen
+  // interface rather than imposing a new seed schema.
+  const auto seed=m_seedJson.is_object()?m_seedJson.at("P"):m_seedJson;
+  Json out{{"schema","wb127_strip_measurement_export_v1"},{"identity",Json{{"actual_run",m_f.at("actual_run")},{"actual_event",m_f.at("actual_event")},{"ordinal",m_f.at("ordinal")},{"input_xaod",m_f.at("input_xaod")}}},{"rows",rows},{"references",refs},{"p_seed",seed},{"new_reconstruction_calls",1},{"new_propagation_calls",0}};
   int fd=::open(m_output.value().c_str(),O_WRONLY|O_CREAT|O_EXCL,0600);if(fd<0)throw std::runtime_error("exclusive output");::close(fd);std::ofstream o(m_output.value());o<<out.dump(2)<<std::endl;
  }
 };}

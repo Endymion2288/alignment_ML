@@ -4,14 +4,14 @@ import json, subprocess
 from pathlib import Path
 from wb127_contract import OUT, PARENT, PROTOCOL, digest, read, write, req, verify
 ROOT=Path(__file__).resolve().parents[1]
-BIN=OUT/'build_preflight_v4/build/x86_64-el9-gcc13-opt'
+BIN=OUT/'build_preflight_v5/build/x86_64-el9-gcc13-opt'
 def main():
- recovery=OUT/'recovery_v4';recovery.mkdir(exist_ok=False);(recovery/'events').mkdir()
+ recovery=OUT/'recovery_v5';recovery.mkdir(exist_ok=False);(recovery/'events').mkdir()
  old=read(OUT/'freeze.json');hashes={}
  for p,h in old['hashes'].items():
-  if p in (str(ROOT/'scripts/wb127_athena.py'),str(ROOT/'scripts/wb127_contract.py')):continue
+  if p in (str(ROOT/'scripts/wb127_athena.py'),str(ROOT/'scripts/wb127_contract.py'),str(ROOT/'research/wb127/StripMeasurementExport.cxx'),str(OUT/'build_preflight_v4/build/x86_64-el9-gcc13-opt/lib/libWB127Diagnostic.so'),str(OUT/'build_preflight_v4/receipt.json')):continue
   req(digest(p)==h,'parent frozen identity '+p);hashes[p]=h
- for p in (ROOT/'scripts/wb127_athena.py',ROOT/'scripts/wb127_contract.py',Path(__file__)):
+ for p in (ROOT/'scripts/wb127_athena.py',ROOT/'scripts/wb127_contract.py',ROOT/'research/wb127/StripMeasurementExport.cxx',BIN/'lib/libWB127Diagnostic.so',OUT/'build_preflight_v5/receipt.json',Path(__file__)):
   hashes[str(p)]=digest(p)
  write(recovery/'freeze.json',{'hashes':hashes,'parent_freeze_sha256':digest(OUT/'freeze.json'),'interface_recovery':'allowlist wrapper indices and preserve old failed receipts','new_propagation_calls':0,'new_reconstruction_calls':0})
  recovery_verify(recovery)
