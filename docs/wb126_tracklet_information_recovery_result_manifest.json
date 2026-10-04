@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb126_tracklet_information_v1/saved_cluster_order_recovery_v1/freeze.json": "b9b40d72cf53723cdfb7061e96f775a2b4512cfe18fc6f9696e059dd1ec3b568",
+    "outputs/mc24_four_station_wb126_tracklet_information_v1/saved_cluster_order_recovery_v1/independent_result_check.json": "f95ff6b961217217cfed5660989167cc46e56d88c1b62e3020d3326b2d96ed27",
+    "outputs/mc24_four_station_wb126_tracklet_information_v1/saved_cluster_order_recovery_v1/summary.json": "8e5fa0cf8d6ed022046db548ee7327b69e778157610ffe4d08f2fa9a7c573fbf"
+  },
+  "covariance_calibration": "NOT_EVALUATED",
+  "held_out_access": false,
+  "hypothesis": "SUPPORTED_BUT_LIMITED",
+  "new_propagation_calls": 0,
+  "original_execution_contract": "UNKNOWN",
+  "original_hypothesis": "UNKNOWN",
+  "qualification": "NOT_EVALUATED",
+  "raw_root_reads": 0,
+  "reader_preflight": {
+    "path": "outputs/wb126_order_reader_preflight.json",
+    "sha256": "4673bb16bdcd3dacd7da476521a78a4d85ce7592890c7469de8e92c327ee84f3"
+  },
+  "recovery_execution_contract": "PASS",
+  "schema": "wb126_order_recovery_result_manifest_v1",
+  "scientific_protocol_sha256": "f6556afe406e8d6b93e9128ec70e99bbbd7e719b95373d8eb7a41f84d10d9519",
+  "sources": {
+    "scripts/wb126_order_recovery.py": "79313319b145b4e5e48a412ceec6e4346a1d297b2b6b53dbbd2a0811f2367451",
+    "tests/test_wb126_order_recovery.py": "cf563929eeaf69ec0626847936d06af2fadb6c4acd77b2d19c0ce1f66f9b0dd4"
+  }
+}
