@@ -1,0 +1,446 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/PoolFileCatalog.xml": "404b55769febb0f29d6e33a9e6cfe8b37c503a901eb1d51fb3b584bb90cdde76",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/athena_manifest.json": "67b40fc44108ed1b1c6b3f348a37241c2338cc3104d44cd3fa10852ca5aa0627",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/command.sh": "c911f5a5dfb169540bec33aebc1325c2159820d98b0f334589cb702281a6de96",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/eventLoopHeartBeat.txt": "abd4886e0499b0f3fbe95794bf63a4969e0a166478ac5193c512b3ee4234b433",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/export.json": "a2ef45435d9434d016b070bd478d7a9c723ee0410731c80817a1f4046a83635e",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/fixture.json": "6611a97c0cdef3b8807839d260eba734d87e7b4439a8bf7184bda84386fb783d",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/p_seed.json": "cd7bfbd0477a067bd8611b212c17218061c72cae16b4e487f1df32800c8137fa",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/recovery.log": "2137c8513886216de684e4cb466f2d5b34a19dbb7dee04f931f4289230831fc9",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/01/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/PoolFileCatalog.xml": "22372f9bbecf8804b06362e5d82a0086e3b96748cb4bcba75568f5b51be2c1d5",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/athena_manifest.json": "8f2399e378d92a4123df7ce23786da3bfdae786cb58f1f9fc171c209c214a697",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/command.sh": "65f7e724a5d09b3bd6beec38557310b739d33462533b85be0cd5eb8976ad6904",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/eventLoopHeartBeat.txt": "c01b181746e64611c117411ac6b075fe720e37e6ee0b4e4baadcf7eb0fe0d250",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/export.json": "ffb59050a5c8c51e3d158d2946e8ac842ab4d14aee13d7639e0f23e8e40fca3b",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/fixture.json": "3c9b560f3992c02addc13c6c202a40abe5be3321f48371570e7ef0d93c4dcbc5",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/p_seed.json": "b960a2371b76ddccb4a98f13e7a497ac4d1ffc906e60b11927377557abdf0003",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/recovery.log": "a10f020547182f391853dd67dac477c15c5dee1aec850868c61a6ba03ffe1909",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/04/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/PoolFileCatalog.xml": "32ef2bffd3341fa114fbb4b9824d9aa55ee636efa5cef585095552bf560cf861",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/athena_manifest.json": "41bafc613a305db2855070b0ff35b841a83eab861491c7bfbb0729453a1c6f9d",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/command.sh": "2a87a0fbe940e3eb20595ee432a14cff316f53db19642516c13181df2a58cd10",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/eventLoopHeartBeat.txt": "8a4f8ffd55f448b74422a113e14174dc5003793899658f820ff0189787282c35",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/export.json": "84672914ee4d420b2160bce7e1f9617535d990ba7f88df73d7116ab8c8e679c3",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/fixture.json": "aa72b612786fb3c7e486dd6007c1421e77588cd725c967e139c9835aacd421bc",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/p_seed.json": "8444f315278742e501bf8050e7ccca8767aaccfdf92612c9b8e7790c6cc7dcff",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/recovery.log": "055bb00b452bc82dcb83d22d2c8b4728ce6094b60fcda5e0e018a53ce25196d6",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/08/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/PoolFileCatalog.xml": "8ee18d701e87ce25dc47c3427cd8e75f61b971ce7ce427ef1644c91e4bad16bf",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/athena_manifest.json": "212e8149830fbef66803a895cbea704de896c2bcd360965fdc3c5d57a2d6f840",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/command.sh": "e3ba2aedb3f3caa444e36e4c6757fabcb0b9fd11e38da5bb5e6fcf6804e16039",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/eventLoopHeartBeat.txt": "999e752efd6750280f7ba4e843e75c556d98853a6d76e8818e382dd9b944d0ba",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/export.json": "42da01e95e3a8355f9c1ff569b7ea37c9f320508839a39f95a7197754d669382",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/fixture.json": "394ad4d768e1072e2344279e8c4a253fb5c6fc6b88f0ff02c50876634d2506b6",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/p_seed.json": "f8d3955a66400974cd93a68736ac5d7bfcc60b31ef3d5b6e8322e07f4285b7b1",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/recovery.log": "f7e7814169f78a4a3f5d82571e8462ad3a6f338ce44d99c9dddb1be07c2a4e16",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/12/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/PoolFileCatalog.xml": "b290ebc17052d47adddb2f6cadf60393c60a190713f9b0d15fc2bea6ddf199d1",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/athena_manifest.json": "4d925bb40adcf077c3c2293e6f7f958c2abfef5319218316371b7d66429cec56",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/command.sh": "7e8f1c4d489f568115b8fba7c22d6f46f1586b10bad1404a49d4339b7253c8d1",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/eventLoopHeartBeat.txt": "1a96b9d68b105e152d60b8e0975d30bce4a79ecf37dd062470724af61dfc585c",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/export.json": "ab69bf9e9cf8d23ecce5f938fe28e592445cd3a52418d709dbd9c9624ffdcbf1",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/fixture.json": "50d308e684960d6e45e8b4475675ff30200767d807c0028154440181b4cdad82",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/p_seed.json": "929cb6abac4043db95c0a69f500d8393fff439a1962189b9a3f6a53691e131ce",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/recovery.log": "5d9ab3709575eb0996440c26be1e3151ec8e98baba540d73efe55c4e57c887fc",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/16/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/PoolFileCatalog.xml": "71fdf947b1df2cde62a08829998208ff58af20806525e85104d0df1e3b6abdeb",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/athena_manifest.json": "92424e6f8d8eab2413b0c93200af6230fbc54817ab1a5619fd6c0d210ebda9b4",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/command.sh": "39c244ebdc22327b235b85c172a0b14f1527887460ff275da5e2e26d8996cac8",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/eventLoopHeartBeat.txt": "9bd21d697361bb04fb5e1bb60d69e0d3927497f30f98c54653f187b79b20750b",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/export.json": "b6438b24e95ffce09568efb3438db07b7158127018becd20abf9d7cc34d9aaf5",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/fixture.json": "0083c7047da6690ec1423e637c351b10fd58892ac77e0624b03cac0c8d855e4b",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/p_seed.json": "135c0426cd685b1591e320d9b1322c9ff9bf95fde305fb6b9f3c552d3bd0055d",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/recovery.log": "9fa5ef4ec51ebf68479d958a3c10227d943ab25989b69bafb1895342aa5fd1af",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/events/20/recovery_exit.json": "81868a6e94ffc0178bf833deb1c9013d9fab4ee95ddb876a5e8ec4f1d26376d2",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/freeze.json": "ba4f7792fc90e6264f65a56f97c65008a1a8fd79a626f934dd0975135d5e1eae",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/independent_audit.json": "c48c38829070a5e34e4112fe5964e5499d504a6d33827ed3e2d4470c5bdd39ad",
+    "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5/summary.json": "9bcb8ed49e4f2694617bea00e98dc8fd4b6d79414e0f5a14527a6f3b227f6e0e"
+  },
+  "association": "INHERITED_CONDITIONAL",
+  "audit_summary": [
+    {
+      "actual_event": 2141,
+      "actual_run": 100043,
+      "fit_max_abs_diff": 1.0667022820598504e-12,
+      "index": 1,
+      "normal_max_abs_diff": 9.313225746154785e-10,
+      "rows": 24,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": 0.04080798244847195,
+          "min_mm": 0.018204626438926397,
+          "rms_mm": 0.03290588800541097,
+          "rows": 6
+        },
+        "1": {
+          "max_mm": 1.8003787851643749,
+          "min_mm": 1.6482519191709324,
+          "rms_mm": 1.7264481962015652,
+          "rows": 6
+        },
+        "2": {
+          "max_mm": 4.88833390888106,
+          "min_mm": 4.656206642344404,
+          "rms_mm": 4.771680620128493,
+          "rows": 6
+        },
+        "3": {
+          "max_mm": 9.449321753797559,
+          "min_mm": 9.1041618995755,
+          "rms_mm": 9.27049136770119,
+          "rows": 6
+        }
+      }
+    },
+    {
+      "actual_event": 2310,
+      "actual_run": 100043,
+      "fit_max_abs_diff": 3.765876499528531e-12,
+      "index": 4,
+      "normal_max_abs_diff": 2.7939677238464355e-09,
+      "rows": 24,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": 0.026790813058453544,
+          "min_mm": -0.041760764930494076,
+          "rms_mm": 0.02314488452582368,
+          "rows": 6
+        },
+        "1": {
+          "max_mm": 0.17462174480561377,
+          "min_mm": 0.10607016681668391,
+          "rms_mm": 0.15157781746396493,
+          "rows": 6
+        },
+        "2": {
+          "max_mm": 0.46214632848203596,
+          "min_mm": 0.3741587410713896,
+          "rms_mm": 0.43226504264672444,
+          "rows": 6
+        },
+        "3": {
+          "max_mm": 0.9479553076438529,
+          "min_mm": 0.8759430476423864,
+          "rms_mm": 0.9067304490561554,
+          "rows": 6
+        }
+      }
+    },
+    {
+      "actual_event": 2327,
+      "actual_run": 100044,
+      "fit_max_abs_diff": 1.2505552149377763e-12,
+      "index": 8,
+      "normal_max_abs_diff": 1.862645149230957e-09,
+      "rows": 24,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": 0.05758561292778097,
+          "min_mm": -0.05581333211620887,
+          "rms_mm": 0.03618039910103304,
+          "rows": 6
+        },
+        "1": {
+          "max_mm": -0.6612616052456701,
+          "min_mm": -0.7203972979957154,
+          "rms_mm": 0.6963560398483511,
+          "rows": 6
+        },
+        "2": {
+          "max_mm": -1.720453934867468,
+          "min_mm": -1.8274073562117081,
+          "rms_mm": 1.7594673893797628,
+          "rows": 6
+        },
+        "3": {
+          "max_mm": -3.2352813783549053,
+          "min_mm": -3.3680189006642625,
+          "rms_mm": 3.315790156083064,
+          "rows": 6
+        }
+      }
+    },
+    {
+      "actual_event": 2268,
+      "actual_run": 100044,
+      "fit_max_abs_diff": 3.112177182629239e-12,
+      "index": 12,
+      "normal_max_abs_diff": 9.313225746154785e-10,
+      "rows": 21,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": -0.08163774208850327,
+          "min_mm": -0.16104173272881894,
+          "rms_mm": 0.12735108631245434,
+          "rows": 5
+        },
+        "1": {
+          "max_mm": -11.405439683848218,
+          "min_mm": -11.904623038005155,
+          "rms_mm": 11.675512472964224,
+          "rows": 4
+        },
+        "2": {
+          "max_mm": -27.510136928977275,
+          "min_mm": -28.731322654882845,
+          "rms_mm": 28.12806473866549,
+          "rows": 6
+        },
+        "3": {
+          "max_mm": -51.11554138364229,
+          "min_mm": -52.758020769723494,
+          "rms_mm": 51.917315852862615,
+          "rows": 6
+        }
+      }
+    },
+    {
+      "actual_event": 2305,
+      "actual_run": 100047,
+      "fit_max_abs_diff": 1.2541079286165768e-12,
+      "index": 16,
+      "normal_max_abs_diff": 1.862645149230957e-09,
+      "rows": 24,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": -0.03203465218988555,
+          "min_mm": -0.05891019376299411,
+          "rms_mm": 0.045455710530270914,
+          "rows": 6
+        },
+        "1": {
+          "max_mm": 0.17076483719389834,
+          "min_mm": 0.13691207721417875,
+          "rms_mm": 0.1540143731186931,
+          "rows": 6
+        },
+        "2": {
+          "max_mm": 0.5086746245259341,
+          "min_mm": 0.4394702873364622,
+          "rms_mm": 0.48316260489418567,
+          "rows": 6
+        },
+        "3": {
+          "max_mm": 1.0395559074603087,
+          "min_mm": 0.9934600327052404,
+          "rms_mm": 1.0184169110326662,
+          "rows": 6
+        }
+      }
+    },
+    {
+      "actual_event": 2287,
+      "actual_run": 100048,
+      "fit_max_abs_diff": 1.1253220577600587e-12,
+      "index": 20,
+      "normal_max_abs_diff": 1.862645149230957e-09,
+      "rows": 30,
+      "stations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "straight_line_local_residual_mm": {
+        "0": {
+          "max_mm": 0.02587610082173697,
+          "min_mm": -0.03679538132604954,
+          "rms_mm": 0.022282972551199733,
+          "rows": 6
+        },
+        "1": {
+          "max_mm": 0.06814064286307264,
+          "min_mm": 0.018715938415523325,
+          "rms_mm": 0.04773350899028375,
+          "rows": 6
+        },
+        "2": {
+          "max_mm": -0.02119919091097744,
+          "min_mm": -0.06839917220662173,
+          "rms_mm": 0.042245425181952796,
+          "rows": 12
+        },
+        "3": {
+          "max_mm": -0.2295957104360724,
+          "min_mm": -0.2750263964642092,
+          "rms_mm": 0.24738178307724742,
+          "rows": 6
+        }
+      }
+    }
+  ],
+  "direct_curve_prediction": "NOT_EXECUTED",
+  "execution_contract": "PASS",
+  "failure_receipts": [
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/events/01/command.sh",
+      "sha256": "9b3579a73401b0856a8182ea8d283427dc01e1eabb6aea9ccf53c78c3360a09d"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/events/01/fixture.json",
+      "sha256": "6611a97c0cdef3b8807839d260eba734d87e7b4439a8bf7184bda84386fb783d"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/events/01/p_seed.json",
+      "sha256": "cd7bfbd0477a067bd8611b212c17218061c72cae16b4e487f1df32800c8137fa"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/events/01/recovery.log",
+      "sha256": "67c77da23d4c2821a01f629fc3e3ae01c053d282e1d3ce4af10c59bf154fce8f"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/events/01/recovery_exit.json",
+      "sha256": "56296949d3a02e635b050fd6b4762f0f0b52c23d05b925203095f7daf8e19027"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v1/freeze.json",
+      "sha256": "04f97fc39621a666139abacee4a73d6d9d9d52b54b57bd947f0609acfa949d34"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/events/01/command.sh",
+      "sha256": "be57e28532fc65ef92530a18fc3765a40183864eceae95aa9969d1519c67f9aa"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/events/01/fixture.json",
+      "sha256": "6611a97c0cdef3b8807839d260eba734d87e7b4439a8bf7184bda84386fb783d"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/events/01/p_seed.json",
+      "sha256": "cd7bfbd0477a067bd8611b212c17218061c72cae16b4e487f1df32800c8137fa"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/events/01/recovery.log",
+      "sha256": "c2f5fdbaad8a590cec989ed5db1ff76a84d90d855e421b1a8270c05cd2a40912"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/events/01/recovery_exit.json",
+      "sha256": "56296949d3a02e635b050fd6b4762f0f0b52c23d05b925203095f7daf8e19027"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v2/freeze.json",
+      "sha256": "a5c481ad22a86b3661e1627bb8eb13cd2df4f1428298699ae987d6aa68834ada"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/events/01/command.sh",
+      "sha256": "34526758b492c710a2bf6e830ac63e3aa6d74ac8389622829dc4046e53c653e5"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/events/01/fixture.json",
+      "sha256": "6611a97c0cdef3b8807839d260eba734d87e7b4439a8bf7184bda84386fb783d"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/events/01/p_seed.json",
+      "sha256": "cd7bfbd0477a067bd8611b212c17218061c72cae16b4e487f1df32800c8137fa"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/events/01/recovery.log",
+      "sha256": "110dfb6974664ff7d8864aa0b69688208fc166c10b317689142a0bd09a2d9d40"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/events/01/recovery_exit.json",
+      "sha256": "56296949d3a02e635b050fd6b4762f0f0b52c23d05b925203095f7daf8e19027"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v3/freeze.json",
+      "sha256": "f95c8973d83c856abf3e898b0bac204ae924853a6fb9f478225282558164f867"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/athena_manifest.json",
+      "sha256": "67b40fc44108ed1b1c6b3f348a37241c2338cc3104d44cd3fa10852ca5aa0627"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/command.sh",
+      "sha256": "dec9970a81346a2429d1862dce110b35df8cbdc4aceaa1940152c1a1dd9166fc"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/eventLoopHeartBeat.txt",
+      "sha256": "abd4886e0499b0f3fbe95794bf63a4969e0a166478ac5193c512b3ee4234b433"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/fixture.json",
+      "sha256": "6611a97c0cdef3b8807839d260eba734d87e7b4439a8bf7184bda84386fb783d"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/p_seed.json",
+      "sha256": "cd7bfbd0477a067bd8611b212c17218061c72cae16b4e487f1df32800c8137fa"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/recovery.log",
+      "sha256": "a990ffb6fe180cfe479bc8a5b7c2fa67329d983a059decf413b0c013029931be"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/events/01/recovery_exit.json",
+      "sha256": "56296949d3a02e635b050fd6b4762f0f0b52c23d05b925203095f7daf8e19027"
+    },
+    {
+      "path": "outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v4/freeze.json",
+      "sha256": "8963717c0328deb34f4e56f3d73e894fb937a13425e1288870adacad4d112ded"
+    }
+  ],
+  "first_runner_failure": "PRESERVED_IN_recovery_v4",
+  "held_out_access": false,
+  "measurement_contract": "PASS",
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 6,
+  "normal_rhs_interface_closure": "PASS",
+  "parent_freeze_sha256": "ec2fe0bbd4acf860446d4cea6c8a1a5fad39f8126d216a5d3c2ee01f922e113e",
+  "population": 6,
+  "recovery_interface_failures": [
+    "recovery_v1_old_freeze_wrapper_hash",
+    "recovery_v2_payload_path",
+    "recovery_v3_allowlist_path",
+    "recovery_v4_seed_array_interface"
+  ],
+  "recovery_namespace": "recovery_v5",
+  "schema": "wb127_strip_measurement_result_manifest_v2",
+  "scientific_boundary": {
+    "acts_curve_transport": "NOT_ESTABLISHED",
+    "alignment_response_solver": "NOT_ESTABLISHED",
+    "measurement_frame_export": "ESTABLISHED_ON_SIX_SEEN_EVENTS",
+    "ml": "NOT_AUTHORIZED",
+    "physical_common_track": "INHERITED_CONDITIONAL",
+    "qualification": "NOT_ESTABLISHED",
+    "straight_compression": "INTERFACE_DIAGNOSTIC_ONLY"
+  },
+  "sources": {
+    "configs/research_review/wp127_strip_measurement_contract.json": "37740340c66c7a90b4f0b096731b3892d5bf31f3de7dea2cbe96fe7e69f33936",
+    "research/wb127/StripMeasurementExport.cxx": "3703fea60458d1f2a6857955958f61d71ff00fdb6f172b1c56595bedbc152b12",
+    "scripts/wb127_athena.py": "a67eca571071b8979c6bf1ed58c4235f2a4515a2cb83b451825b9db75cfb1aa3",
+    "scripts/wb127_independent_audit.py": "66702f7f6d71069eb1711019cb240b5ad5b5228b20bbcb0496e4ca00a9975e2a",
+    "scripts/wb127_recovery.py": "5fbf31f721b7f842f54534793aace51fbbef0516d60f03748d3b75b0c665c775"
+  },
+  "stage": "WB127",
+  "straight_line_prediction": "DIAGNOSTIC_ONLY"
+}
