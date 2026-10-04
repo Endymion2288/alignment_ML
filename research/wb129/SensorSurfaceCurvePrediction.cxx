@@ -111,7 +111,7 @@ class SensorSurfaceCurvePrediction final: public AthAlgorithm {
       if(!result) {row["status"]="FAIL_OFFICIAL_NULL";row["failure_reason"]="UNKNOWN_OPTIONAL_ONLY";}
       else {
         row["status"]="SUCCESS"; row["state"]=state(*result,frame,g);
-        const auto predicted=row.at("state").at("local_position_mm").at(0).get<double>();
+        const auto predicted=row.at("state").at("local_position_mm").at(0).at(0).get<double>();
         const auto measured=input.at("local_position").at(0).get<double>();
         row["local_residual_mm"]=measured-predicted;
         if(!std::isfinite(measured-predicted)) throw std::runtime_error("nonfinite residual");
