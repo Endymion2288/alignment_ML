@@ -1,0 +1,22 @@
+{
+  "schema": "wp129_sensor_surface_curve_contract_v1",
+  "parent_stage": "WB127 recovery_v5",
+  "indices": [1, 4, 8, 12, 16, 20],
+  "target": "every exported WB127 cluster sensor surface, exact row order and cluster IDs",
+  "seed": "frozen WB127 P seed at station-0 z center",
+  "prediction": "official FaserActsExtrapolationTool curve propagation to the actual ACTS sensor surface",
+  "geometry": "FASERNU-04",
+  "global_tag": "OFLCOND-FASER-06",
+  "field_mode": "FASER",
+  "material_source": "None (inherited WB125 configuration)",
+  "q_over_p": "frozen WB127 P seed",
+  "covariance": "none transported; inherited WB127 measurement covariance only for reporting",
+  "max_new_propagation_calls": 147,
+  "max_new_reconstruction_calls": 0,
+  "held_out_access": false,
+  "truth_access": false,
+  "allowlist_rule": "exact exported cluster IDs and wafer IDs; no residual selection",
+  "success_rule": "all 147 actual sensor-surface calls return finite endpoint states with target-surface status and residuals",
+  "failure_rule": "any missing surface, transform mismatch, null propagation, nonfinite endpoint, or identity mismatch is FAIL/UNKNOWN with receipt",
+  "forbidden": ["change q/p", "change geometry", "change field", "change material setting", "change tolerance", "change allowlist", "covariance inflation", "free q/p fit", "damping", "alignment solve", "held-out", "ML"]
+}
