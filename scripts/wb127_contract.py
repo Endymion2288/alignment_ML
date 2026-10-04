@@ -34,7 +34,7 @@ def build():
 def freeze():
  req(subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip()=='4station','branch');req(not subprocess.check_output(['git','diff','HEAD','--name-only'],cwd=ROOT,text=True).strip(),'tracked dirty')
  r=read(OUT/'build_preflight_v4/receipt.json');req(digest(r['binary'])==r['binary_sha256'] and digest(SRC)==r['source_sha256'],'build identity')
- OUT.mkdir(exist_ok=False);(OUT/'events').mkdir();shutil.copyfile(PROTOCOL,OUT/'protocol.json');(OUT/'contract_workbook.md').write_text(WORKBOOK.read_text());hashes={}
+ OUT.mkdir(exist_ok=True);(OUT/'events').mkdir(exist_ok=False);shutil.copyfile(PROTOCOL,OUT/'protocol.json');(OUT/'contract_workbook.md').write_text(WORKBOOK.read_text());hashes={}
  parent=read(ROOT/'docs/wb125_physical_seed_result_manifest.json')
  for section in ('sources','artifacts'):
   for n,h in parent[section].items():req(digest(ROOT/n)==h,'parent identity');hashes[n]=h
