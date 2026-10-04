@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/PlaneContract.cxx": "0ac5c24fa1e5196f6b8b25c37b24cdfc7c4ac687775502706f4528290eb209a1",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/binary_manifest.json": "622175050fe241afc09ee3876d471bfeaf4f815580d7dabbc33bf7aed3863c9b",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/compile_receipt.json": "5f54256e76ef726c566333d6f5c46f1e2d4387c944612fe02485189fc6bd1e1b",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/plane_contract": "a098f4e45e84eab7a55d10ec7f49da1e7ab5f31a4a11ffa41cb4bbd6f6b7a2dd",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/synthetic_probe_receipt.json": "c59f26d96e75b73c09d21c32381b143daa9ca3ea4106563d11bca9782d3889ab",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/synthetic_request.json": "a7578c0a3786152a4a014731029ab6fca2e68919a9e67a8945f0f469d8452175",
+    "outputs/mc24_four_station_wb123_plane_preflight_v1/synthetic_result.json": "b252f32d2c77a7d34c29dd892883ece8cb156e7f9d5e556ab5d6b0dc0d389266",
+    "outputs/wb123_calypso_contract_import_v1.json": "f8b0e2c439a778285f4771af762645b4034fe52e8246ec1b1d12ddad63c02db7",
+    "outputs/wb123_calypso_test_preflight_v1.json": "e734615c66a1402cb6637845e0e7555d002f55eaca378125702a6ebf37ba027b",
+    "outputs/wb123_ml_contract_import_v1.json": "2b729e5f397d3d912d48c42a940c585c13786af2bb74987befa39ab0ebbe62a2",
+    "outputs/wb123_ml_test_preflight_v1.json": "a6f8b2d5db8af8c99c129aeccb9249a894da0a3b9e36b242a64e1651e4caa3aa"
+  },
+  "calypso_python": "3.9.12",
+  "event_access": false,
+  "ml_python": "3.13.11",
+  "new_physical_calls": 0,
+  "old_and_new_tests_per_environment": 66,
+  "plane_api_probe_cases": 14,
+  "plane_compile_and_probe": "PASS",
+  "preregistration_commit": "29d749e",
+  "schema": "wb123_saved_semantics_preflight_v1",
+  "source_replacement": "one terminal predicate; numeric/controller/field/exact gates retained"
+}
