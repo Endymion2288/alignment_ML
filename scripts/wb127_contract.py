@@ -46,7 +46,7 @@ def verify():
  for p,h in read(OUT/'freeze.json')['hashes'].items():req(digest(p)==h,'frozen '+p)
 def run():
  verify();(OUT/'execution_lock').mkdir(exist_ok=False);total=0
- for idx in read(PROTOCOL)['indices']:
+  for idx in read(PROTOCOL)['indices']:
   e=OUT/'events'/f'{idx:02d}';script='\n'.join(['source '+str(ROOT/'scripts/setup_environment.sh')+' calypso','source '+str(OUT/'build_preflight_v4/build/x86_64-el9-gcc13-opt/setup.sh'),'export LD_LIBRARY_PATH='+str(OUT/'build_preflight_v4/build/x86_64-el9-gcc13-opt/lib')+':$LD_LIBRARY_PATH','python '+str(ROOT/'scripts/wb127_athena.py')+' --work-dir '+str(e)+' --sqlite '+str(PARENT/'identity_payload/tracker_alignment.sqlite')]);(e/'command.sh').write_text(script);r=subprocess.run(['bash','-c',script],cwd=e,stdout=(e/'athena.log').open('w'),stderr=subprocess.STDOUT);write(e/'exit.json',{'exit_code':r.returncode});req(r.returncode==0,'Athena '+str(idx));total+=1;verify()
  write(OUT/'summary.json',{'schema':'wb127_strip_measurement_summary_v1','execution_contract':'PASS','population':6,'new_reconstruction_calls':total,'new_propagation_calls':0,'held_out_access':False,'measurement_export':'PASS','direct_curve_prediction':'NOT_EXECUTED','straight_compression':'NOT_EVALUATED','association':'INHERITED_CONDITIONAL','qualification':'NOT_EVALUATED','freeze_sha256':digest(OUT/'freeze.json')});print('RUN_COMPLETE',total)
 def seal():

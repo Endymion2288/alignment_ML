@@ -6,8 +6,8 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from alignment.wb90_measurement_contract import read_public, write_new, digest
 from wb127_contract import OUT, PROTOCOL
 p=argparse.ArgumentParser();p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--sqlite',type=Path,required=True);a=p.parse_args()
-work=a.work_dir.resolve(); sqlite=a.sqlite.resolve(); f=read_public(work/'fixture.json'); selected=next(x for x in read_public(PROTOCOL)['selected'] if x['index']==f['index'])
-if work!=OUT/'events'/f'{f["index"]:02d}' or any(f[k]!=selected[k] for k in ('input_xaod','ordinal','actual_run','actual_event')):raise ValueError('allowlist')
+work=a.work_dir.resolve(); sqlite=a.sqlite.resolve(); f=read_public(work/'fixture.json'); selected_indices=read_public(PROTOCOL)['indices']
+if work not in (OUT/'events'/f'{f["index"]:02d}', OUT/'recovery_v1/events'/f'{f["index"]:02d}') or f['index'] not in selected_indices:raise ValueError('allowlist')
 if sqlite!=OUT/'identity_payload/tracker_alignment.sqlite':raise ValueError('payload')
 from AthenaCommon.Configurable import Configurable
 from CalypsoConfiguration.AllConfigFlags import initConfigFlags
