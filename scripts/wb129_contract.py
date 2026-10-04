@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 PARENT=ROOT/'outputs/mc24_four_station_wb125_physical_seed_v1'
 WB127=ROOT/'outputs/mc24_four_station_wb127_strip_measurement_v1/recovery_v5'
-OUT=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v1'
+OUT=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v2'
 PROTOCOL=ROOT/'configs/research_review/wp129_sensor_surface_curve_contract.json'
 WORKBOOK=ROOT/'workbook/2026-10-04_129_WB127同六事件实际传感器面曲线传播.md'
 SRC=ROOT/'research/wb129/SensorSurfaceCurvePrediction.cxx'
