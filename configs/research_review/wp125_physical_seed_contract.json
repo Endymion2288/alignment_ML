@@ -1,0 +1,137 @@
+{
+  "arms": [
+    "D",
+    "M",
+    "P"
+  ],
+  "association_requires_all_RDO_complete_unique_links": true,
+  "association_unknown_allows_conditional_intervention": true,
+  "bridge": "official_propagator_to_original_S0_plane_no_material_no_covariance",
+  "covariance_transport": false,
+  "downstream_targets": [
+    1,
+    2,
+    3
+  ],
+  "dummy_qop_per_MeV": 1e-05,
+  "energy_loss": false,
+  "fd_arm": "P",
+  "fd_indices": [
+    12,
+    20
+  ],
+  "fd_qop_multipliers": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+  ],
+  "fd_targets": [
+    2,
+    3
+  ],
+  "field_failure_state": "UNKNOWN_NOT_EXPOSED_BY_OFFICIAL_BOUND_INTERFACE; preserve error log; no extra logger calls",
+  "field_mode": "FASER",
+  "final_oracle": "NOT_EVALUATED",
+  "frame_rotation_tolerance": 1e-09,
+  "geometry": "FASERNU-04",
+  "global_tag": "OFLCOND-FASER-06",
+  "gross_residual_ratio_description": 0.1,
+  "held_out_access": false,
+  "historical_raw_sha256_known_indices": [
+    12
+  ],
+  "historical_raw_sha256_unknown_indices": [
+    1,
+    4,
+    8,
+    16,
+    20
+  ],
+  "material_map": false,
+  "max_propagation_calls": 88,
+  "max_step_size_m": 10.0,
+  "max_steps": 10000,
+  "multiple_scattering": false,
+  "new_reconstruction_calls": 0,
+  "output_scales": [
+    1.0,
+    1.0,
+    0.001,
+    0.001
+  ],
+  "physics_screening": "NOT_EVALUATED",
+  "population": "six_exact_WB103_seen_development_events",
+  "primary_collection": "CKFTrackCollection",
+  "primary_hypothesis": "index12_D_station3_failure_removed_by_P_in_same_frozen_model",
+  "qop_step_per_MeV": 1e-08,
+  "qualification": "NOT_EVALUATED",
+  "repeat_indices": [
+    12,
+    20
+  ],
+  "repeat_targets": [
+    2,
+    3
+  ],
+  "require_single_track": true,
+  "review_head": "006b696adc47bf07ded1cc9670161b8de689d1cd",
+  "roundtrip_direction": 1e-09,
+  "roundtrip_position_mm": 1e-06,
+  "schema": "wb125_physical_seed_contract_v1",
+  "selected": [
+    {
+      "actual_event": 2141,
+      "actual_run": 100043,
+      "index": 1,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00200-00299-s0013-r0022-xAOD.root",
+      "ordinal": 2141,
+      "row_sha256": "a38aec4c872bf2b3e48e31a79b0803d96951d44aacf2829ab9d603cf7f4202fe"
+    },
+    {
+      "actual_event": 2310,
+      "actual_run": 100043,
+      "index": 4,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100043/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100043-00300-00399-s0013-r0022-xAOD.root",
+      "ordinal": 2310,
+      "row_sha256": "f23c94c126076d28e3563d358b575f2494c65a3355706dd8b6b906c97b1f8f9b"
+    },
+    {
+      "actual_event": 2327,
+      "actual_run": 100044,
+      "index": 8,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00200-00299-s0013-r0022-xAOD.root",
+      "ordinal": 2327,
+      "row_sha256": "1a1c70ba060b7d24c3398d699c6cd242c557598a7a8689f7213915bd8d43e544"
+    },
+    {
+      "actual_event": 2268,
+      "actual_run": 100044,
+      "index": 12,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100044/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100044-00300-00399-s0013-r0022-xAOD.root",
+      "ordinal": 2268,
+      "row_sha256": "d83a3a989117bf8bad71fd20fb51179a5b91e3a1f33fbc0087d46d5d4813dae6"
+    },
+    {
+      "actual_event": 2305,
+      "actual_run": 100047,
+      "index": 16,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100047/rec/s0013-r0022/FaserMC-MC24_PG_mumi_fasernu_5mrad_flukaE-100047-00100-00149-s0013-r0022-xAOD.root",
+      "ordinal": 2305,
+      "row_sha256": "445e7541a028d777a76ac21ddc70f67f3088f8a0119d55c17c7ba1b00ebab31f"
+    },
+    {
+      "actual_event": 2287,
+      "actual_run": 100048,
+      "index": 20,
+      "input_xaod": "/eos/experiment/faser/data0/sim/mc24/particle_gun/100048/rec/s0013-r0022/FaserMC-MC24_PG_mupl_fasernu_5mrad_flukaE-100048-00100-00149-s0013-r0022-xAOD.root",
+      "ordinal": 2287,
+      "row_sha256": "1fd9f0f4a6f21e20de0c65c3a6134e686684f8d5ab0211338196f6bcc2e1cc5e"
+    }
+  ],
+  "source_relative_precision": 9.5367431640625e-07,
+  "source_surface": "actual_persistent_Trk_PlaneSurface_transform",
+  "state_selection": "minimum_abs_global_z_minus_original_S0_z_then_persistent_index",
+  "step_tolerance": 0.0001,
+  "surface_tolerance_mm": 0.0001
+}
