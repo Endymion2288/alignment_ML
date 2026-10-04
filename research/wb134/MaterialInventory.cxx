@@ -72,9 +72,10 @@ class MaterialInventory final:public AthAlgorithm {
     }
     std::set<size_t> child;
     if(v->confinedVolumes())for(const auto& c:v->confinedVolumes()->arrayObjects())child.insert(volume(c.get()));
-    for(const auto& c:v->confinedDenseVolumes())child.insert(volume(c.get()));
+    for(const auto& c:v->denseVolumes())child.insert(volume(c.get()));
     for(auto i:local)volumes[index]["surface_indices"].push_back(i);
-    for(auto i:child)volumes[index]["children"].push_back(i);return index;
+    for(auto i:child)volumes[index]["children"].push_back(i);
+    return index;
   }
   void audit(){
     const auto& ctx=Gaudi::Hive::currentContext();const xAOD::EventInfo* h=nullptr;
@@ -88,7 +89,8 @@ class MaterialInventory final:public AthAlgorithm {
     for(const auto& row:m_e.at("rows")){
       const auto id=row.at("cluster_id").get<uint64_t>();if(!seen.insert(id).second)throw std::runtime_error("duplicate target");
       Identifier wafer(static_cast<Identifier::value_type>(row.at("wafer_id").get<uint64_t>()));
-      if(ids->count(wafer)!=1)throw std::runtime_error("wafer missing");const auto* s=tracking->findSurface(ids->at(wafer));
+      if(ids->count(wafer)!=1)throw std::runtime_error("wafer missing");
+      const auto* s=tracking->findSurface(ids->at(wafer));
       if(!s||!sindex.count(s))throw std::runtime_error("target absent from recursive inventory");
       const auto t=s->transform(g).matrix();double error=0;for(int i=0;i<4;++i)for(int k=0;k<4;++k)error=std::max(error,std::abs(t(i,k)-row.at("sensor_transform").at(i).at(k).get<double>()));
       if(error>1e-9)throw std::runtime_error("target frame changed");

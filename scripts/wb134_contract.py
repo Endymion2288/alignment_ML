@@ -27,7 +27,7 @@ EVIDENCE += [CALYPSO/'Tracking/Acts/FaserActsKalmanFilter/src/TrackFinderFunctio
 
 
 def build():
- pre=OUT/'build_preflight_v2';pre.mkdir(parents=True,exist_ok=False);source=pre/'source';pkg=source/'WB134Diagnostic';pkg.mkdir(parents=True)
+ pre=OUT/'build_preflight_v3';pre.mkdir(parents=True,exist_ok=False);source=pre/'source';pkg=source/'WB134Diagnostic';pkg.mkdir(parents=True)
  old=ROOT/'outputs/mc24_four_station_wb125_build_preflight_v2/source'
  (source/'CMakeLists.txt').write_text((old/'CMakeLists.txt').read_text().replace('WB125','WB134'))
  cm=(old/'WB125Diagnostic/CMakeLists.txt').read_text().replace('WB125Diagnostic','WB134Diagnostic')
@@ -46,9 +46,9 @@ def freeze():
  manifest=read(ROOT/'docs/wb133_accepted_anchor_result_manifest.json')
  for group in ('sources','artifacts'):
   for name,h in manifest[group].items():require(digest(ROOT/name)==h,'parent manifest identity '+name)
- hashes=dict(read(PARENT_STAGE/'freeze.json')['hashes']);receipt=read(OUT/'build_preflight_v2/receipt.json')
+ hashes=dict(read(PARENT_STAGE/'freeze.json')['hashes']);receipt=read(OUT/'build_preflight_v3/receipt.json')
  require(digest(receipt['binary'])==receipt['binary_sha256'] and digest(SRC)==receipt['source_sha256'],'build identity')
- for p in SOURCES+EVIDENCE+[ROOT/'docs/wb133_accepted_anchor_result_manifest.json',PARENT_STAGE/'freeze.json',Path(receipt['binary']),OUT/'build_preflight_v2/receipt.json']:hashes[str(p)]=digest(p)
+ for p in SOURCES+EVIDENCE+[ROOT/'docs/wb133_accepted_anchor_result_manifest.json',PARENT_STAGE/'freeze.json',Path(receipt['binary']),OUT/'build_preflight_v3/receipt.json']:hashes[str(p)]=digest(p)
  shutil.copyfile(WORKBOOK,OUT/'contract_workbook.md');hashes[str(OUT/'contract_workbook.md')]=digest(OUT/'contract_workbook.md')
  availability=[]
  for name in read(PROTOCOL)['map_candidate_paths']:
@@ -80,7 +80,7 @@ def verify():
 
 
 def execute(index):
- verify();event=OUT/'events'/f'{index:02d}';binary=Path(read(OUT/'build_preflight_v2/receipt.json')['binary']);platform=binary.parent.parent;q=lambda p:shlex.quote(str(p))
+ verify();event=OUT/'events'/f'{index:02d}';binary=Path(read(OUT/'build_preflight_v3/receipt.json')['binary']);platform=binary.parent.parent;q=lambda p:shlex.quote(str(p))
  command='\n'.join(['set -eo pipefail','ulimit -c 0','source '+q(ROOT/'scripts/setup_environment.sh')+' calypso','source '+q(platform/'setup.sh'),
   'export LD_LIBRARY_PATH='+q(platform/'lib')+':${LD_LIBRARY_PATH:-}','python '+q(ROOT/'scripts/wb134_athena.py')+' --work-dir '+q(event)+' --sqlite '+q(PARENT/'identity_payload/tracker_alignment.sqlite')])
  with (event/'command.sh').open('x') as f:f.write(command+'\n')
