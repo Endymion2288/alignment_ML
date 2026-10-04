@@ -3,7 +3,7 @@ import argparse,hashlib,json,shutil,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 PARENT=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v2'
-WB129=PARENT/'recovery_v2'
+WB129=PARENT
 OUT=ROOT/'outputs/mc24_four_station_wb130_sensor_bounds_v1'
 PROTOCOL=ROOT/'configs/research_review/wp130_sensor_bounds_contract.json'
 WORKBOOK=ROOT/'workbook/2026-10-04_130_WB129事件12与20传感器边界及测量帧审计.md'
@@ -36,7 +36,7 @@ def freeze():
  for p in (ROOT/'configs/research_review/wp130_sensor_bounds_contract.json',SRC,ROOT/'scripts/wb130_athena.py',ROOT/'scripts/wb130_contract.py',WORKBOOK,OUT/'build_preflight_v1/receipt.json',Path(r['binary'])):hashes[str(p)]=digest(p)
  OUT.mkdir(exist_ok=True);(OUT/'events').mkdir(exist_ok=False);shutil.copyfile(PROTOCOL,OUT/'protocol.json');(OUT/'contract_workbook.md').write_text(WORKBOOK.read_text())
  for idx in read(PROTOCOL)['indices']:
-  src=WB129/'events'/f'{idx:02d}';dst=OUT/'events'/f'{idx:02d}';dst.mkdir()
+  src=WB129/'recovery_v2/events'/f'{idx:02d}';dst=OUT/'events'/f'{idx:02d}';dst.mkdir()
   for n in ('fixture.json','export.json','curve_response.json'):shutil.copyfile(src/n,dst/n);hashes[str(dst/n)]=digest(dst/n)
  hashes[str(OUT/'protocol.json')]=digest(OUT/'protocol.json');hashes[str(OUT/'contract_workbook.md')]=digest(OUT/'contract_workbook.md')
  write_new(OUT/'freeze.json',{'schema':'wb130_sensor_bounds_freeze_v1','hashes':hashes,'parent_wb129_freeze_sha256':digest(WB129/'freeze.json'),'population':2,'rows':51,'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False})
