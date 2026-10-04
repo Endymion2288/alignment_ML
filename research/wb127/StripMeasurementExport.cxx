@@ -22,15 +22,15 @@ class StripMeasurementExport final:public AthAlgorithm {
  private:
  Gaudi::Property<std::string> m_fixture{this,"FixturePath",""},m_seed{this,"SeedPath",""},m_output{this,"OutputPath",""};
  const FaserSCT_ID* m_id=nullptr;Json m_f,m_seedJson;
- void audit(){const xAOD::EventInfo* h=nullptr;ATH_CHECK(evtStore()->retrieve(h,"EventInfo"));if(h->runNumber()!=m_f.at("actual_run")||h->eventNumber()!=m_f.at("actual_event"))throw std::runtime_error("event identity");
-  const Tracker::FaserSCT_ClusterContainer* cc=nullptr;ATH_CHECK(evtStore()->retrieve(cc,"SCT_ClusterContainer"));
+ void audit(){const xAOD::EventInfo* h=nullptr;if(evtStore()->retrieve(h,"EventInfo").isFailure())throw std::runtime_error("header");if(h->runNumber()!=m_f.at("actual_run")||h->eventNumber()!=m_f.at("actual_event"))throw std::runtime_error("event identity");
+  const Tracker::FaserSCT_ClusterContainer* cc=nullptr;if(evtStore()->retrieve(cc,"SCT_ClusterContainer").isFailure())throw std::runtime_error("clusters");
   std::map<uint64_t,int> allow;for(const auto& r:m_f.at("references"))for(const auto& id:r.at("clusters")){if(!allow.emplace(id.get<uint64_t>(),r.at("station").get<int>()).second)throw std::runtime_error("duplicate allowlist");}
   std::map<uint64_t,const Tracker::FaserSCT_Cluster*> found;for(const auto* c:*cc)for(const auto* p:*c){const auto id=p->identify().get_compact();if(allow.count(id)){if(!found.emplace(id,p).second)throw std::runtime_error("duplicate cluster");if(!p->detectorElement()||m_id->station(p->identify())!=allow.at(id))throw std::runtime_error("cluster station");}}
   if(found.size()!=allow.size())throw std::runtime_error("allowlist missing");
   Json rows=Json::array();Json refs=Json::array();
   for(const auto& r:m_f.at("references")){const int station=r.at("station");const double zc=r.at("z_center_mm");Json ids=Json::array();
    for(const auto& idj:r.at("clusters")){const uint64_t id=idj;const auto* c=found.at(id);const auto* e=c->detectorElement();const Identifier wafer=e->identify();const auto& tr=e->transform();
-    if((tr.linear().transpose()*tr.linear()-Amg::Matrix3D::Identity()).cwiseAbs().maxCoeff()>1e-9||std::abs(tr.linear().determinant()-1)>1e-9)throw std::runtime_error("non-rigid frame");
+    if((tr.linear().transpose()*tr.linear()-Eigen::Matrix3d::Identity()).cwiseAbs().maxCoeff()>1e-9||std::abs(tr.linear().determinant()-1)>1e-9)throw std::runtime_error("non-rigid frame");
     const auto lp=c->localPosition();const auto gp=c->globalPosition();const auto cov=c->localCovariance();if(cov.rows()<1||cov.cols()<1||!(cov(0,0)>0)||!std::isfinite(cov(0,0)))throw std::runtime_error("invalid covariance");
     double alpha=std::abs(std::asin(e->sinStereo()));int eta=m_id->eta_module(wafer),phi=m_id->phi_module(wafer),mi=(((eta+1)/2+phi)%2==1?phi:phi+4);double sa=0,ca=0;switch(mi){case 0:case 2:case 1:case 3:sa=-std::sin(alpha);ca=std::cos(alpha);break;case 4:case 6:case 5:case 7:sa=std::sin(alpha);ca=std::cos(alpha);break;default:throw std::runtime_error("module");}if(m_id->side(wafer)>0)sa=-sa;
     const double z=gp.z()-zc,u=gp.y()*ca+gp.x()*sa;Json rdo=Json::array();for(const auto& rid:c->rdoList())rdo.push_back(rid.get_compact());
