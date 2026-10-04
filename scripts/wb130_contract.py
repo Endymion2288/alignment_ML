@@ -2,8 +2,8 @@
 import argparse,hashlib,json,shutil,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-PARENT=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v2'
-WB129=PARENT
+PARENT=ROOT/'outputs/mc24_four_station_wb125_physical_seed_v1'
+WB129=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v2'
 OUT=ROOT/'outputs/mc24_four_station_wb130_sensor_bounds_v1'
 PROTOCOL=ROOT/'configs/research_review/wp130_sensor_bounds_contract.json'
 WORKBOOK=ROOT/'workbook/2026-10-04_130_WB129事件12与20传感器边界及测量帧审计.md'
@@ -45,7 +45,7 @@ def freeze():
 def verify():
  for p,h in read(OUT/'freeze.json')['hashes'].items():req(digest(p)==h,'frozen '+p)
 def run():
- verify();(OUT/'execution_lock').mkdir(exist_ok=False);rec=OUT/'recovery_v1';rec.mkdir();(rec/'events').mkdir()
+ verify();(OUT/'execution_lock_v2').mkdir(exist_ok=False);rec=OUT/'recovery_v2';rec.mkdir();(rec/'events').mkdir()
  for idx in read(PROTOCOL)['indices']:
   src=OUT/'events'/f'{idx:02d}';ev=rec/'events'/f'{idx:02d}';ev.mkdir()
   for n in ('fixture.json','export.json','curve_response.json'):shutil.copyfile(src/n,ev/n)
@@ -54,6 +54,6 @@ def run():
   write_new(ev/'exit.json',{'exit_code':r.returncode});req(r.returncode==0,'Athena '+str(idx));req((ev/'bounds_audit.json').is_file(),'bounds output')
  write_new(rec/'summary.json',{'schema':'wb130_sensor_bounds_summary_v1','execution_contract':'PASS','population':2,'rows':51,'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False})
 def seal():
- verify();s=read(OUT/'recovery_v1/summary.json');arts={str(p.relative_to(ROOT)):digest(p) for p in OUT.rglob('*') if p.is_file()};write_new(ROOT/'docs/wb130_sensor_bounds_result_manifest.json',{'schema':'wb130_sensor_bounds_result_manifest_v1','execution_contract':s['execution_contract'],'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False,'sources':{str(p.relative_to(ROOT)):digest(p) for p in (SRC,ROOT/'scripts/wb130_athena.py',ROOT/'scripts/wb130_contract.py',PROTOCOL)},'artifacts':arts,'scientific_boundary':{'alignment':'NOT_ESTABLISHED','association':'INHERITED_CONDITIONAL','curve_endpoint_active_surface':'TO_BE_AUDITED'}})
+ verify();s=read(OUT/'recovery_v2/summary.json');arts={str(p.relative_to(ROOT)):digest(p) for p in OUT.rglob('*') if p.is_file()};write_new(ROOT/'docs/wb130_sensor_bounds_result_manifest.json',{'schema':'wb130_sensor_bounds_result_manifest_v1','execution_contract':s['execution_contract'],'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False,'sources':{str(p.relative_to(ROOT)):digest(p) for p in (SRC,ROOT/'scripts/wb130_athena.py',ROOT/'scripts/wb130_contract.py',PROTOCOL)},'artifacts':arts,'scientific_boundary':{'alignment':'NOT_ESTABLISHED','association':'INHERITED_CONDITIONAL','curve_endpoint_active_surface':'TO_BE_AUDITED'}})
 if __name__=='__main__':
  a=argparse.ArgumentParser();a.add_argument('action',choices=['build','freeze','run','verify','seal']);globals()[a.parse_args().action]()
