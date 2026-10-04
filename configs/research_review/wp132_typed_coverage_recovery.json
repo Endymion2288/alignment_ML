@@ -1,0 +1,18 @@
+{
+  "schema": "wp132_typed_coverage_recovery_v1",
+  "reason": "The original observer compared all TSOS ROT links, including Outliers, to measurementsOnTrack() accepted Measurement membership",
+  "mechanism": "explicit Measurement AND NOT Outlier AND NOT Hole predicate for the already-defined 111-row primary hypothesis; retain every original linked Outlier and unlinked row separately",
+  "scientific_threshold_changes": false,
+  "numerical_field_changes": false,
+  "input_changes": false,
+  "source_reselection": false,
+  "indices": [1,4,8,12,16,20],
+  "expected_accepted_counts": [18,18,18,16,18,23],
+  "expected_not_accepted_count": 36,
+  "new_input_event_executions": 0,
+  "new_reconstruction_calls": 0,
+  "new_propagation_calls": 0,
+  "new_algorithm_field_queries": 0,
+  "preserve": "original frozen contract, raw exports, six original statuses and summary remain unchanged; NOT_IN_SELECTED_CKF is corrected to NOT_IN_ACCEPTED_CKF_MEASUREMENTS, actual linked excluded states remain evidence",
+  "forbidden": ["change residual thresholds or geometric tolerance", "alter raw flags/IDs/parameters/positions/qop/covariance", "guess missing association", "read input xAOD again", "held-out/sealed/truth", "rewrite original failure as PASS"]
+}

@@ -49,3 +49,15 @@ execution PASS 只证明六个输入成功读取并保存；interface PASS 要�
 ## Artifact / 防 post-hoc tuning
 
 机器合同 `configs/research_review/wp132_native_ckf_state_contract.json`；exclusive namespace `outputs/mc24_four_station_wb132_native_ckf_state_v1/`。执行前源码/合同 commit，并冻结隔离 binary、源/父级实际 artifacts、已选输入及合同 workbook 快照。保存 commands/logs/exit、完整 native export、audit decisions、独立重算、manifest；失败不覆盖、不重试。结果只追加在本文件末尾，freeze 使用执行前 `contract_workbook.md` 快照。
+
+## 保存接口恢复合同（原六次执行之后，恢复计算之前）
+
+### FACT FROM REPOSITORY
+
+六次 exporter execution 均 PASS。原 observer 全部因 `old selected membership changed` 中止分析，原 `summary.json` / `status.json` 均保留 UNKNOWN。前两个 raw exports 显示 S0 有 exact ROT→PRD links，但 TSOS flag 为 Outlier；它们不在 `track->measurementsOnTrack()` 的 accepted Measurement 列表中。原 observer 错把两个不同集合相等当成 identity gate。这是 aggregation/interface failure，同时产生了“原无 accepted membership 不能推导无 exact TSOS link”的新来源证据。
+
+### RECOMMENDATION / 限定恢复
+
+机器恢复合同 `configs/research_review/wp132_typed_coverage_recovery.json`。在新 `saved_typed_coverage_v1/` 内，分别构造 all exact links 与 `Measurement AND NOT Outlier AND NOT Hole` accepted links。后者与原 WB125 accepted membership 逐 ID 闭合，仍为原主 H 规定的111 rows。原147 rows全部保留；36个 non-accepted rows 必须报告实际是否 linked、原 flags、原参数及 residual，不再用 `NOT_IN_SELECTED_CKF` 暗示没有 TSOS link。
+
+不改主 H、gross 阈值、plane precision allowance、参数/source index、任何 numeric 字段，不覆写原失败、raw export、协议或脚本；新 reader 的唯一接口变化是明确 accepted Measurement 集合。源状态诊断保持实际 Outlier/测量字段，不伪造 flags，不删除 excluded states。四项 typed coverage 回归控制 PASS。执行前另行 commit/freeze 新 reader、原 freeze、六个 raw responses/原失败收据；新增 event read、reconstruction、propagation、field query 全为0。
