@@ -1,0 +1,12 @@
+{
+  "schema": "wp130_sensor_bounds_contract_v1",
+  "parent_stage": "WB129 recovery_v2",
+  "indices": [12, 20],
+  "scope": "saved WB129 endpoints and actual runtime ACTS sensor bounds",
+  "new_propagation_calls": 0,
+  "new_reconstruction_calls": 0,
+  "field_queries": 0,
+  "allowlist": "all 21/30 exported rows for events 12 and 20",
+  "checks": ["event identity", "cluster order", "surface transform identity", "surface type and bounds values", "insideBounds", "isOnSurface", "local-y and measured local frame"],
+  "forbidden": ["rerun propagation", "change q/p", "change geometry", "change field", "change material", "change covariance", "change tolerance", "residual selection", "held-out", "ML", "alignment solve"]
+}
