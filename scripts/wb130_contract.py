@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 PARENT=ROOT/'outputs/mc24_four_station_wb125_physical_seed_v1'
 WB129=ROOT/'outputs/mc24_four_station_wb129_sensor_surface_curve_v2'
-OUT=ROOT/'outputs/mc24_four_station_wb130_sensor_bounds_v1'
+OUT=ROOT/'outputs/mc24_four_station_wb130_sensor_bounds_v2'
 PROTOCOL=ROOT/'configs/research_review/wp130_sensor_bounds_contract.json'
 WORKBOOK=ROOT/'workbook/2026-10-04_130_WB129事件12与20传感器边界及测量帧审计.md'
 SRC=ROOT/'research/wb130/SensorBoundsAudit.cxx'
