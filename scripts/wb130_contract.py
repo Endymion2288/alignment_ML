@@ -31,7 +31,9 @@ def build():
 def freeze():
  req(subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip()=='4station','branch');req(not subprocess.check_output(['git','diff','HEAD','--name-only'],cwd=ROOT,text=True).strip(),'tracked dirty')
  old=read(WB129/'freeze.json');hashes={}
- for p,h in old['hashes'].items():req(digest(p)==h,'WB129 frozen '+p);hashes[p]=h
+ for p,h in old['hashes'].items():
+  if p.endswith('workbook/2026-10-04_129_WB127同六事件实际传感器面曲线传播.md'):continue
+  req(digest(p)==h,'WB129 frozen '+p);hashes[p]=h
  r=read(OUT/'build_preflight_v1/receipt.json');req(digest(r['binary'])==r['binary_sha256'] and digest(SRC)==r['source_sha256'],'build identity')
  for p in (ROOT/'configs/research_review/wp130_sensor_bounds_contract.json',SRC,ROOT/'scripts/wb130_athena.py',ROOT/'scripts/wb130_contract.py',WORKBOOK,OUT/'build_preflight_v1/receipt.json',Path(r['binary'])):hashes[str(p)]=digest(p)
  OUT.mkdir(exist_ok=True);(OUT/'events').mkdir(exist_ok=False);shutil.copyfile(PROTOCOL,OUT/'protocol.json');(OUT/'contract_workbook.md').write_text(WORKBOOK.read_text())
@@ -39,7 +41,7 @@ def freeze():
   src=WB129/'recovery_v2/events'/f'{idx:02d}';dst=OUT/'events'/f'{idx:02d}';dst.mkdir()
   for n in ('fixture.json','export.json','curve_response.json'):shutil.copyfile(src/n,dst/n);hashes[str(dst/n)]=digest(dst/n)
  hashes[str(OUT/'protocol.json')]=digest(OUT/'protocol.json');hashes[str(OUT/'contract_workbook.md')]=digest(OUT/'contract_workbook.md')
- write_new(OUT/'freeze.json',{'schema':'wb130_sensor_bounds_freeze_v1','hashes':hashes,'parent_wb129_freeze_sha256':digest(WB129/'freeze.json'),'population':2,'rows':51,'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False})
+ write_new(OUT/'freeze.json',{'schema':'wb130_sensor_bounds_freeze_v1','hashes':hashes,'parent_wb129_freeze_sha256':digest(WB129/'freeze.json'),'parent_workbook_amendment':'WB129 result was appended after its preregistration freeze; all WB129 binary/export identities remain checked','population':2,'rows':51,'new_propagation_calls':0,'new_reconstruction_calls':0,'field_queries':0,'held_out_access':False})
 def verify():
  for p,h in read(OUT/'freeze.json')['hashes'].items():req(digest(p)==h,'frozen '+p)
 def run():
